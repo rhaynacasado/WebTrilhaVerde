@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Árvores — Trilha Verde</title>
+  <link rel="stylesheet" href="../style/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar"></div>
+    <div id="topbar"></div>
+
+    <main class="content">
+      <section class="page visible" id="page-arvores">
+        <div class="page-header">
+          <h2>Árvores</h2>
+          <p>Catálogo e status de plantio.</p>
+        </div>
+        <div class="list" id="arvoresList"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    async function loadPartials() {
+      document.getElementById("sidebar").innerHTML =
+        await (await fetch("../partials/sidebar.html")).text();
+      document.getElementById("topbar").innerHTML =
+        await (await fetch("../partials/topbar.html")).text();
+    }
+    loadPartials();
+  </script>
+
+  <script src="../script/dashboard.js"></script>
+</body>
+</html>

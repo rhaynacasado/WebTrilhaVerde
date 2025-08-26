@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trilha Verde</title>
+    <link rel="stylesheet" href="style/dashboard_old.css">
+</head>
+<body>
+
+    <!-- Barra Superior -->
+    <header>
+        <div class="logo">
+            <img src="img/logo.png" alt="Logo Trilha Verde">
+            <h1>Trilha Verde</h1>
+        </div>
+        <div class="user-info">
+            <img src="img/avatar.png" alt="Avatar">
+            <span>Nome Usuário</span>
+            <span class="dropdown">&#9660;</span>
+
+            <!-- Dropdown Menu -->
+            <div class="dropdown-menu" style="display:none;">
+                <button id="logoutBtn">Sair</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Menu de Navegação -->
+    <nav>
+        <button class="active">Dashboard</button>
+        <button>Trilhas</button>
+        <button>Árvores</button>
+        <button>Perguntas</button>
+        <button>Log</button>
+        <button>Admin</button>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main>
+        <section class="stats">
+            <div class="card">
+                <h2>25</h2>
+                <p>Usuários</p>
+            </div>
+            <div class="card">
+                <h2>1</h2>
+                <p>Trilhas</p>
+            </div>
+            <div class="card">
+                <h2>12</h2>
+                <p>Árvores</p>
+            </div>
+            <div class="card">
+                <h2>103</h2>
+                <p>Perguntas</p>
+            </div>
+        </section>
+            <div class="graph-placeholder">
+                <p class="graph-title">Distribuição Usuários X Conclusão de Trilhas</p>
+                <img class="graph" src="img/graph.png" alt="Graph">
+            </div>
+
+        <section class="recent-activities">
+            <h3>Atividades Recentes</h3>
+            <ul>
+                <li class="add"><span class="flag">➕</span><strong>Nome Usuário</strong> adicionou Árvore Ipê Amarelo em 12/08/2025 12:12</li>
+                <li class="remove"><span class="flag">❌</span><strong>Nome Usuário</strong> removeu Trilha Gimnospermas em 10/08/2025 10:03</li>
+                <li class="edit"><span class="flag">✏️</span><strong>Nome Usuário</strong> editou Pergunta 103 em 09/04/2025 15:10</li>
+            </ul>
+        </section>
+    </main>
+
+</body>
+</html>

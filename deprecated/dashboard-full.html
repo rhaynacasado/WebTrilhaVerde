@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trilha Verde — Admin</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard-full.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <!-- Logo simples em SVG -->
+        <div class="logo" aria-hidden="true">
+          <img src="img/logo.png" alt="Logo Trilha Verde">
+        </div>
+        <div class="brand-text">
+          <h1>Trilha Verde</h1>
+          <span>Painel Admin</span>
+        </div>
+      </div>
+
+      <nav class="menu" aria-label="Principal">
+        <button class="menu-item active" data-page="dashboard">
+          <span class="icon" aria-hidden="true">📊</span>
+          <span>Dashboard</span>
+        </button>
+        <button class="menu-item" data-page="trilhas">
+          <span class="icon" aria-hidden="true">🥾</span>
+          <span>Trilhas</span>
+        </button>
+        <button class="menu-item" data-page="arvores">
+          <span class="icon" aria-hidden="true">🌳</span>
+          <span>Árvores</span>
+        </button>
+        <button class="menu-item" data-page="perguntas">
+          <span class="icon" aria-hidden="true">❓</span>
+          <span>Perguntas</span>
+        </button>
+        <button class="menu-item" data-page="log">
+          <span class="icon" aria-hidden="true">📜</span>
+          <span>Log</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="sairBtn" class="ghost">Sair</button>
+      </div>
+    </aside>
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="search">
+        <input type="search" placeholder="Buscar…" aria-label="Buscar" />
+      </div>
+      <div class="user">
+        <div class="user-info">
+          <strong>Pedro Almeida</strong>
+          <small>pedra@gmail.com</small>
+        </div>
+        <div class="avatar" aria-hidden="true">🧑🏽‍🦱</div>
+      </div>
+    </header>
+
+    <!-- Conteúdo -->
+    <main class="content">
+      <!-- Página: Dashboard -->
+      <section class="page visible" id="page-dashboard" aria-labelledby="title-dashboard">
+        <div class="page-header">
+          <h2 id="title-dashboard">Dashboard</h2>
+          <p>Visão geral das métricas, atividades e progresso.</p>
+        </div>
+
+        <div class="kpis">
+          <article class="kpi">
+            <h3>Trilhas totais</h3>
+            <div class="value" id="kpiTrilhas">—</div>
+            <span class="muted" id="kpiTrilhasDelta">—</span>
+          </article>
+          <article class="kpi">
+            <h3>Árvores</h3>
+            <div class="value" id="kpiArvores">—</div>
+            <span class="muted" id="kpiArvoresDelta">—</span>
+          </article>
+          <article class="kpi">
+            <h3>Perguntas</h3>
+            <div class="value" id="kpiPerguntas">—</div>
+            <span class="muted" id="kpiPerguntasDelta">—</span>
+          </article>
+          <article class="kpi status">
+            <h3>Status</h3>
+            <div class="pill success">Ativa</div>
+          </article>
+        </div>
+
+        <div class="grid-2">
+          <!-- Gráfico de progresso (anel) -->
+          <section class="card">
+            <header class="card-head">
+              <h3>Progresso do Projeto</h3>
+            </header>
+            <div class="donut-wrap">
+              <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="Progresso em porcentagem">
+                <circle class="donut-track" cx="60" cy="60" r="52" />
+                <circle class="donut-indicator" cx="60" cy="60" r="52" stroke-dasharray="0 999" />
+                <text x="60" y="66" text-anchor="middle" class="donut-label" id="donutLabel">0%</text>
+              </svg>
+              <div class="legend">
+                <span class="dot done"></span> Concluído
+                <span class="dot doing"></span> Em andamento
+                <span class="dot pending"></span> Pendente
+              </div>
+            </div>
+          </section>
+
+          <!-- Atividades recentes -->
+          <section class="card">
+            <header class="card-head">
+              <h3>Atividades Recentes</h3>
+            </header>
+            <ul class="activity" id="activityList" aria-live="polite"></ul>
+          </section>
+        </div>
+
+        <!-- Mini “analytics” com barras -->
+        <section class="card">
+          <header class="card-head">
+            <h3>Analytics semanais</h3>
+          </header>
+          <div class="bars" id="bars">
+            <!-- as barras são preenchidas pelo JS com base em data-valor -->
+          </div>
+          <footer class="card-foot muted">S, T, Q, Q, S, S, D</footer>
+        </section>
+      </section>
+
+      <!-- Página: Trilhas -->
+      <section class="page" id="page-trilhas" aria-labelledby="title-trilhas">
+        <div class="page-header">
+          <h2 id="title-trilhas">Trilhas</h2>
+          <p>Gerencie e crie novas trilhas.</p>
+        </div>
+        <div class="list" id="trilhasList"></div>
+      </section>
+
+      <!-- Página: Árvores -->
+      <section class="page" id="page-arvores" aria-labelledby="title-arvores">
+        <div class="page-header">
+          <h2 id="title-arvores">Árvores</h2>
+          <p>Catálogo e status de plantio.</p>
+        </div>
+        <div class="list" id="arvoresList"></div>
+      </section>
+
+      <!-- Página: Perguntas -->
+      <section class="page" id="page-perguntas" aria-labelledby="title-perguntas">
+        <div class="page-header">
+          <h2 id="title-perguntas">Perguntas</h2>
+          <p>Discussões e dúvidas da comunidade.</p>
+        </div>
+        <div class="list" id="perguntasList"></div>
+      </section>
+
+      <!-- Página: Log -->
+      <section class="page" id="page-log" aria-labelledby="title-log">
+        <div class="page-header">
+          <h2 id="title-log">Log</h2>
+          <p>Registro de eventos do sistema.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="logTable" aria-describedby="title-log">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Nível</th>
+                <th>Evento</th>
+              </tr>
+            </thead>
+            <tbody><!-- preenchido via JS --></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="dashboard-full.js"></script>
+</body>
+</html>

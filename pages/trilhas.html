@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trilhas — Trilha Verde</title>
+  <link rel="stylesheet" href="../style/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar"></div>
+    <div id="topbar"></div>
+
+    <main class="content">
+      <section class="page visible" id="page-trilhas">
+        <div class="page-header">
+          <h2>Trilhas</h2>
+          <p>Gerencie e crie novas trilhas.</p>
+        </div>
+        <div class="list" id="trilhasList">
+          <div class="item">
+            <span class="titulo">Qual melhor época pra plantar araucária?</span>
+            <span class="meta">por Marcos • 4 respostas</span>
+          </div>
+
+          <div class="item">
+            <span class="titulo">Dúvida sobre irrigação automatizada</span>
+            <span class="meta">por Helena • 2 respostas</span>
+          </div>
+
+          <div class="item">
+            <span class="titulo">Como medir crescimento de mudas?</span>
+            <span class="meta">por Rafa • 6 respostas</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    async function loadPartials() {
+      document.getElementById("sidebar").innerHTML =
+        await (await fetch("../partials/sidebar.html")).text();
+      document.getElementById("topbar").innerHTML =
+        await (await fetch("../partials/topbar.html")).text();
+    }
+    loadPartials();
+  </script>
+
+  <script src="../script/dashboard.js"></script>
+</body>
+</html>

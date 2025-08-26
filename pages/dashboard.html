@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — Trilha Verde</title>
+  <link rel="stylesheet" href="../style/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar"></div>
+    <div id="topbar"></div>
+
+    <main class="content">
+      <section class="page visible" id="page-dashboard">
+        <div class="page-header">
+          <h2>Dashboard</h2>
+          <p>Visão geral das métricas, atividades e progresso.</p>
+          
+        <div class="kpis">
+          <article class="kpi">
+            <h3>Trilhas totais</h3>
+            <div class="value" id="kpiTrilhas">—</div>
+            <span class="muted" id="kpiTrilhasDelta">—</span>
+          </article>
+          <article class="kpi">
+            <h3>Árvores</h3>
+            <div class="value" id="kpiArvores">—</div>
+            <span class="muted" id="kpiArvoresDelta">—</span>
+          </article>
+          <article class="kpi">
+            <h3>Perguntas</h3>
+            <div class="value" id="kpiPerguntas">—</div>
+            <span class="muted" id="kpiPerguntasDelta">—</span>
+          </article>
+          <article class="kpi status">
+            <h3>Status</h3>
+            <div class="pill success">Ativa</div>
+          </article>
+        </div>
+
+        <div class="grid-2">
+          <!-- Gráfico de progresso (anel) -->
+          <section class="card">
+            <header class="card-head">
+              <h3>Progresso do Projeto</h3>
+            </header>
+            <div class="donut-wrap">
+              <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="Progresso em porcentagem">
+                <circle class="donut-track" cx="60" cy="60" r="52" />
+                <circle class="donut-indicator" cx="60" cy="60" r="52" stroke-dasharray="0 999" />
+                <text x="60" y="66" text-anchor="middle" class="donut-label" id="donutLabel">0%</text>
+              </svg>
+              <div class="legend">
+                <span class="dot done"></span> Concluído
+                <span class="dot doing"></span> Em andamento
+                <span class="dot pending"></span> Pendente
+              </div>
+            </div>
+          </section>
+
+          <!-- Atividades recentes -->
+          <section class="card">
+            <header class="card-head">
+              <h3>Atividades Recentes</h3>
+            </header>
+            <ul class="activity" id="activityList" aria-live="polite"></ul>
+          </section>
+        </div>
+
+        <!-- Mini “analytics” com barras -->
+        <section class="card">
+          <header class="card-head">
+            <h3>Analytics semanais</h3>
+          </header>
+          <div class="bars" id="bars">
+            <!-- as barras são preenchidas pelo JS com base em data-valor -->
+          </div>
+          <footer class="card-foot muted">S, T, Q, Q, S, S, D</footer>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    async function loadPartials() {
+      document.getElementById("sidebar").innerHTML =
+        await (await fetch("../partials/sidebar.html")).text();
+      document.getElementById("topbar").innerHTML =
+        await (await fetch("../partials/topbar.html")).text();
+    }
+    loadPartials();
+  </script>
+
+  <script src="../script/dashboard.js"></script>
+</body>
+</html>

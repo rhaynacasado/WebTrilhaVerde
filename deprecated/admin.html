@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Jogo de Trilhas</title>
+    <link rel="stylesheet" href="style/admin.css">
+</head>
+<body class="admin-page">
+
+    <!-- Menu Lateral -->
+    <nav>
+        <h2>Administração</h2>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#trilhas">Trilhas</a>
+        <a href="#arvores">Árvores</a>
+        <a href="#perguntas">Perguntas</a>
+        <a href="#usuarios">Usuários</a>
+        <a href="#config">Configurações</a>
+        <a href="#" onclick="logout()">Sair</a>
+    </nav>
+
+    <!-- Área Principal -->
+    <main>
+        <!-- Dashboard -->
+        <section id="dashboard">
+            <h1>Dashboard</h1>
+            <p>Trilhas: 12 | Árvores: 135 | Perguntas: 420</p>
+            <p>Últimas alterações:</p>
+            <ul>
+                <li>12/08: Árvore "Ipê Amarelo" adicionada</li>
+                <li>11/08: Pergunta alterada</li>
+            </ul>
+        </section>
+
+        <!-- Lista de Trilhas -->
+        <section id="trilhas">
+            <h1>Trilhas</h1>
+            <button onclick="openModal('modalTrilha')">+ Nova Trilha</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Localização</th>
+                        <th>Árvores</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Trilha A</td>
+                        <td>Parque X</td>
+                        <td>12</td>
+                        <td><button onclick="openModal('modalTrilha')">Editar</button> | X</td>
+                    </tr>
+                    <tr>
+                        <td>Trilha B</td>
+                        <td>Bosque Y</td>
+                        <td>8</td>
+                        <td><button onclick="openModal('modalTrilha')">Editar</button> | X</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Lista de Árvores -->
+        <section id="arvores">
+            <h1>Árvores</h1>
+            <button onclick="openModal('modalArvore')">+ Nova Árvore</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome Popular</th>
+                        <th>Nome Científico</th>
+                        <th>Trilha</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ipê Amarelo</td>
+                        <td>Handroanthus spp.</td>
+                        <td>Trilha A</td>
+                        <td><button onclick="openModal('modalArvore')">Editar</button> | X</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Lista de Perguntas -->
+        <section id="perguntas">
+            <h1>Perguntas</h1>
+            <button onclick="openModal('modalPergunta')">+ Nova Pergunta</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pergunta</th>
+                        <th>Tipo</th>
+                        <th>Árvore</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Qual a cor da flor?</td>
+                        <td>Múltipla</td>
+                        <td>Ipê</td>
+                        <td><button onclick="openModal('modalPergunta')">Editar</button> | X</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Modais -->
+
+        <!-- Modal Trilha -->
+        <div id="modalTrilha" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('modalTrilha')">&times;</span>
+                <h2>Nova Trilha</h2>
+                <form>
+                    <label>Nome:</label>
+                    <input type="text">
+                    <label>Descrição:</label>
+                    <textarea></textarea>
+                    <label>Localização:</label>
+                    <input type="text">
+                    <label>Distância (km):</label>
+                    <input type="number">
+                    <label>Dificuldade:</label>
+                    <select>
+                        <option value="facil">Fácil</option>
+                        <option value="medio">Médio</option>
+                        <option value="dificil">Difícil</option>
+                    </select>
+                    <button type="submit">Salvar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal Árvore -->
+        <div id="modalArvore" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('modalArvore')">&times;</span>
+                <h2>Nova Árvore</h2>
+                <form>
+                    <label>Nome Popular:</label>
+                    <input type="text">
+                    <label>Nome Científico:</label>
+                    <input type="text">
+                    <label>Descrição:</label>
+                    <textarea></textarea>
+                    <label>Trilha:</label>
+                    <input type="text">
+                    <button type="submit">Salvar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal Pergunta -->
+        <div id="modalPergunta" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('modalPergunta')">&times;</span>
+                <h2>Nova Pergunta</h2>
+                <form>
+                    <label>Pergunta:</label>
+                    <textarea></textarea>
+                    <label>Tipo:</label>
+                    <select>
+                        <option value="multipla">Múltipla Escolha</option>
+                        <option value="vf">Verdadeiro/Falso</option>
+                        <option value="aberta">Aberta</option>
+                    </select>
+                    <label>Árvore Associada:</label>
+                    <input type="text">
+                    <button type="submit">Salvar</button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+        <script src="script.js"></script>
+
+
+</body>
+</html>
