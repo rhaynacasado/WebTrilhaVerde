@@ -5,6 +5,8 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
 }
 
 .container {
@@ -37,7 +39,7 @@ body {
   margin-bottom: 2px;
   font-size: 36px;
   font-weight: bold;
-  color: var(--verde-folha)
+  color: var(--verde-folha);
 }
 
 .left p {
@@ -46,7 +48,7 @@ body {
 }
 
 /* Lado direito */
-.right-login, .right-singup {
+.right {
   flex: 1;
   padding: 40px;
   display: flex;
@@ -54,17 +56,40 @@ body {
   justify-content: center;
 }
 
-.right-singup{
-  overflow-y: auto;
+/* Formulários */
+/* Todos os formulários escondidos por padrão */
+.form-box {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Apenas o ativo aparece */
+.form-box.active {
+  display: flex;
+}
+
+/* Título fixo */
+.form-box h2 {
+  flex-shrink: 0; /* Não encolhe */
+  margin-bottom: 10px;
+}
+
+/* Apenas cadastro tem conteúdo rolável */
+.form-content {
+  flex: 1;           
+  overflow-y: auto;  /* Scroll só aqui */
+  padding-right: 10px;
+  box-sizing: border-box;
 }
 
 .logo {
   font-weight: bold;
   font-size: 38px;
-  margin-top: 30px;
+  margin-top: 10px;
   margin-bottom: 4px;
   text-align: center;
-  color: var(--marrom-claro)
+  color: var(--marrom-claro);
 }
 
 h2 {
@@ -75,7 +100,7 @@ h2 {
   color: var(--preto);
 }
 
-.form {
+.formLogin, .formCadastro {
   display: flex;
   flex-direction: column;
 }
@@ -85,7 +110,7 @@ label {
   margin: 10px 0 5px;
 }
 
-input {
+input, select {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -112,13 +137,11 @@ input {
   position: absolute;
   bottom: 5px;
   right: 5px;
-  /* background: #4CAF50; */
   color: white;
   border-radius: 50%;
   padding: 8px;
   font-size: 14px;
   cursor: pointer;
-  /* border: 2px solid white; */
   transition: background 0.3s;
 }
 
@@ -150,7 +173,7 @@ input {
   color: var(--branco);
   font-size: 14px;
   cursor: pointer;
-  margin-top: 20px;;
+  margin-top: 20px;
   margin-bottom: 5px;
   transition: 0.3s;
 }
@@ -161,8 +184,8 @@ input {
 
 .error {
   color: var(--vermelho); 
-  display:none;
-  font-size: 13px;;
+  display: none;
+  font-size: 13px;
 }
 
 .divider {
@@ -177,13 +200,26 @@ input {
   font-size: 12px;
 }
 
-.signup,.login {
+.toggleForm {
   font-size: 13px;
   text-align: center;
   margin-top: 5px;
   margin-bottom: 30px;
+  cursor: pointer;
 }
 
-.signup:hover, .login:hover {
+.toggleForm:hover {
   color: var(--preto);
+}
+
+/* RESPONSIVO */
+@media (max-width: 1000px){
+  .container { flex-direction: column; width: 90%; height: auto; }
+  .left { width: 100%; padding: 20px; }
+  .right { width: 100%; padding: 20px; }
+}
+
+@media (max-width: 560px){
+  .logo { font-size: 28px; }
+  .left h2 { font-size: 28px; }
 }

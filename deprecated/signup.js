@@ -1,15 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector(".form");
+    const fileInput = document.getElementById('fileInput');
+    const profileImage = document.getElementById('profileImage');
+    const nomeInput = document.getElementById("nome");
     const emailInput = document.getElementById("email");
     const senhaInput = document.getElementById("senha");
     const errorMsg = document.getElementById("errorMsg");
-    const createAccountLink = document.querySelector(".signup");
-    const forgotPasswordLink = document.querySelector(".forgotpass a");
+    const loginLink = document.querySelector(".login");
 
     // Evento de login
     form.addEventListener("submit", (event) => {
         event.preventDefault(); // evita reload da página
 
+        const nome = nomeInput.value.trim();
         const email = emailInput.value.trim();
         const senha = senhaInput.value.trim();
 
@@ -25,15 +28,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Evento de criar conta
-    createAccountLink.addEventListener("click", (event) => {
-        event.preventDefault(); // evita comportamento padrão
-        window.location.href = "signup.html"; // redireciona
+    fileInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+            profileImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
     });
 
-    // Evento de esqueci a senha
-    forgotPasswordLink.addEventListener("click", (event) => {
+
+    // Evento de criar conta
+    loginLink.addEventListener("click", (event) => {
         event.preventDefault(); // evita comportamento padrão
-        window.location.href = "pages/dashboard.html"; // redireciona
+        window.location.href = "login.html"; // redireciona
     });
 });

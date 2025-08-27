@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Log — Trilha Verde</title>
-  <link rel="stylesheet" href="../style/dashboard.css" />
+  <link rel="stylesheet" href="../style/admin.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -12,7 +12,7 @@
     <div id="topbar"></div>
 
     <main class="content">
-      <section class="page visible" id="page-log">
+      <section class="page visible" id="pageLog">
         <div class="page-header">
           <h2>Log</h2>
           <p>Registro de eventos do sistema.</p>
@@ -27,7 +27,6 @@
               </tr>
             </thead>
             <tbody>
-              <!-- preenchido via JS -->
             </tbody>
           </table>
         </div>
@@ -35,16 +34,6 @@
     </main>
   </div>
 
-  <script>
-    async function loadPartials() {
-      document.getElementById("sidebar").innerHTML =
-        await (await fetch("../partials/sidebar.html")).text();
-      document.getElementById("topbar").innerHTML =
-        await (await fetch("../partials/topbar.html")).text();
-    }
-    loadPartials();
-  </script>
-
-  <script src="../script/dashboard.js"></script>
+  <script src="../script/admin.js"></script>
 </body>
 </html>

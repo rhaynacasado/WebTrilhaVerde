@@ -1,5 +1,6 @@
 :root {
     --verde-floresta: #4F6F52;
+    --verde-medio: #396851;
     --verde-folha: #A7C957;
     --marrom: #8B5E3C;
     --marrom-claro: #A35E2D;
@@ -7,6 +8,7 @@
     --amarelo: #EBA937;
     --branco: #FFFFFF;
     --preto: #554336;
+    --cinza: #6B7280;
     --vermelho: #8F3D3D;
 }
 
