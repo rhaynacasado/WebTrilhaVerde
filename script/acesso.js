@@ -57,10 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // Validação simulada
             if (nome && email && senha) {
                 signupError.style.display = "none";
-                alert("Cadastro realizado com sucesso!"); // aqui poderia ser redirecionamento real
-                // Reset dos campos
+                alert("Cadastro realizado com sucesso!");
                 formCadastro.reset();
-                // Volta para o login
                 signupFormContainer.classList.remove("active");
                 loginFormContainer.classList.add("active");
             } else {
@@ -93,6 +91,23 @@ document.addEventListener("DOMContentLoaded", () => {
         forgotPasswordLink.addEventListener("click", (event) => {
             event.preventDefault();
             alert("Funcionalidade de redefinição de senha ainda não implementada!");
+        });
+    }
+
+    // -------- Trocar foto de perfil --------
+    const fileInput = document.getElementById("fileInput");
+    const profileImage = document.getElementById("profileImage");
+
+    if(fileInput && profileImage){
+        fileInput.addEventListener("change", function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profileImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
         });
     }
 });

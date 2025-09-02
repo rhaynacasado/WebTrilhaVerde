@@ -61,11 +61,12 @@
   padding:12px 14px; border-radius:12px;
   cursor:pointer; font-weight:600;
   color:var(--bege); opacity:.95;
+  transition: 0.3s;
 }
 .menu-item:hover{ background:rgba(255,255,255,.08); }
-/* .menu-item.active{
+.menu-item.active{
   background:#183D2E; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-} */
+}
 .menu-item .icon{ width:20px; text-align:center; }
 
 .pagename {color: var(--bege);}
@@ -75,7 +76,7 @@
 }
 .ghost{
   width:100%; background:transparent; color:var(--branco); border:1px solid rgba(255,255,255,.25);
-  border-radius:12px; padding:10px 12px; cursor:pointer; font-weight:600;
+  border-radius:12px; padding:10px 12px; cursor:pointer; font-weight:600; transition: 0.3s;
 }
 .ghost:hover{ background:rgba(255,255,255,.08); }
 
@@ -160,7 +161,7 @@
   padding:12px; background:#FAFAFA; border:1px solid #eee; border-radius:12px;
 }
 .activity .who{ display:flex; align-items:center; gap:10px; }
-.activity .activity-info{ color: var(--preto);}
+.activity strong, .activity .acao{ color: var(--preto);}
 .badge{
   width:34px; height:34px; border-radius:50%; display:grid; place-items:center; background:#F2EBDD; 
 }

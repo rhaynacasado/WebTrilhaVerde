@@ -1,6 +1,3 @@
-// TROCAR TODOS INNERHTML POR APPEND CHILD
-
-
 /* PARTIALS - TOPBAR */ 
 
 function loadTopBar() {
@@ -12,14 +9,19 @@ function loadTopBar() {
 
   const profilePicture = document.createElement('div');
   profilePicture.className = 'profile-pic';
-  profilePicture.innerHTML = `<img src="${user.picurl}" alt="Foto de perfil">`;
+  const img = document.createElement('img');
+  img.src = user.picurl;
+  img.alt = "Foto de perfil";
+  profilePicture.appendChild(img);
 
   const userInfo = document.createElement('div');
   userInfo.className = 'user-info';
-  userInfo.innerHTML = `
-    <strong>${user.name}</strong>
-    <small>${user.email}</small>
-  `;
+  const strong = document.createElement('strong');
+  strong.textContent = user.name;
+  userInfo.appendChild(strong);
+  const small = document.createElement('small');
+  small.textContent = user.email;
+  userInfo.appendChild(small);
 
   const userContainer = document.querySelector('.topbar .user');
   if (userContainer) {
@@ -66,19 +68,18 @@ async function loadPartials() {
   // depois que topbar for carregado, insere o usuário
   loadTopBar();
   loadSideBar();
+  
+  /* PAGES FUNCTIONS */ 
+  const currentPage = window.location.pathname.split("/").pop();
+  document.querySelectorAll(".menu-item").forEach(link => {
+    if (link.getAttribute("href") === currentPage) {
+      link.classList.add("active");
+    }
+  });
 }
-
+  
 // inicializa carregamento de partials
 loadPartials();
-
-
-/* PAGES FUNCTIONS */ 
-
-function renderList(containerId, rows, builder){
-  const wrap = document.getElementById(containerId);
-  wrap.innerHTML = '';
-  rows.forEach(r => wrap.appendChild(builder(r)));
-}
 
 
 /* PAGES - DASHBOARD */ 
@@ -130,18 +131,52 @@ if(pageDashboard){
     { quem: 'João Pedro', acao: 'Criou uma pergunta', quando: 'Ontem' },
     { quem: 'Ana Júlia', acao: 'Ativou uma árvore', quando: '2 dias atrás' }
   ];
+
   const activityList = document.getElementById('activityList');
+
   atividades.forEach(a => {
     const li = document.createElement('li');
-    li.innerHTML = `
-      <div class="who"><span class="badge">🙂</span>
-        <div ><strong class="activity-info">${a.quem}</strong><br><span class="activity-info">${a.acao}</span></div>
-      </div>
-      <span class="time">${a.quando}</span>`;
+
+    // div.who
+    const divWho = document.createElement('div');
+    divWho.classList.add('who');
+
+    // badge
+    const badge = document.createElement('span');
+    badge.classList.add('badge');
+    badge.textContent = '🙂';
+
+    // container do nome + ação
+    const divText = document.createElement('div');
+
+    const strong = document.createElement('strong');
+    strong.textContent = a.quem;
+
+    const br = document.createElement('br');
+
+    const spanAcao = document.createElement('span');
+    spanAcao.classList.add('acao');
+    spanAcao.textContent = a.acao;
+
+    divText.appendChild(strong);
+    divText.appendChild(br);
+    divText.appendChild(spanAcao);
+
+    divWho.appendChild(badge);
+    divWho.appendChild(divText);
+
+    // span.time
+    const spanTime = document.createElement('span');
+    spanTime.classList.add('time');
+    spanTime.textContent = a.quando;
+
+    // monta no li
+    li.appendChild(divWho);
+    li.appendChild(spanTime);
+
     activityList.appendChild(li);
   });
 }
-
 
 /* PAGES - TRILHAS */ 
 
@@ -154,12 +189,23 @@ if(pageTrilhas){
     { nome: 'Serra do Mel', status: 'Ativa', itens: 19 },
   ];
 
-  renderList('trilhasList', trilhas, r => {
+  const trilhasList = document.getElementById('trilhasList');
+
+  trilhas.forEach(r => {
     const el = document.createElement('div');
     el.className = 'item';
-    el.innerHTML = `<strong class="item-title">${r.nome}</strong>
-      <span class="meta">${r.itens} pontos • ${r.status}</span>`;
-    return el;
+
+    const strong = document.createElement('strong');
+    strong.className = 'item-title';
+    strong.textContent = r.nome;
+    el.appendChild(strong);
+
+    const span = document.createElement('span');
+    span.className = 'meta';
+    span.textContent = `${r.itens} pontos • ${r.status}`;
+    el.appendChild(span);
+    
+    trilhasList.appendChild(el)
   });
 }
 
@@ -175,13 +221,23 @@ if(arvoresList){
     { nome: 'Pau-Brasil', plantadas: 5, regiao: 'Litoral' },
   ];
 
-  renderList('arvoresList', arvores, r => {
-    console.log("admin.js carregado");
+  const arvoresList = document.getElementById('arvoresList');
+
+  arvores.forEach(r => {
     const el = document.createElement('div');
     el.className = 'item';
-    el.innerHTML = `<strong class="item-title">${r.nome}</strong>
-      <span class="meta">${r.plantadas} plantadas • ${r.regiao}</span>`;
-    return el;
+
+    const strong = document.createElement('strong');
+    strong.className = 'item-title';
+    strong.textContent = r.nome;
+    el.appendChild(strong);
+
+    const span = document.createElement('span');
+    span.className = 'meta';
+    span.textContent = `${r.plantadas} plantadas • ${r.regiao}`;
+    el.appendChild(span);
+    
+    arvoresList.appendChild(el)
   });
 }
 
@@ -197,12 +253,23 @@ if(pagePerguntas){
     { titulo: 'Como medir crescimento de mudas?', autor: 'Rafa', respostas: 6 },
   ];
   
-  renderList('perguntasList', perguntas, r => {
+  const perguntasList = document.getElementById('perguntasList');
+
+  perguntas.forEach(r => {
     const el = document.createElement('div');
     el.className = 'item';
-    el.innerHTML = `<strong class="item-title">${r.titulo}</strong>
-      <span class="meta">por ${r.autor} • ${r.respostas} respostas</span>`;
-    return el;
+
+    const strong = document.createElement('strong');
+    strong.className = 'item-title';
+    strong.textContent = r.titulo;
+    el.appendChild(strong);
+
+    const span = document.createElement('span');
+    span.className = 'meta';
+    span.textContent = `por ${r.autor} • ${r.respostas} respostas`;
+    el.appendChild(span);
+    
+    perguntasList.appendChild(el)
   });
 }
 
@@ -220,9 +287,22 @@ if(pageLog){
   ];
 
   const logBody = document.querySelector('#logTable tbody');
+
   logs.forEach(l => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${l.data}</td><td>${l.nivel}</td><td>${l.evento}</td>`;
+
+    const tdData = document.createElement('td');
+    tdData.textContent = l.data;
+    tr.appendChild(tdData);
+
+    const tdNivel = document.createElement('td');
+    tdNivel.textContent = l.nivel;
+    tr.appendChild(tdNivel);
+
+    const tdEvento = document.createElement('td');
+    tdEvento.textContent = l.evento;
+    tr.appendChild(tdEvento);
+
     logBody.appendChild(tr);
   });
 }
