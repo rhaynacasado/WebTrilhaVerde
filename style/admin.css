@@ -89,7 +89,7 @@
 .user{ display:flex; align-items:center; gap:12px; }
 .user-info{ display:flex; flex-direction:column; line-height:1.1; text-align:right; }
 .user-info small{ color:var(--cinza); }
-.profile-pic img {
+.topbar-profile-pic img {
   width: auto;  /* ajuste conforme necessário */
   max-height: 43px;
   display: block;
@@ -196,6 +196,112 @@
 .table{ width:100%; border-collapse:collapse; min-width:640px; }
 .table th, .table td{ padding:12px 14px; border-bottom:1px solid #eee; color: var(--preto);}
 .table thead th{ text-align:left; background:#FAFAFA; position:sticky; top:0; }
+
+/* Página de Perfil */
+.profile-card {
+  display: flex;
+  gap: 32px;
+  background: var(--branco);
+  padding: 32px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  max-width: 800px;
+}
+
+.profile-pic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-pic img {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--verde-floresta);
+  box-shadow: var(--shadow);
+}
+
+/* .edit-photo {
+  all: unset;
+  font-weight: 600;
+  font-color: var(--branco);
+  background: var(--verde-floresta);
+  color: var(--bege);
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.edit-photo:hover {
+  background: var(--verde-medio);
+} */
+
+.profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-info h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--preto);
+}
+
+.profile-info p {
+  margin: 0;
+  color: var(--cinza);
+}
+
+.profile-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--preto);
+  font-weight: 500;
+}
+
+.profile-fields input, .profile-fields select {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+.profile-fields input:focus, .profile-fields select:focus {
+  border-color: var(--verde-floresta);
+}
+
+.profile-actions {
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.profile-actions .primary, .edit-photo {
+  all: unset;
+  background: var(--verde-floresta);
+  color: var(--branco);
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.profile-actions .primary:hover, .edit-photo:hover{
+  background: #222;
+}
 
 /* Responsivo */
 @media (max-width: 1000px){

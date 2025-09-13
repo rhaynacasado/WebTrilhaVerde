@@ -1,40 +1,40 @@
+// Dados do usuário em memória
+let userData = {
+  name: 'Trilha Verde',
+  email: 'trilhaverde@usp.br',
+  picurl: '../img/avatar.png',
+  vinculo: 'externo'
+};
+
+// FUNÇÃO PARA PEGAR DADOS DO USUÁRIO
+function getUser() {
+  return userData;
+}
+
+// FUNÇÃO PARA ATUALIZAR DADOS DO USUÁRIO
+function setUser(newData) {
+  userData = { ...userData, ...newData };
+}
+
 /* PARTIALS - TOPBAR */ 
 
 function loadTopBar() {
-  const user = { 
-    name: 'Trilha Verde', 
-    email: 'trilhaverde@usp.br', 
-    picurl: '../img/avatar.png' 
-  };
+  const user = getUser();
 
-  const profilePicture = document.createElement('div');
-  profilePicture.className = 'profile-pic';
-  const img = document.createElement('img');
-  img.src = user.picurl;
-  img.alt = "Foto de perfil";
-  profilePicture.appendChild(img);
+  const img = document.getElementById('topbar-pic');
+  const nameElem = document.getElementById('topbar-name');
+  const emailElem = document.getElementById('topbar-email');
 
-  const userInfo = document.createElement('div');
-  userInfo.className = 'user-info';
-  const strong = document.createElement('strong');
-  strong.textContent = user.name;
-  userInfo.appendChild(strong);
-  const small = document.createElement('small');
-  small.textContent = user.email;
-  userInfo.appendChild(small);
-
-  const userContainer = document.querySelector('.topbar .user');
-  if (userContainer) {
-    userContainer.append(userInfo);
-    userContainer.append(profilePicture);
-  }
+  if (img) img.src = user.picurl;
+  if (nameElem) nameElem.textContent = user.name;
+  if (emailElem) emailElem.textContent = user.email;
 }
 
 
 /* PARTIALS - SIDEBAR */ 
 
 function loadSideBar() {
-  // -------- Navegação ee páginas --------
+  // -------- Navegação de páginas --------
   const menuButtons = document.querySelectorAll('.menu-item');
   const pages = document.querySelectorAll('.page');
 
@@ -304,5 +304,71 @@ if(pageLog){
     tr.appendChild(tdEvento);
 
     logBody.appendChild(tr);
+  });
+}
+
+/* PAGES - PERFIL */ 
+const pagePerfil = document.getElementById('pagePerfil') !== null;
+if (pagePerfil) {
+  const user = getUser();
+
+  const profilePic = document.getElementById('profile-pic');
+  const inputNome = document.getElementById('inputNome');
+  const inputEmail = document.getElementById('inputEmail');
+  const inputVinculo = document.getElementById('inputVinculo');
+  const fileInput = document.getElementById('fileInput');
+  const editButton = document.querySelector('.edit-photo');
+  const saveButton = document.querySelector('.profile-actions .primary');
+
+  // Inicializa campos
+  profilePic.src = user.picurl;
+  inputNome.value = user.name;
+  inputEmail.value = user.email;
+  inputVinculo.value = user.vinculo;
+
+  document.getElementById('profileNome').textContent = userData.name;
+  document.getElementById('profileEmail').textContent = userData.email;
+
+  // --- Trocar foto ---
+  editButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        profilePic.src = evt.target.result; // Atualiza a imagem na tela
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // --- Salvar alterações ---
+  saveButton.addEventListener('click', (e) => {
+    e.preventDefault();
+
+    // Atualiza userData
+    setUser({
+      name: inputNome.value,
+      email: inputEmail.value,
+      vinculo: inputVinculo.value,
+      picurl: profilePic.src
+    });
+
+    // Atualiza a própria página
+    document.getElementById('profileNome').textContent = userData.name;
+    document.getElementById('profileEmail').textContent = userData.email;
+
+    // --- Atualiza topbar ---
+    const topbarPic = document.getElementById('topbar-pic');
+    const topbarName = document.getElementById('topbar-name');
+    const topbarEmail = document.getElementById('topbar-email');
+
+    if (topbarPic) topbarPic.src = userData.picurl;
+    if (topbarName) topbarName.textContent = userData.name;
+    if (topbarEmail) topbarEmail.textContent = userData.email;
   });
 }

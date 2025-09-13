@@ -15,7 +15,44 @@
       <section class="page visible" id="pagePerfil">
         <div class="page-header">
           <h2>Meu Perfil</h2>
-          <p>Altere seus dados.</p>
+          <p>Gerencie suas informações pessoais.</p>
+        </div>
+        <div class="profile-card">
+          <div class="profile-pic">
+          <img id="profile-pic" alt="Foto de perfil do usuário" />
+          <button class="edit-photo">Alterar foto</button>
+          <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+
+          <div class="profile-info">
+            <h3 id="profileNome"></h3>
+            <p id="profileEmail"></p>
+
+            <div class="profile-fields">
+              <label>
+                Nome completo
+                <input type="text" id="inputNome"/>
+              </label>
+              <label>
+                E-mail
+                <input type="email" id="inputEmail"/>
+              </label>
+              <label>
+                Vínculo
+                <select id="inputVinculo">
+                  <option value="aluno">Aluno USP</option>
+                  <option value="prof">Professor USP</option>
+                  <option value="funcionario">Funcionário USP</option>
+                  <option value="externo">Externo</option>
+                </select> 
+              </label>
+            </div>
+
+            <div class="profile-actions">
+              <button class="primary">Salvar alterações</button>
+              <button class="ghost">Cancelar</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>
