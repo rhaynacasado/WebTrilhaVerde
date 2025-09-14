@@ -17,7 +17,6 @@ function setUser(newData) {
 }
 
 /* PARTIALS - TOPBAR */ 
-
 function loadTopBar() {
   const user = getUser();
 
@@ -30,11 +29,7 @@ function loadTopBar() {
   if (emailElem) emailElem.textContent = user.email;
 }
 
-
-/* PARTIALS - SIDEBAR */ 
-
 function loadSideBar() {
-  // -------- Navegação de páginas --------
   const menuButtons = document.querySelectorAll('.menu-item');
   const pages = document.querySelectorAll('.page');
 
@@ -46,19 +41,27 @@ function loadSideBar() {
     });
   });
 
-    // -------- Botão de Sair --------
+  document.querySelectorAll('.menu-item').forEach(el => {
+    // tenta pegar um span que não seja o de ícone
+    const labelNode = el.querySelector('span:not(.icon)');
+    const label = (labelNode ? labelNode.textContent : el.textContent).trim();
+    if (label) {
+      el.setAttribute('title', label);
+      el.setAttribute('aria-label', label);
+    }
+  });
+
+  // -------- Botão de Sair --------
   const sairBtn = document.getElementById('sairBtn');
   if (sairBtn) {
     sairBtn.addEventListener('click', (e) => {
-      e.preventDefault(); // evita comportamento padrão
-      window.location.href = "../acesso.html"; // redireciona
+      e.preventDefault();
+      window.location.href = "../acesso.html";
     });
   }
 }
 
-
 /* PARTIALS FUNCTIONS */ 
-
 async function loadPartials() {
   document.getElementById("sidebar").innerHTML =
     await (await fetch("../partials/sidebar.html")).text();
@@ -81,9 +84,7 @@ async function loadPartials() {
 // inicializa carregamento de partials
 loadPartials();
 
-
 /* PAGES - DASHBOARD */ 
-
 const pageDashboard = document.getElementById('pageDashboard') !== null;
 
 if(pageDashboard){
@@ -179,7 +180,6 @@ if(pageDashboard){
 }
 
 /* PAGES - TRILHAS */ 
-
 const pageTrilhas = document.getElementById('pageTrilhas') !== null;
 
 if(pageTrilhas){
@@ -209,73 +209,7 @@ if(pageTrilhas){
   });
 }
 
-
-/* PAGES - ARVORES */ 
-
-const arvoresList = document.getElementById('arvoresList') !== null;
-
-if(arvoresList){
-  const arvores = [
-    { nome: 'Ipê Amarelo', plantadas: 24, regiao: 'Zona Norte' },
-    { nome: 'Araucária', plantadas: 12, regiao: 'Serra' },
-    { nome: 'Pau-Brasil', plantadas: 5, regiao: 'Litoral' },
-  ];
-
-  const arvoresList = document.getElementById('arvoresList');
-
-  arvores.forEach(r => {
-    const el = document.createElement('div');
-    el.className = 'item';
-
-    const strong = document.createElement('strong');
-    strong.className = 'item-title';
-    strong.textContent = r.nome;
-    el.appendChild(strong);
-
-    const span = document.createElement('span');
-    span.className = 'meta';
-    span.textContent = `${r.plantadas} plantadas • ${r.regiao}`;
-    el.appendChild(span);
-    
-    arvoresList.appendChild(el)
-  });
-}
-
-
-/* PAGES - PERGUNTAS */ 
-
-const pagePerguntas = document.getElementById('pagePerguntas') !== null;
-
-if(pagePerguntas){
-  const perguntas = [
-    { titulo: 'Qual melhor época pra plantar araucária?', autor: 'Marcos', respostas: 4 },
-    { titulo: 'Dúvida sobre irrigação automatizada', autor: 'Helena', respostas: 2 },
-    { titulo: 'Como medir crescimento de mudas?', autor: 'Rafa', respostas: 6 },
-  ];
-  
-  const perguntasList = document.getElementById('perguntasList');
-
-  perguntas.forEach(r => {
-    const el = document.createElement('div');
-    el.className = 'item';
-
-    const strong = document.createElement('strong');
-    strong.className = 'item-title';
-    strong.textContent = r.titulo;
-    el.appendChild(strong);
-
-    const span = document.createElement('span');
-    span.className = 'meta';
-    span.textContent = `por ${r.autor} • ${r.respostas} respostas`;
-    el.appendChild(span);
-    
-    perguntasList.appendChild(el)
-  });
-}
-
-
 /* PAGES - LOG */ 
-
 const pageLog = document.getElementById('pageLog') !== null;
 
 if(pageLog){
@@ -340,7 +274,7 @@ if (pagePerfil) {
     if (file) {
       const reader = new FileReader();
       reader.onload = function(evt) {
-        profilePic.src = evt.target.result; // Atualiza a imagem na tela
+        profilePic.src = evt.target.result;
       };
       reader.readAsDataURL(file);
     }
@@ -350,7 +284,6 @@ if (pagePerfil) {
   saveButton.addEventListener('click', (e) => {
     e.preventDefault();
 
-    // Atualiza userData
     setUser({
       name: inputNome.value,
       email: inputEmail.value,
@@ -358,7 +291,6 @@ if (pagePerfil) {
       picurl: profilePic.src
     });
 
-    // Atualiza a própria página
     document.getElementById('profileNome').textContent = userData.name;
     document.getElementById('profileEmail').textContent = userData.email;
 
