@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Formulários
     const formLogin = document.querySelector(".formLogin");
     const formCadastro = document.querySelector(".formCadastro");
+    const formPassword = document.querySelector(".formPassword");
 
     // Inputs de login
     const loginEmail = document.getElementById("loginEmail");
@@ -18,10 +19,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Forms containers
     const loginFormContainer = document.getElementById("loginForm");
     const signupFormContainer = document.getElementById("signupForm");
+    const passwordFormContainer = document.getElementById("passwordForm");
 
     // Links para alternar entre os forms
-    const toSignup = document.getElementById("toSignup");
-    const toLogin = document.getElementById("toLogin");
+    const toSignupFromLogin = document.getElementById("toSignupFromLogin");
+    const toLoginFromSignup = document.getElementById("toLoginFromSignup");
+    const toLoginFromPassword = document.getElementById("toLoginFromPassword");
+    const toPasswordFromLogin = document.getElementById("toPasswordFromLogin");
 
     // -------- Evento de login --------
     if(formLogin){
@@ -48,40 +52,70 @@ document.addEventListener("DOMContentLoaded", () => {
     if(formCadastro){
         formCadastro.addEventListener("submit", (event) => {
             event.preventDefault();
+            alert("Funcionalidade de cadastro ainda não implementada!");
 
-            const nome = nomeInput.value.trim();
-            const email = signupEmail.value.trim();
-            const senha = signupSenha.value.trim();
-            const vinculo = vinculoInput.value.trim();
+        //     const nome = nomeInput.value.trim();
+        //     const email = signupEmail.value.trim();
+        //     const senha = signupSenha.value.trim();
+        //     const vinculo = vinculoInput.value.trim();
 
-            // Validação simulada
-            if (nome && email && senha) {
-                signupError.style.display = "none";
-                alert("Cadastro realizado com sucesso!");
-                formCadastro.reset();
-                signupFormContainer.classList.remove("active");
-                loginFormContainer.classList.add("active");
-            } else {
-                signupError.style.display = "block";
-            }
+        //     // Validação simulada
+        //     if (nome && email && senha) {
+        //         signupError.style.display = "none";
+        //         alert("Cadastro realizado com sucesso!");
+        //         formCadastro.reset();
+        //         signupFormContainer.classList.remove("active");
+        //         loginFormContainer.classList.add("active");
+        //     } else {
+        //         signupError.style.display = "block";
+        //     }
+        });
+    }
+
+    // -------- Evento de alteração de senha --------
+    if(formPassword){
+        formPassword.addEventListener("submit", (event) => {
+            event.preventDefault();
+            alert("Funcionalidade de alteração de senha ainda não implementada!");
         });
     }
 
     // -------- Alternar para cadastro --------
-    if(toSignup){
-        toSignup.addEventListener("click", (event) => {
+    if(toSignupFromLogin){
+        toSignupFromLogin.addEventListener("click", (event) => {
             event.preventDefault();
-            loginFormContainer.classList.remove("active");
+            loginFormContainer.classList.remove("active"); 
+            passwordFormContainer.classList.remove("active"); 
             signupFormContainer.classList.add("active");
         });
     }
 
     // -------- Alternar para login --------
-    if(toLogin){
-        toLogin.addEventListener("click", (event) => {
+    if(toLoginFromPassword){
+        toLoginFromPassword.addEventListener("click", (event) => {
             event.preventDefault();
             signupFormContainer.classList.remove("active");
+            passwordFormContainer.classList.remove("active");
             loginFormContainer.classList.add("active");
+        });
+    }
+
+    if(toLoginFromSignup){
+        toLoginFromSignup.addEventListener("click", (event) => {
+            event.preventDefault();
+            signupFormContainer.classList.remove("active");
+            passwordFormContainer.classList.remove("active");
+            loginFormContainer.classList.add("active");
+        });
+    }
+
+    // -------- Alternar para alteração senha --------
+    if(toPasswordFromLogin){
+        toPasswordFromLogin.addEventListener("click", (event) => {
+            event.preventDefault();
+            loginFormContainer.classList.remove("active"); 
+            signupFormContainer.classList.remove("active"); 
+            passwordFormContainer.classList.add("active");
         });
     }
 
@@ -90,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if(forgotPasswordLink){
         forgotPasswordLink.addEventListener("click", (event) => {
             event.preventDefault();
-            alert("Funcionalidade de redefinição de senha ainda não implementada!");
+            alert("Funcionalidade de redefinição de senha via e-mail ainda não implementada!");
         });
     }
 

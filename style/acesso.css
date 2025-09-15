@@ -103,7 +103,12 @@ h2 {
   color: var(--preto);
 }
 
-.formLogin, .formCadastro {
+.passwordNome{
+  margin-top: 15px;
+  font-weight: 600;
+}
+
+.formLogin, .formCadastro, .formPassword {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -232,7 +237,7 @@ input, select {
 }
 
 /* RESPONSIVO */
-@media (max-width: 1000px){
+/* @media (max-width: 1000px){
   .container { flex-direction: column; width: 90%; height: auto; }
   .left { width: 100%; padding: 20px; }
   .right { width: 100%; padding: 20px; }
@@ -241,4 +246,22 @@ input, select {
 @media (max-width: 560px){
   .logo { font-size: 28px; }
   .left h2 { font-size: 28px; }
+} */
+
+@media (max-width: 1000px){
+  body {
+    align-items: flex-start; /* deixa de centralizar verticalmente */
+    height: auto;             /* altura passa a acompanhar o conteúdo */
+    padding: 40px 0;           /* cria margem superior e inferior */
+  }
+
+  .container {
+    flex-direction: column;
+    width: 90%;
+    height: auto;
+  }
+
+  .left { width: 100%; padding: 20px; }
+  .right { width: 100%; padding: 20px; }
 }
+

@@ -33,14 +33,14 @@
           <input type="password" id="loginSenha" placeholder="********">
 
           <div class="forgotpass">
-            <a href="#">Esqueceu a senha?</a>
+            <a id="toPasswordFromLogin" href="#">Esqueceu a senha?</a>
           </div>
 
           <button type="submit" class="btn">Entrar</button>
           <p class="error" id="loginError">Usuário ou senha incorretos!</p>
 
           <div class="divider"><span>ou</span></div>
-          <a class="toggleForm" href="#" id="toSignup">Criar nova conta</a>
+          <a class="toggleForm" href="#" id="toSignupFromLogin">Criar nova conta</a>
         </form>
       </div>
 
@@ -78,7 +78,33 @@
             <p class="error" id="signupError">Cadastro inválido</p>
 
             <div class="divider"><span>ou</span></div>
-            <a class="toggleForm" href="#" id="toLogin">Entre na sua conta</a>
+            <a class="toggleForm" href="#" id="toLoginFromSignup">Entre na sua conta</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- Formulário de Alteração de Senha -->
+      <div id="passwordForm" class="form-box">
+        <h2>Redefina sua senha</h2>
+        <form class="formPassword">
+          <div class="form-content">
+            <div class="profile-pic">
+              <img id="profileImage" class="profileimage" src="img/avatar.png" alt="Foto de perfil">
+              <label for="fileInput">
+                <img class="edit-icon" src="img/camera.svg" alt="Alterar foto">
+              </label>
+            </div>
+
+            <h2 class="passwordNome">Nome completo</h2>
+
+            <label for="passwordSenha">Nova senha</label>
+            <input type="password" id="passwordSenha" placeholder="********">
+
+            <button type="submit" class="btn">Alterar senha</button>
+            <p class="error" id="passwordError">Senha inválida</p>
+
+            <div class="divider"><span>ou</span></div>
+            <a class="toggleForm" href="#" id="toLoginFromPassword">Entre na sua conta</a>
           </div>
         </form>
       </div>
