@@ -378,7 +378,7 @@
   background: var(--branco);
   border-radius: 16px;
   box-shadow: var(--shadow);
-  /* overflow-x: auto; */
+  overflow-x: hidden;
   max-width: 100%;
   padding-right: 20px;
 }
@@ -429,7 +429,7 @@
   .table tr {
     display: block;
   }
-
+  
   .table thead {
     display: none;
   }
@@ -444,11 +444,11 @@
     margin-right: 16px; /* margem direita adicionada */
     max-width: 420px;
   }
-
+  
   .table-wrap{
     max-width: 420px;
   }
-
+  
   .table td {
     border: none;
     padding: 6px 0;
@@ -456,11 +456,114 @@
     justify-content: flex-start;
     font-size: 14px;
   }
-
+  
   .table td::before {
     content: attr(data-label);
     font-weight: 600;
     color: var(--cinza);
     margin-right: 8px;
+  }
+}
+
+/* ===== Responsividade Dashboard ===== */
+
+/* KPIs: de 4 colunas para 2 e depois 1 em telas menores */
+@media (max-width: 1024px) {
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .kpis {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .kpi {
+    padding: 14px;
+    font-size: 14px;
+  }
+}
+
+/* Grid-2: transforma em 1 coluna em tablets e mobiles */
+@media (max-width: 860px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .donut-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .legend {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* Ajuste das barras analíticas para mobile */
+@media (max-width: 720px) {
+  .bars {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+}
+
+/* Cards: largura e padding menores para mobile */
+@media (max-width: 640px) {
+  .card {
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .card-head h3 {
+    font-size: 16px;
+  }
+
+  .donut {
+    width: 120px;
+    height: 120px;
+  }
+
+  .donut-label {
+    font-size: 18px;
+  }
+
+  .activity li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  .activity .who {
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .bars {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+}
+
+/* Para telas muito pequenas */
+@media (max-width: 480px) {
+  .bars {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .kpi .value {
+    font-size: 24px;
+  }
+
+  .kpi h3 {
+    font-size: 14px;
   }
 }
