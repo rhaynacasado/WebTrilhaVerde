@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redefinir Senha — Trilha Verde</title>
+  <link rel="stylesheet" href="../style/acesso.css">
+  <link rel="stylesheet" href="../style/redefinicao.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body data-page="redefinicao">
+  <main class="container">
+    <div class="left" id="left-container"></div>
+
+    <section class="right">
+      <h1 class="logo">Trilha Verde</h1>
+      <div class="form-box">
+        <h2>Redefina sua senha</h2>
+        <form class="formPassword">
+          <div class="form-content">
+            <div class="profile-pic">
+              <img id="profileImage" class="profileimage" src="../img/avatar.png" alt="Foto de perfil">
+            </div>
+
+            <h2 class="passwordNome">Nome completo</h2>
+
+            <label for="passwordSenha">Nova senha</label>
+            <input type="password" id="passwordSenha" placeholder="********">
+
+            <button type="submit" class="btn">Alterar senha</button>
+            <p class="error" id="passwordError">Senha inválida</p>
+
+            <div class="divider"><span>ou</span></div>
+            <a class="toggleForm" href="../login.html">Entre na sua conta</a>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="../script/acesso.js"></script>
+  <script src="../script/redefinicao.js"></script>
+</body>
+</html>

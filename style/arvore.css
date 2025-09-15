@@ -20,7 +20,9 @@
   gap:6px;
 }
 
-#pageArvores .item-title{ color:var(--preto); }
+#pageArvores .item-title{ 
+  color:var(--preto); 
+}
 
 /* linha de informações abaixo do nome */
 #pageArvores .subline{
@@ -36,9 +38,15 @@
 }
 
 /* status com cores */
-#pageArvores .status{ font-weight:600; }
-#pageArvores .status.active{ color: var(--verde-floresta); }
-#pageArvores .status.inactive{ color: #b91c1c; }
+#pageArvores .status{ 
+  font-weight:600; 
+}
+#pageArvores .status.active{ 
+  color: var(--verde-floresta); 
+}
+#pageArvores .status.inactive{ 
+  color: #b91c1c; 
+}
 
 /* botão de editar colado à direita, DENTRO do card, mesma altura */
 .edit-pill{
@@ -52,12 +60,23 @@
   cursor:pointer;
   transition:transform .12s ease, box-shadow .12s ease, filter .18s;
 }
-.edit-pill:hover{ filter:brightness(1.02); transform:translateY(-1px); }
-.edit-pill:active{ transform:translateY(0); }
-.edit-pill svg{ width:20px; height:20px; }
+.edit-pill:hover{ 
+  filter:brightness(1.02); 
+  transform:translateY(-1px); 
+}
+.edit-pill:active{ 
+  transform:translateY(0); 
+}
+.edit-pill svg{ 
+  width:20px; 
+  height:20px; 
+}
 
 /* estado desativado (aplica no card todo) */
-#pageArvores .item.disabled{ opacity:.55; filter:grayscale(.15); }
+#pageArvores .item.disabled{ 
+  opacity:.55; 
+  filter:grayscale(.15); 
+}
 
 /* Empilhamento no mobile: igual Perguntas */
 @media (max-width: 720px){

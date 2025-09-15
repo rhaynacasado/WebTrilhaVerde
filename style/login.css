@@ -1,0 +1,13 @@
+/* Formulário de login */
+.formLogin {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Deixa o form-box visível diretamente */
+.form-box {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}

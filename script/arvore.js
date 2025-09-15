@@ -3,9 +3,9 @@
   if (!listRoot) return;
 
   const arvores = [
-    { id: 1, codigo: 'IPE-AM',  nome: 'Ipê Amarelo', especie: 'Handroanthus albus',     foto: '', icon: '', quantPerguntas: 4,  ativa: true },
-    { id: 2, codigo: 'ARA-ANG', nome: 'Araucária',   especie: 'Araucaria angustifolia', foto: '', icon: '', quantPerguntas: 6,  ativa: true },
-    { id: 3, codigo: 'PBR-ECH', nome: 'Pau-Brasil',  especie: 'Paubrasilia echinata',   foto: '', icon: '', quantPerguntas: 12, ativa: false },
+    { id: 1, codigo: 'IPE-AM',  nome: 'Ipê Amarelo', trilha: 'Árvores Úteis', especie: 'Handroanthus albus',     foto: '', quantPerguntas: 4,  ativa: true },
+    { id: 2, codigo: 'ARA-ANG', nome: 'Araucária', trilha: 'Árvores Úteis', especie: 'Araucaria angustifolia', foto: '', quantPerguntas: 6,  ativa: true },
+    { id: 3, codigo: 'PBR-ECH', nome: 'Pau-Brasil', trilha: 'Árvores Úteis', especie: 'Paubrasilia echinata',   foto: '', quantPerguntas: 12, ativa: false },
   ];
 
   function makeBrushSvg(stroke = '#1f2937'){
@@ -125,10 +125,12 @@
       const title = document.createElement('strong'); title.className='item-title'; title.textContent=a.nome;
 
       const sub = document.createElement('div'); sub.className='subline';
+      const t = document.createElement('span'); t.className='meta'; t.textContent = `Trilha ${a.trilha}`;
+      const sep1 = document.createElement('span'); sep1.className='sep'; sep1.textContent='•';
       const q = document.createElement('span'); q.className='meta'; q.textContent = `${a.quantPerguntas} perguntas`;
-      const sep = document.createElement('span'); sep.className='sep'; sep.textContent='•';
+      const sep2 = document.createElement('span'); sep2.className='sep'; sep2.textContent='•';
       const st = document.createElement('span'); st.className='status ' + (a.ativa?'active':'inactive'); st.textContent = a.ativa?'Ativa':'Desativada';
-      sub.appendChild(q); sub.appendChild(sep); sub.appendChild(st);
+      sub.appendChild(t); sub.appendChild(sep1); sub.appendChild(q); sub.appendChild(sep2); sub.appendChild(st);
 
       body.appendChild(title); body.appendChild(sub);
 

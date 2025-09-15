@@ -55,37 +55,6 @@ body {
   justify-content: center;
 }
 
-/* Formulários */
-/* Todos os formulários escondidos por padrão */
-.form-box {
-  display: none;
-  flex-direction: column;
-  height: 100%;
-}
-
-/* Apenas o ativo aparece */
-.form-box.active {
-  display: flex;
-}
-
-/* Título fixo */
-.form-box h2 {
-  flex-shrink: 0; /* Não encolhe */
-  margin-bottom: 10px;
-}
-
-/* Apenas cadastro tem conteúdo rolável */
-.form-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  padding-top: 20px;
-  padding-right: 10px;
-  padding-bottom: 30px;;
-  box-sizing: border-box;
-}
-
 .logo {
   font-weight: bold;
   font-size: 38px;
@@ -97,24 +66,14 @@ body {
 
 h2 {
   text-align: center;
-  margin-bottom: 18px;
+  margin-bottom: 0px;
   font-size: 14px;
   font-weight: normal;
   color: var(--preto);
 }
 
-.passwordNome{
-  margin-top: 15px;
-  font-weight: 600;
-}
-
-.formLogin, .formCadastro, .formPassword {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
 label {
+  display: block;
   margin: 10px 0 5px;
 }
 
@@ -124,69 +83,7 @@ input, select {
   border-radius: 8px;
 }
 
-.form-content label,
-.form-content input,
-.form-content select {
-  font-size: 14px;
-  text-align: left;
-  width: 100%;
-  max-width: 320px;   /* controla a largura */
-  margin-left: auto;
-  margin-right: auto; /* centraliza o bloco na tela, mas conteúdo alinhado à esquerda */
-}
-
-.profile-pic {
-  position: relative;
-  width: 90px;
-  height: 90px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.profile-pic .profileimage {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--marrom-claro);
-  /* align-self: center; */
-}
-
-.edit-icon {
-  width: 40%;   /* Reduz para 40% do tamanho do círculo */
-  height: auto; /* Mantém proporção da imagem */
-  object-fit: contain; /* Garante que a imagem não deforme */
-  border-radius: 50%;
-  background-color: var(--cinza);
-  border: 2px solid var(--branco);
-  padding: 5px;
-  position: relative;
-  top: -35px;
-  right: -60px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.edit-icon:hover {
-  background: #388E3C;
-}
-
-.forgotpass {
-  display: flex;
-  justify-content: flex-end;
-  margin: 5px 0 0;
-}
-
-.forgotpass a {
-  font-size: 12px;
-  color: var(--cinza);
-  text-decoration: none;
-}
-
-.forgotpass a:hover {
-  text-decoration: underline;
-}
-
+/* Botões e links comuns */
 .btn {
   width: 100%;
   padding: 12px;
@@ -206,9 +103,9 @@ input, select {
 }
 
 .error {
-  color: var(--vermelho); 
-  display: none;
+  color: var(--vermelho);
   font-size: 13px;
+  display: none;
 }
 
 .divider {
@@ -225,6 +122,7 @@ input, select {
 
 .toggleForm {
   font-size: 13px;
+  display: block;
   align-self: center;
   text-align: center;
   margin-top: 5px;
@@ -236,23 +134,28 @@ input, select {
   color: var(--preto);
 }
 
-/* RESPONSIVO */
-/* @media (max-width: 1000px){
-  .container { flex-direction: column; width: 90%; height: auto; }
-  .left { width: 100%; padding: 20px; }
-  .right { width: 100%; padding: 20px; }
+.forgotpass {
+  display: flex;
+  justify-content: flex-end;
+  margin: 5px 0 0;
 }
 
-@media (max-width: 560px){
-  .logo { font-size: 28px; }
-  .left h2 { font-size: 28px; }
-} */
+.forgotpass a {
+  font-size: 12px;
+  color: var(--cinza);
+  text-decoration: none;
+}
 
-@media (max-width: 1000px){
+.forgotpass a:hover {
+  text-decoration: underline;
+}
+
+/* RESPONSIVO */
+@media (max-width: 1000px) {
   body {
-    align-items: flex-start; /* deixa de centralizar verticalmente */
-    height: auto;             /* altura passa a acompanhar o conteúdo */
-    padding: 40px 0;           /* cria margem superior e inferior */
+    align-items: flex-start;
+    height: auto;
+    padding: 40px 0;
   }
 
   .container {
@@ -264,4 +167,3 @@ input, select {
   .left { width: 100%; padding: 20px; }
   .right { width: 100%; padding: 20px; }
 }
-

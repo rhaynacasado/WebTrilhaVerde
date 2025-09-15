@@ -1,0 +1,99 @@
+/* Table */
+.table-wrap{ 
+    background:var(--branco); 
+    border-radius:16px; 
+    box-shadow: var(--shadow); 
+    overflow:auto; 
+}
+.table{ 
+    width:100%; 
+    border-collapse:collapse; 
+    min-width:640px; 
+}
+.table th, .table td{ 
+    padding:12px 14px; 
+    border-bottom:1px solid #eee; 
+    color: var(--preto);
+}
+.table thead th{ 
+    text-align:left; 
+    background:#FAFAFA; 
+    position:sticky; 
+    top:0; 
+}
+
+/* Deixa a tabela responsiva em telas pequenas */
+.table-wrap {
+  background: var(--branco);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  overflow-x: hidden;
+  max-width: 100%;
+  padding-right: 20px;
+}
+
+/* Melhorando a aparência da tabela */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+.table th, .table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eee;
+  color: var(--preto);
+  text-align: left;
+  white-space: nowrap;
+}
+.table thead th {
+  background: #FAFAFA;
+  position: sticky;
+  top: 0;
+  font-weight: 700;
+  z-index: 1;
+}
+
+.table td:nth-child(2) {
+  font-weight: 600;
+}
+
+/* Responsividade: quebra em "cards" para mobile */
+@media (max-width: 640px) {
+  .table, .table thead, .table tbody, .table th, .table td, .table tr {
+    display: block;
+  }
+  
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    margin-bottom: 12px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 10px;
+    margin-right: 16px; /* margem direita adicionada */
+    max-width: 420px;
+  }
+  
+  .table-wrap{
+    max-width: 420px;
+  }
+  
+  .table td {
+    border: none;
+    padding: 6px 0;
+    display: flex;
+    justify-content: flex-start;
+    font-size: 14px;
+  }
+  
+  .table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--cinza);
+    margin-right: 8px;
+  }
+}

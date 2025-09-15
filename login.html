@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Trilha Verde</title>
+  <link rel="stylesheet" href="style/acesso.css">
+  <link rel="stylesheet" href="style/login.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body data-page="login">
+  <main class="container">
+    <div class="left" id="left-container"></div>
+
+    <section class="right">
+      <h1 class="logo">Trilha Verde</h1>
+      <div class="form-box">
+        <h2>Entre com sua conta</h2>
+        <form class="formLogin">
+          <label for="loginEmail">E-mail</label>
+          <input type="text" id="loginEmail" placeholder="Seu e-mail">
+
+          <label for="loginSenha">Senha</label>
+          <input type="password" id="loginSenha" placeholder="********">
+
+          <div class="forgotpass">
+            <a href="pages/redefinicao.html">Esqueceu a senha?</a>
+          </div>
+
+          <button type="submit" class="btn">Entrar</button>
+          <p class="error" id="loginError">Usuário ou senha incorretos!</p>
+
+          <div class="divider"><span>ou</span></div>
+          <a class="toggleForm" href="pages/cadastro.html">Criar nova conta</a>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="script/acesso.js"></script>
+  <script src="script/login.js"></script>
+</body>
+</html>

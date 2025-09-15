@@ -9,8 +9,13 @@
 }
 
 /* bloco do grupo */
-#pagePerguntas .group{ margin-bottom: 18px; }
-#pagePerguntas .group .list{ display: grid; gap: 12px; }
+#pagePerguntas .group{ 
+  margin-bottom: 18px; 
+}
+#pagePerguntas .group .list{ 
+  display: grid; 
+  gap: 12px; 
+}
 
 /* card da pergunta — mesmo visual base dos cards */
 #pagePerguntas .item{
@@ -50,7 +55,9 @@
   color: var(--cinza);
   font-size: 14px;
 }
-#pagePerguntas .subline .sep{ opacity: .55; }
+#pagePerguntas .subline .sep{ 
+  opacity: .55; 
+}
 
 /* botão editar (igual Árvores) */
 #pagePerguntas .edit-pill{
@@ -64,17 +71,26 @@
   cursor: pointer;
   transition: transform .12s ease, filter .18s;
 }
-#pagePerguntas .edit-pill:hover{ filter: brightness(1.02); transform: translateY(-1px); }
-#pagePerguntas .edit-pill svg{ width: 20px; height: 20px; }
+#pagePerguntas .edit-pill:hover{ 
+  filter: brightness(1.02); 
+  transform: translateY(-1px); 
+}
+#pagePerguntas .edit-pill svg{ 
+  width: 20px; 
+  height: 20px; 
+}
 
 /* utilitário de grid do modal */
-#pagePerguntas .span-2{ grid-column: 1 / -1; }
+#pagePerguntas .span-2{ 
+  grid-column: 1 / -1; 
+}
 
 /* só no modal de Pergunta */
-#perguntaModal .modal__head h3{ color: #4F6F52; }
+#perguntaModal .modal__head h3{ 
+  color: #4F6F52; 
+}
 
-#confirmPerguntaModal .form,
-#confirmPerguntaModal .form p{
+#confirmPerguntaModal .form, #confirmPerguntaModal .form p{
   color: #554336;
 }
 
@@ -96,13 +112,28 @@
   z-index: 1000;
   transition: transform .12s ease, filter .18s, box-shadow .18s;
 }
-.fab-add:hover{ filter: brightness(1.05); transform: translateY(-2px); }
-.fab-add:active{ transform: translateY(0); }
-.fab-add svg{ width: 26px; height: 26px; }
+.fab-add:hover{ 
+  filter: brightness(1.05); 
+  transform: translateY(-2px); 
+}
+.fab-add:active{ 
+  transform: translateY(0); 
+}
+.fab-add svg{ 
+  width: 26px; 
+  height: 26px; 
+}
 
 @media (max-width: 560px){
-  .fab-add{ right: 16px; bottom: 16px; width: 56px; height: 56px; }
-  .fab-add svg{ width: 22px; height: 22px; }
+  .fab-add{ right: 16px; 
+    bottom: 16px; 
+    width: 56px; 
+    height: 56px; 
+  }
+  .fab-add svg{ 
+    width: 22px; 
+    height: 22px; 
+  }
 }
 
 /* Empilhamento no mobile: conteúdo em cima, botão embaixo, 100% de largura */
