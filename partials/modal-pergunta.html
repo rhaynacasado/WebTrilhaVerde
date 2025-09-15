@@ -1,0 +1,90 @@
+<!-- Modal: Editar Pergunta -->
+<div id="perguntaModal" class="modal" aria-hidden="true">
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="perguntaModalTitle">
+    <header class="modal__head">
+      <h3 id="perguntaModalTitle">Editar pergunta</h3>
+      <button class="icon-btn close" title="Fechar" data-close>&times;</button>
+    </header>
+
+    <form id="perguntaForm" class="form">
+      <input type="hidden" id="perguntaHiddenId" />
+      <input type="hidden" id="perguntaArvoreId" />
+
+      <div class="form__grid">
+        <div class="form__row">
+          <label for="perguntaId">ID</label>
+          <input id="perguntaId" type="text" readonly aria-readonly="true" class="input-readonly" />
+        </div>
+        <div class="form__row">
+          <label for="perguntaArvoreNome">Árvore</label>
+          <input id="perguntaArvoreNome" type="text" readonly aria-readonly="true" class="input-readonly" />
+        </div>
+      </div>
+
+      <div class="form__row">
+        <label for="perguntaEnunciado">Enunciado</label>
+        <textarea id="perguntaEnunciado" rows="3" placeholder="Digite o enunciado da pergunta..." required></textarea>
+      </div>
+
+      <div class="form__row">
+        <label for="perguntaTextoInfo">Texto Info</label>
+        <textarea id="perguntaTextoInfo" rows="3" placeholder="Texto explicativo para a pergunta" required></textarea>
+      </div>
+      <div class="form__grid">
+        <div class="form__row">
+          <label for="perguntaAudioInfo">Áudio Info (URL)</label>
+          <input id="perguntaAudioInfo" type="url" placeholder="https://..." required />
+        </div>
+        <div class="form__row">
+          <label for="perguntaAudioDica">Áudio Dica (URL)</label>
+          <input id="perguntaAudioDica" type="url" placeholder="https://..." required />
+        </div>
+      </div>
+
+      <div class="form__grid">
+        <div class="form__row">
+          <label for="perguntaItemA">Item A</label>
+          <input id="perguntaItemA" type="text" required />
+        </div>
+        <div class="form__row">
+          <label for="perguntaItemB">Item B</label>
+          <input id="perguntaItemB" type="text" required />
+        </div>
+        <div class="form__row">
+          <label for="perguntaItemC">Item C</label>
+          <input id="perguntaItemC" type="text" required />
+        </div>
+        <div class="form__row">
+          <label for="perguntaItemD">Item D</label>
+          <input id="perguntaItemD" type="text" required />
+        </div>
+        <div class="form__row span-2">
+          <label for="perguntaItemE">Item E</label>
+          <input id="perguntaItemE" type="text" required />
+        </div>
+      </div>
+
+      <div class="form__row">
+        <label for="perguntaResposta">Resposta correta</label>
+        <select id="perguntaResposta" required>
+          <option value="A">Item A</option>
+          <option value="B">Item B</option>
+          <option value="C">Item C</option>
+          <option value="D">Item D</option>
+          <option value="E">Item E</option>
+        </select>
+      </div>
+
+      <div class="form__row">
+        <label for="perguntaTextoDica">Texto Dica</label>
+        <textarea id="perguntaTextoDica" rows="2" placeholder="Texto de dica" required></textarea>
+      </div>
+
+      <footer class="modal__foot">
+        <button type="button" class="btn danger" id="btnExcluirPergunta">Excluir</button>
+        <button type="submit" class="btn primary" id="btnSalvarPergunta">Alterar</button>
+      </footer>
+    </form>
+  </div>
+</div>

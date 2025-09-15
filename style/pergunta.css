@@ -1,0 +1,137 @@
+/* ===== Página Perguntas (agrupadas por árvore) ===== */
+
+/* título da árvore (sem card) */
+#pagePerguntas .group-title{
+  margin: 18px 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--preto);
+}
+
+/* bloco do grupo */
+#pagePerguntas .group{ margin-bottom: 18px; }
+#pagePerguntas .group .list{ display: grid; gap: 12px; }
+
+/* card da pergunta — mesmo visual base dos cards */
+#pagePerguntas .item{
+  background: var(--branco);
+  border: 1px solid #eee;
+  border-radius: 14px;
+  padding: 0;                        /* padding vai no body */
+  display: flex;
+  align-items: stretch;              /* botão na mesma altura */
+  justify-content: space-between;
+  box-shadow: var(--shadow);
+  overflow: hidden;                  /* cantos corretos */
+}
+
+/* conteúdo do card em COLUNA: título em cima, infos embaixo */
+#pagePerguntas .item-body{
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* título na mesma cor dos cards de Árvores */
+#pagePerguntas .item-title{
+  color: var(--preto);
+  font-weight: 800;
+}
+
+/* linha de infos abaixo do título */
+#pagePerguntas .subline{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cinza);
+  font-size: 14px;
+}
+#pagePerguntas .subline .sep{ opacity: .55; }
+
+/* botão editar (igual Árvores) */
+#pagePerguntas .edit-pill{
+  width: 56px; min-width: 56px;
+  border: 0;
+  border-left: 1px solid #e5e7eb;
+  border-radius: 0 14px 14px 0;
+  background: #A7C957;
+  box-shadow: var(--shadow);
+  display: grid; place-items: center;
+  cursor: pointer;
+  transition: transform .12s ease, filter .18s;
+}
+#pagePerguntas .edit-pill:hover{ filter: brightness(1.02); transform: translateY(-1px); }
+#pagePerguntas .edit-pill svg{ width: 20px; height: 20px; }
+
+/* utilitário de grid do modal */
+#pagePerguntas .span-2{ grid-column: 1 / -1; }
+
+/* só no modal de Pergunta */
+#perguntaModal .modal__head h3{ color: #4F6F52; }
+
+#confirmPerguntaModal .form,
+#confirmPerguntaModal .form p{
+  color: #554336;
+}
+
+/* ===== FAB: botão flutuante para adicionar pergunta ===== */
+.fab-add{
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  border: 0;
+  background: #A7C957;     /* verde da sua UI */
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 30px rgba(25,37,31,.25);
+  cursor: pointer;
+  z-index: 1000;
+  transition: transform .12s ease, filter .18s, box-shadow .18s;
+}
+.fab-add:hover{ filter: brightness(1.05); transform: translateY(-2px); }
+.fab-add:active{ transform: translateY(0); }
+.fab-add svg{ width: 26px; height: 26px; }
+
+@media (max-width: 560px){
+  .fab-add{ right: 16px; bottom: 16px; width: 56px; height: 56px; }
+  .fab-add svg{ width: 22px; height: 22px; }
+}
+
+/* Empilhamento no mobile: conteúdo em cima, botão embaixo, 100% de largura */
+@media (max-width: 720px){
+  #pagePerguntas .item{
+    flex-direction: column;
+  }
+  #pagePerguntas .edit-pill{
+    width: 100%;
+    min-width: 100%;
+    height: 44px;
+    border-left: 0;
+    border-top: 1px solid #e5e7eb;
+    border-radius: 0 0 14px 14px;
+  }
+  #pagePerguntas .item-body{
+    width: 100%;
+  }
+}
+
+/* Títulos de perguntas não estouram */
+#pagePerguntas .item-title{
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.fab-add.is-hidden{
+  opacity: 0;
+  transform: scale(.92);
+  pointer-events: none;
+  transition: opacity .15s ease, transform .15s ease;
+}
