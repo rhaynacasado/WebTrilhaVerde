@@ -214,10 +214,10 @@ const pageLog = document.getElementById('pageLog') !== null;
 
 if(pageLog){
   const logs = [
-    { data: '2025-08-24 10:12', nivel: 'INFO', evento: 'Backup concluído com sucesso.' },
-    { data: '2025-08-24 09:02', nivel: 'WARN', evento: 'Uso de disco acima de 80%.' },
-    { data: '2025-08-23 22:41', nivel: 'INFO', evento: 'Usuário João Pedro criou trilha “Serra do Mel”.' },
-    { data: '2025-08-23 20:15', nivel: 'ERROR', evento: 'Falha ao sincronizar mapa de calor.' }
+    { data: '2025-08-24 10:12', nome: 'Maria Silva', atividade: 'Editou uma árvore.' },
+    { data: '2025-08-24 09:02', nome: 'João Pedro', atividade: 'Criou uma pergunta.' },
+    { data: '2025-08-23 22:41', nome: 'Ana Júlia', atividade: 'Ativou uma árvore.' },
+    { data: '2025-08-23 20:15', nome: 'Miguel Rodrigues', atividade: 'Desativou uma árvore.' }
   ];
 
   const logBody = document.querySelector('#logTable tbody');
@@ -229,13 +229,13 @@ if(pageLog){
     tdData.textContent = l.data;
     tr.appendChild(tdData);
 
-    const tdNivel = document.createElement('td');
-    tdNivel.textContent = l.nivel;
-    tr.appendChild(tdNivel);
+    const tdNome = document.createElement('td');
+    tdNome.textContent = l.nome;
+    tr.appendChild(tdNome);
 
-    const tdEvento = document.createElement('td');
-    tdEvento.textContent = l.evento;
-    tr.appendChild(tdEvento);
+    const tdAtividade = document.createElement('td');
+    tdAtividade.textContent = l.atividade;
+    tr.appendChild(tdAtividade);
 
     logBody.appendChild(tr);
   });
