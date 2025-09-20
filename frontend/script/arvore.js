@@ -1,13 +1,22 @@
+// frontend/script/arvore.js
 (function initArvores(){
+  const API_BASE = 'http://localhost:3001';   // ajuste se mudar a porta/host
   const listRoot = document.getElementById('arvoresList');
   if (!listRoot) return;
 
-  const arvores = [
-    { id: 1, codigo: 'IPE-AM',  nome: 'Ipê Amarelo', trilha: 'Árvores Úteis', especie: 'Handroanthus albus',     foto: '', quantPerguntas: 4,  ativa: true },
-    { id: 2, codigo: 'ARA-ANG', nome: 'Araucária', trilha: 'Árvores Úteis', especie: 'Araucaria angustifolia', foto: '', quantPerguntas: 6,  ativa: true },
-    { id: 3, codigo: 'PBR-ECH', nome: 'Pau-Brasil', trilha: 'Árvores Úteis', especie: 'Paubrasilia echinata',   foto: '', quantPerguntas: 12, ativa: false },
-  ];
+  // estado em memória (carregado do backend)
+  let arvores = [];
 
+  // util
+  function getParam(name){
+    const p = new URLSearchParams(location.search);
+    return p.get(name);
+  }
+  function composedId(a){ // id único para a UI
+    return `${a.trilha_nome}:${a.codigo}`;
+  }
+
+  // ======== modal (sua lógica original, com pequenos ajustes) =========
   function makeBrushSvg(stroke = '#1f2937'){
     const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
     svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none'); svg.setAttribute('aria-hidden','true');
@@ -20,17 +29,15 @@
     svg.appendChild(p1); svg.appendChild(p2);
     return svg;
   }
-
   function getHost(){
     let host = document.getElementById('modals');
     if (!host){ host = document.createElement('div'); host.id = 'modals'; document.body.appendChild(host); }
     return host;
   }
-
   async function tryLoad(url){
     try{
       const res = await fetch(url, { cache:'no-store' });
-      const text = await res.text(); // mesmo 404 retorna texto (pode ser vazio/HTML genérico)
+      const text = await res.text();
       const doc  = new DOMParser().parseFromString(text, 'text/html');
       const toAppend = Array.from(doc.body.children);
       if (toAppend.length){
@@ -40,7 +47,6 @@
       return !!document.getElementById('arvoreModal');
     }catch(_){ return false; }
   }
-
   async function ensureModal(){
     if (document.getElementById('arvoreModal')) return;
     const candidates = [
@@ -52,6 +58,7 @@
       const ok = await tryLoad(url);
       if (ok) return;
     }
+    // fallback se o partial não existir
     const host   = getHost();
     const modal  = document.createElement('div');
     modal.id = 'arvoreModal'; modal.className = 'modal'; modal.setAttribute('aria-hidden','true');
@@ -70,7 +77,7 @@
     const form = document.createElement('form'); form.id='arvoreForm'; form.className='form';
 
     const gridIds = document.createElement('div'); gridIds.className='form__grid';
-    gridIds.appendChild(row('ID', input('arvoreId','text',true)));
+    gridIds.appendChild(row('Trilha', input('arvoreTrilha','text',true)));
     gridIds.appendChild(row('Código', input('arvoreCodigo','text',true)));
 
     const rowNome = row('Nome', input('arvoreNome','text',false,{required:true}));
@@ -78,7 +85,7 @@
 
     const gridLinks = document.createElement('div'); gridLinks.className='form__grid';
     gridLinks.appendChild(row('Foto (URL)', input('arvoreFoto','url',false,{placeholder:'https://...'})));
-    gridLinks.appendChild(row('Ícone na trilha (URL)', input('arvoreIcon','url',false,{placeholder:'https://...'})));
+    gridLinks.appendChild(row('Ícone (não usado)', input('arvoreIcon','url',false,{placeholder:'—'}))); // não existe mais no banco
 
     const foot = document.createElement('footer'); foot.className='modal__foot';
     const btnToggle = document.createElement('button'); btnToggle.id='btnToggleStatus'; btnToggle.type='button'; btnToggle.className='btn danger'; btnToggle.textContent='Desativar';
@@ -103,11 +110,9 @@
       return el;
     }
   }
-
   const modalEl   = () => document.getElementById('arvoreModal');
   const openModal = () => { const m = modalEl(); if (m){ m.classList.add('open'); m.setAttribute('aria-hidden','false'); } };
   const closeModal= () => { const m = modalEl(); if (m){ m.classList.remove('open'); m.setAttribute('aria-hidden','true'); } };
-
   function setVal(id, v){ const el = document.getElementById(id); if (el) el.value = (v ?? ''); }
   function setToggle(isActive){
     const btn = document.getElementById('btnToggleStatus'); if (!btn) return;
@@ -116,6 +121,7 @@
     else { btn.textContent='Ativar'; btn.classList.add('success'); btn.dataset.action='activate'; }
   }
 
+  // =============== RENDER ===============
   function render(){
     while (listRoot.firstChild) listRoot.removeChild(listRoot.firstChild);
     arvores.forEach(a => {
@@ -125,9 +131,9 @@
       const title = document.createElement('strong'); title.className='item-title'; title.textContent=a.nome;
 
       const sub = document.createElement('div'); sub.className='subline';
-      const t = document.createElement('span'); t.className='meta'; t.textContent = `Trilha ${a.trilha}`;
+      const t = document.createElement('span'); t.className='meta'; t.textContent = `Trilha ${a.trilha_nome}`;
       const sep1 = document.createElement('span'); sep1.className='sep'; sep1.textContent='•';
-      const q = document.createElement('span'); q.className='meta'; q.textContent = `${a.quantPerguntas} perguntas`;
+      const q = document.createElement('span'); q.className='meta'; q.textContent = `${a.quantidade_perguntas ?? 0} perguntas`;
       const sep2 = document.createElement('span'); sep2.className='sep'; sep2.textContent='•';
       const st = document.createElement('span'); st.className='status ' + (a.ativa?'active':'inactive'); st.textContent = a.ativa?'Ativa':'Desativada';
       sub.appendChild(t); sub.appendChild(sep1); sub.appendChild(q); sub.appendChild(sep2); sub.appendChild(st);
@@ -135,7 +141,8 @@
       body.appendChild(title); body.appendChild(sub);
 
       const btn = document.createElement('button');
-      btn.type='button'; btn.className='edit-pill'; btn.title='Editar'; btn.dataset.id=String(a.id);
+      btn.type='button'; btn.className='edit-pill'; btn.title='Editar';
+      btn.dataset.id = composedId(a); // <— id composto
       btn.appendChild(makeBrushSvg());
 
       item.appendChild(body); item.appendChild(btn);
@@ -143,23 +150,24 @@
     });
   }
 
+  // =============== Eventos ===============
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.edit-pill');
     if (btn && btn.closest('#arvoresList')){
-      const id = Number(btn.dataset.id);
-      const a  = arvores.find(x => x.id === id);
+      const id = String(btn.dataset.id);
+      const a  = arvores.find(x => composedId(x) === id);
       if (!a) return;
 
-      await ensureModal();  
-      if (!document.getElementById('arvoreModal')) return; 
+      await ensureModal();
+      if (!document.getElementById('arvoreModal')) return;
 
-      setVal('arvoreId', a.id);
+      setVal('arvoreTrilha', a.trilha_nome);
       setVal('arvoreCodigo', a.codigo);
       setVal('arvoreNome', a.nome);
-      setVal('arvoreEspecie', a.especie);
-      setVal('arvoreFoto', a.foto);
-      setVal('arvoreIcon', a.icon);
-      setToggle(a.ativa);
+      setVal('arvoreEspecie', a.especie || '');
+      setVal('arvoreFoto', a.foto_url || '');
+      setVal('arvoreIcon', ''); // não existe mais
+      setToggle(!!a.ativa);
 
       openModal();
       return;
@@ -169,27 +177,103 @@
       closeModal(); return;
     }
 
+    // ---- Toggle de ATIVA (agora persistente no banco) ----
     if (e.target && e.target.id === 'btnToggleStatus'){
-      const id  = Number((document.getElementById('arvoreId') || {}).value || 0);
-      const idx = arvores.findIndex(x => x.id === id); if (idx === -1) return;
-      arvores[idx].ativa = !arvores[idx].ativa;
-      render(); closeModal(); return;
+      const trilha = (document.getElementById('arvoreTrilha') || {}).value || '';
+      const codigo = Number((document.getElementById('arvoreCodigo') || {}).value || 0);
+      const idx = arvores.findIndex(x => x.trilha_nome === trilha && Number(x.codigo) === codigo);
+      if (idx === -1) return;
+
+      const novaAtiva = !arvores[idx].ativa;
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(codigo)}/ativa`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ativa: novaAtiva })
+        });
+        if (!resp.ok) {
+          const t = await resp.text();
+          throw new Error(`Falha ao salvar: ${resp.status} ${t}`);
+        }
+        const data = await resp.json(); // { ativa, trilha_nome, codigo }
+        arvores[idx].ativa = !!data.ativa; // sincroniza com o servidor
+        render();
+        closeModal();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao alterar status no servidor.');
+      }
     }
   });
 
-  document.addEventListener('submit', (e) => {
+  document.addEventListener('submit', async (e) => {
     if (e.target && e.target.id === 'arvoreForm'){
       e.preventDefault();
-      const id  = Number((document.getElementById('arvoreId') || {}).value || 0);
-      const idx = arvores.findIndex(x => x.id === id); if (idx === -1) return;
+
+      const trilha  = (document.getElementById('arvoreTrilha') || {}).value || '';
+      const codigo  = Number((document.getElementById('arvoreCodigo') || {}).value || 0);
+      const idx = arvores.findIndex(x => x.trilha_nome === trilha && Number(x.codigo) === codigo);
+      if (idx === -1) return;
+
       const nome    = (document.getElementById('arvoreNome')    || {}).value?.trim() ?? '';
       const especie = (document.getElementById('arvoreEspecie') || {}).value?.trim() ?? '';
       const foto    = (document.getElementById('arvoreFoto')    || {}).value?.trim() ?? '';
-      const icon    = (document.getElementById('arvoreIcon')    || {}).value?.trim() ?? '';
-      arvores[idx] = { ...arvores[idx], nome, especie, foto, icon };
-      render(); closeModal();
+
+      // 1) feedback visual rápido
+      arvores[idx] = { ...arvores[idx], nome, especie, foto_url: foto };
+      render();
+
+      // 2) salva no servidor
+      try {
+        const resp = await fetch(`${API_BASE}/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(codigo)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, especie, foto_url: foto })
+        });
+        if (!resp.ok) {
+          const t = await resp.text();
+          throw new Error(`Falha ao salvar: ${resp.status} ${t}`);
+        }
+        const saved = await resp.json();
+        arvores[idx] = { ...arvores[idx], ...saved };
+        render();
+        closeModal();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao salvar no servidor. Recarregando lista.');
+        loadArvores(); // ressincroniza
+        closeModal();
+      }
     }
   });
 
-  render();
+  // =============== Carregar do backend ===============
+  async function loadArvores(){
+    const trilhaParam = getParam('trilha'); // ex.: arvores.html?trilha=Árvores%20Úteis
+    const qs = trilhaParam ? `?trilha=${encodeURIComponent(trilhaParam)}` : '';
+    const url = `${API_BASE}/api/arvores${qs}`;
+    try {
+      const resp = await fetch(url, { credentials: 'omit' });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      // normaliza tipos
+      arvores = (Array.isArray(data) ? data : []).map(a => ({
+        trilha_nome: a.trilha_nome,
+        codigo: Number(a.codigo),
+        nome: a.nome,
+        especie: a.especie || '',
+        foto_url: a.foto_url || '',
+        quantidade_perguntas: Number(a.quantidade_perguntas ?? 0),
+        ativa: !!a.ativa
+      }));
+      render();
+    } catch (err) {
+      console.error('Falha ao carregar árvores:', err);
+      listRoot.innerHTML = '<p>Erro ao carregar árvores.</p>';
+    }
+  }
+
+  // inicializa
+  loadArvores();
 })();
