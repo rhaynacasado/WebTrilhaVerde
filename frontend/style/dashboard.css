@@ -45,6 +45,7 @@
   padding: 12px 16px 0;  /* 16px 16px 0 -> 12px 16px 0 */
 }
 
+/* OPCIONAL: rodapé (legenda) mais enxuto */
 .card-foot{ 
   padding: 8px 16px 10px; /* 8px 16px 14px -> 8px 16px 10px */
 }

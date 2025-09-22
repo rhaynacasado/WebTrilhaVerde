@@ -8,7 +8,6 @@ const Trilha    = require('./Trilha')(sequelize, DataTypes);
 const Arvore    = require('./Arvore')(sequelize, DataTypes);
 const Pergunta  = require('./Pergunta')(sequelize, DataTypes);
 const Administrador  = require('./Administrador')(sequelize, DataTypes);
-const PasswordReset = require('./PasswordReset')(sequelize, DataTypes);
 const AlteracaoArvore    = require('./AlteracaoArvore')(sequelize, DataTypes);
 const AlteracaoPergunta  = require('./AlteracaoPergunta')(sequelize, DataTypes);
 
@@ -58,4 +57,4 @@ Arvore.hasMany(Pergunta, {
   constraints: false,
 });
 
-module.exports = { sequelize, Trilha, Arvore, Pergunta, Administrador, PasswordReset, AlteracaoArvore, AlteracaoPergunta};
+module.exports = { sequelize, Trilha, Arvore, Pergunta, Administrador, AlteracaoArvore, AlteracaoPergunta};
