@@ -3,10 +3,10 @@ const express = require('express');
 const router = express.Router();
 
 const { Pergunta } = require('../models');
-const auth = require('../middlewares/auth');                // << protege rotas que alteram
-const { logPergunta } = require('../utils/logHelpers');     // << registra no histórico
+const auth = require('../middlewares/auth');
+const { logPergunta } = require('../utils/logHelpers');
 
-// GET /api/perguntas?trilha=...&arvore=...
+// GETs públicos (inalterados)
 router.get('/', async (req, res) => {
   try {
     const { trilha, arvore } = req.query;
@@ -26,7 +26,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/perguntas/:trilha/:arvore/:id
 router.get('/:trilha/:arvore/:id', async (req, res) => {
   try {
     const { trilha, arvore, id } = req.params;
@@ -42,7 +41,7 @@ router.get('/:trilha/:arvore/:id', async (req, res) => {
   }
 });
 
-// POST /api/perguntas  (cria; se id não vier, gera próximo por trilha+arvore)
+// POST (criar) — gera id se não vier
 router.post('/', auth, async (req, res) => {
   try {
     const {
@@ -71,8 +70,8 @@ router.post('/', auth, async (req, res) => {
       texto, audio_url, resposta_correta, dica, audio_dica_url
     });
 
-    // LOG: criação
-    await logPergunta(req, trilha_nome, Number(arvore_codigo), Number(newId));
+    await logPergunta(req, trilha_nome, Number(arvore_codigo), Number(newId),
+      `create:"${(enunciado || '').slice(0, 80)}"`);
 
     res.status(201).json(created.toJSON());
   } catch (e) {
@@ -81,7 +80,7 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// PUT /api/perguntas/:trilha/:arvore/:id
+// PUT (editar) — só salva e loga se algo mudou
 router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
   try {
     const { trilha, arvore, id } = req.params;
@@ -94,12 +93,20 @@ router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
       'enunciado','item_a','item_b','item_c','item_d','item_e',
       'texto','audio_url','resposta_correta','dica','audio_dica_url'
     ];
-    for (const f of fields) if (req.body[f] !== undefined) q[f] = req.body[f];
+    const changed = [];
+    for (const f of fields) {
+      if (req.body[f] !== undefined && req.body[f] !== q[f]) {
+        q[f] = req.body[f];
+        changed.push(f);
+      }
+    }
+
+    if (changed.length === 0) {
+      return res.json({ unchanged: true, ...q.toJSON() });
+    }
 
     await q.save();
-
-    // LOG: edição
-    await logPergunta(req, trilha, Number(arvore), Number(id));
+    await logPergunta(req, trilha, Number(arvore), Number(id), `update:${changed.join(',')}`);
 
     res.json(q.toJSON());
   } catch (e) {
@@ -108,21 +115,19 @@ router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE /api/perguntas/:trilha/:arvore/:id
+// DELETE — grava log com snapshot do enunciado
 router.delete('/:trilha/:arvore/:id', auth, async (req, res) => {
   try {
     const { trilha, arvore, id } = req.params;
-
-    // buscamos antes para poder logar com os mesmos identificadores
     const q = await Pergunta.findOne({
       where: { trilha_nome: trilha, arvore_codigo: Number(arvore), id: Number(id) }
     });
     if (!q) return res.status(404).json({ error: 'Pergunta não encontrada' });
 
+    const enunc = q.enunciado || '';
     await q.destroy();
 
-    // LOG: exclusão
-    await logPergunta(req, q.trilha_nome, q.arvore_codigo, q.id);
+    await logPergunta(req, trilha, Number(arvore), Number(id), `delete:"${enunc.slice(0, 80)}"`);
 
     res.status(204).end();
   } catch (e) {

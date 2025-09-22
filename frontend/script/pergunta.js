@@ -1,28 +1,47 @@
 // frontend/script/perguntas.js
-(function bootstrapPerguntas(){
+(function bootstrapPerguntas() {
   const onPage = document.getElementById('pagePerguntas') !== null;
   if (!onPage) return;
 
-  const API_BASE = 'http://localhost:3001';
+  const API_BASE  = window.__API_BASE__ || 'http://127.0.0.1:3001';
+  const TOKEN_KEY = 'token';
+
+  // ---- helper fetch com Authorization ----
+  async function authFetch(path, opts = {}) {
+    const token   = localStorage.getItem(TOKEN_KEY);
+    const headers = { ...(opts.headers || {}) };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return fetch(`${API_BASE}${path}`, { ...opts, headers });
+  }
+
   const host = document.getElementById('modals') || document.body;
 
+  // carrega os modais se não estiverem no DOM
   const needsEdit = !document.getElementById('perguntaModal');
   const needsAdd  = !document.getElementById('perguntaAddModal');
-
   const tasks = [];
-  if (needsEdit){
-    tasks.push(fetch('../partials/modal-pergunta.html').then(r => r.text()).then(txt => {
-      const doc = new DOMParser().parseFromString(txt, 'text/html');
-      Array.from(doc.body.children).forEach(n => host.appendChild(n));
-    }).catch(()=>{}));
+  if (needsEdit) {
+    tasks.push(
+      fetch('../partials/modal-pergunta.html')
+        .then(r => r.text())
+        .then(txt => {
+          const doc = new DOMParser().parseFromString(txt, 'text/html');
+          Array.from(doc.body.children).forEach(n => host.appendChild(n));
+        })
+        .catch(() => {})
+    );
   }
-  if (needsAdd){
-    tasks.push(fetch('../partials/modal-pergunta-add.html').then(r => r.text()).then(txt => {
-      const doc = new DOMParser().parseFromString(txt, 'text/html');
-      Array.from(doc.body.children).forEach(n => host.appendChild(n));
-    }).catch(()=>{}));
+  if (needsAdd) {
+    tasks.push(
+      fetch('../partials/modal-pergunta-add.html')
+        .then(r => r.text())
+        .then(txt => {
+          const doc = new DOMParser().parseFromString(txt, 'text/html');
+          Array.from(doc.body.children).forEach(n => host.appendChild(n));
+        })
+        .catch(() => {})
+    );
   }
-
   Promise.all(tasks).then(initPerguntas).catch(initPerguntas);
 
   // ====== estado ======
@@ -32,13 +51,10 @@
   let nextPerguntaId = 1;
 
   async function loadArvores() {
-    // opcional: limitar por trilha via ?trilha=
-    const url = `${API_BASE}/api/arvores`;
-    const resp = await fetch(url);
+    const resp = await fetch(`${API_BASE}/api/arvores`);
     if (!resp.ok) throw new Error('Falha ao carregar árvores');
     const data = await resp.json();
 
-    // gera id sequencial para UI
     arvores = data.map((a, idx) => ({
       id: idx + 1,
       trilha_nome: a.trilha_nome,
@@ -49,14 +65,11 @@
   }
 
   async function loadPerguntas() {
-    const url = `${API_BASE}/api/perguntas`;
-    const resp = await fetch(url);
+    const resp = await fetch(`${API_BASE}/api/perguntas`);
     if (!resp.ok) throw new Error('Falha ao carregar perguntas');
     const rows = await resp.json();
 
-    // mapeia pergunta de DB -> UI
     perguntas = rows.map(r => {
-      // encontra arvoreId da UI para (trilha,codigo)
       const a = arvores.find(x => x.trilha_nome === r.trilha_nome && x.codigo === Number(r.arvore_codigo));
       const arvoreId = a ? a.id : null;
       return {
@@ -78,33 +91,43 @@
     nextPerguntaId = (perguntas.length ? Math.max(...perguntas.map(p => p.id)) : 0) + 1;
   }
 
-  // ====== UI original (com pequenas adaptações) ======
-  function initPerguntas(){
+  // ====== UI ======
+  function initPerguntas() {
     const container = document.getElementById('perguntasList');
     if (!container) return;
 
-    function makeBrushSvg(){
+    function makeBrushSvg() {
       const svg  = document.createElementNS('http://www.w3.org/2000/svg','svg');
-      svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none'); svg.setAttribute('aria-hidden','true');
+      svg.setAttribute('viewBox','0 0 24 24');
+      svg.setAttribute('fill','none');
+      svg.setAttribute('aria-hidden','true');
       const p1 = document.createElementNS('http://www.w3.org/2000/svg','path');
       p1.setAttribute('d','M14.7 5.3l4 4L9 19l-4.5 .5L5 15l9.7 -9.7z');
       p1.setAttribute('stroke','#1f2937'); p1.setAttribute('stroke-width','1.6');
-      p1.setAttribute('stroke-linecap','round'); p1.setAttribute('stroke-linejoin','round'); p1.setAttribute('fill','none');
+      p1.setAttribute('stroke-linecap','round'); p1.setAttribute('stroke-linejoin','round');
+      p1.setAttribute('fill','none');
       const p2 = document.createElementNS('http://www.w3.org/2000/svg','path');
-      p2.setAttribute('d','M13.3 6.7l4 4'); p2.setAttribute('stroke','#1f2937'); p2.setAttribute('stroke-width','1.6'); p2.setAttribute('stroke-linecap','round');
-      svg.appendChild(p1); svg.appendChild(p2); return svg;
+      p2.setAttribute('d','M13.3 6.7l4 4');
+      p2.setAttribute('stroke','#1f2937'); p2.setAttribute('stroke-width','1.6');
+      p2.setAttribute('stroke-linecap','round');
+      svg.appendChild(p1); svg.appendChild(p2);
+      return svg;
     }
-    function makePlusSvg(){
+
+    function makePlusSvg() {
       const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-      svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none'); svg.setAttribute('aria-hidden','true');
+      svg.setAttribute('viewBox','0 0 24 24');
+      svg.setAttribute('fill','none');
+      svg.setAttribute('aria-hidden','true');
       const v = document.createElementNS('http://www.w3.org/2000/svg','path');
       v.setAttribute('d','M12 5v14M5 12h14');
-      v.setAttribute('stroke','#fff'); v.setAttribute('stroke-width','2.2'); v.setAttribute('stroke-linecap','round');
+      v.setAttribute('stroke','#fff'); v.setAttribute('stroke-width','2.2');
+      v.setAttribute('stroke-linecap','round');
       svg.appendChild(v);
       return svg;
     }
 
-    function render(){
+    function render() {
       while (container.firstChild) container.removeChild(container.firstChild);
 
       const byTree = new Map();
@@ -184,7 +207,7 @@
     const openAddModal = () => { const m = addModalEl(); if (m){ fixButtonTypes(); m.classList.add('open');  m.setAttribute('aria-hidden','false'); } };
     const closeAddModal= () => { const m = addModalEl(); if (m){ m.classList.remove('open'); m.setAttribute('aria-hidden','true'); } };
 
-    function ensureConfirmModal(){
+    function ensureConfirmModal() {
       if (confirmModalEl()) return;
       const modal = document.createElement('div');
       modal.id = 'confirmPerguntaModal';
@@ -229,7 +252,7 @@
       (document.getElementById('modals') || document.body).appendChild(modal);
     }
 
-    function openConfirm(msg){
+    function openConfirm(msg) {
       ensureConfirmModal();
       const c = confirmModalEl(); if (!c) return;
       const t = document.getElementById('confirmPerguntaText');
@@ -243,7 +266,7 @@
       c.classList.remove('open'); c.setAttribute('aria-hidden','true');
     };
 
-    function fixButtonTypes(){
+    function fixButtonTypes() {
       ['btnExcluirPergunta','btnConfirmExcluir','btnCancelExcluir']
         .forEach(id => { const b = document.getElementById(id); if (b) b.type = 'button'; });
     }
@@ -296,12 +319,11 @@
       openModal();
     });
 
-    // salvar edição -> PUT
+    // salvar edição -> PUT (autenticado)
     document.addEventListener('submit', async e => {
       if (e.target && e.target.id === 'perguntaForm') {
         e.preventDefault();
-        const form = e.target;
-        if (!form.reportValidity()) return;
+        if (!e.target.reportValidity()) return;
 
         const id        = Number(document.getElementById('perguntaHiddenId').value);
         const arvoreId  = Number(document.getElementById('perguntaArvoreId').value);
@@ -322,7 +344,7 @@
           dica      : document.getElementById('perguntaTextoDica').value.trim(),
         };
 
-        // otimista na UI
+        // atualização otimista na UI
         const idx = perguntas.findIndex(x => x.id === id && x.arvoreId === arvoreId);
         if (idx !== -1) {
           perguntas[idx] = {
@@ -339,8 +361,8 @@
         }
 
         try {
-          const url = `${API_BASE}/api/perguntas/${encodeURIComponent(aRef.trilha_nome)}/${encodeURIComponent(aRef.codigo)}/${encodeURIComponent(id)}`;
-          const resp = await fetch(url, {
+          const url  = `/api/perguntas/${encodeURIComponent(aRef.trilha_nome)}/${encodeURIComponent(String(aRef.codigo))}/${encodeURIComponent(String(id))}`;
+          const resp = await authFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -349,15 +371,15 @@
           closeModal(); showFab();
         } catch (err) {
           console.error(err);
-          alert('Erro ao salvar pergunta.');
+          alert('Erro ao salvar pergunta (verifique se está logado).');
         }
       }
     });
 
-    // exclusão
+    // exclusão (autenticada)
     let pendingDelete = { id: null, arvoreId: null };
 
-    function wireEditModalButtons(){
+    function wireEditModalButtons() {
       const m = modalEl(); if (!m) return;
       const delBtn =
         m.querySelector('#btnExcluirPergunta') ||
@@ -380,13 +402,13 @@
       }
     }
 
-    function wireConfirmButtons(){
+    function wireConfirmButtons() {
       const c = confirmModalEl(); if (!c) return;
 
       const ok = c.querySelector('#btnConfirmExcluir') || c.querySelector('.btn.danger');
       const cancel = c.querySelector('#btnCancelExcluir') || c.querySelector('.btn');
 
-      if (ok){
+      if (ok) {
         ok.type = 'button';
         ok.onclick = async () => {
           const { id, arvoreId } = pendingDelete || {};
@@ -399,23 +421,24 @@
           render();
 
           try {
-            const url = `${API_BASE}/api/perguntas/${encodeURIComponent(aRef.trilha_nome)}/${encodeURIComponent(aRef.codigo)}/${encodeURIComponent(id)}`;
-            const resp = await fetch(url, { method: 'DELETE' });
+            const url  = `/api/perguntas/${encodeURIComponent(aRef.trilha_nome)}/${encodeURIComponent(String(aRef.codigo))}/${encodeURIComponent(String(id))}`;
+            const resp = await authFetch(url, { method: 'DELETE' });
             if (!resp.ok && resp.status !== 204) throw new Error(`DELETE ${resp.status}`);
           } catch (err) {
             console.error(err);
-            alert('Erro ao excluir pergunta.');
+            alert('Erro ao excluir pergunta (verifique se está logado).');
           } finally {
             closeConfirm(); closeModal(); showFab();
           }
         };
       }
-      if (cancel){
+      if (cancel) {
         cancel.type = 'button';
         cancel.onclick = () => { pendingDelete = { id:null, arvoreId:null }; closeConfirm(); };
       }
     }
 
+    // FAB (adicionar)
     const fab = document.createElement('button');
     fab.className = 'fab-add';
     fab.title = 'Adicionar pergunta';
@@ -424,7 +447,7 @@
 
     fab.addEventListener('click', () => {
       const sel = document.getElementById('addArvore');
-      if (sel){
+      if (sel) {
         while (sel.firstChild) sel.removeChild(sel.firstChild);
         arvores.forEach(a => {
           const opt = document.createElement('option');
@@ -433,80 +456,25 @@
           sel.appendChild(opt);
         });
       }
-      const fields = ['addEnunciado','addTextoInfo','addAudioInfo','addAudioDica',
-        'addItemA','addItemB','addItemC','addItemD','addItemE','addTextoDica'];
+      const fields = [
+        'addEnunciado','addTextoInfo','addAudioInfo','addAudioDica',
+        'addItemA','addItemB','addItemC','addItemD','addItemE','addTextoDica'
+      ];
       fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
       const resp = document.getElementById('addResposta'); if (resp) resp.value = 'A';
       openAddModal();
     });
 
-    // criar nova -> POST
-    document.addEventListener('submit', async e => {
-      if (e.target && e.target.id === 'perguntaAddForm') {
-        e.preventDefault();
-        const form = e.target;
-        if (!form.reportValidity()) return;
-
-        const arvoreId  = Number(document.getElementById('addArvore').value);
-        const aRef      = arvoreById.get(arvoreId);
-        if (!aRef) return;
-
-        const payload = {
-          trilha_nome: aRef.trilha_nome,
-          arvore_codigo: aRef.codigo,
-          enunciado : document.getElementById('addEnunciado').value.trim(),
-          texto     : document.getElementById('addTextoInfo').value.trim(),
-          audio_url : document.getElementById('addAudioInfo').value.trim(),
-          audio_dica_url : document.getElementById('addAudioDica').value.trim(),
-          item_a    : document.getElementById('addItemA').value.trim(),
-          item_b    : document.getElementById('addItemB').value.trim(),
-          item_c    : document.getElementById('addItemC').value.trim(),
-          item_d    : document.getElementById('addItemD').value.trim(),
-          item_e    : document.getElementById('addItemE').value.trim(),
-          resposta_correta: document.getElementById('addResposta').value,
-          dica      : document.getElementById('addTextoDica').value.trim(),
-        };
-
-        try {
-          const resp = await fetch(`${API_BASE}/api/perguntas`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (!resp.ok) throw new Error(`POST falhou: ${resp.status}`);
-          const created = await resp.json();
-
-          // insere na UI
-          perguntas.push({
-            id: Number(created.id),
-            arvoreId,
-            enunciado: created.enunciado || '',
-            textoInfo: created.texto || '',
-            audioInfo: created.audio_url || '',
-            audioDica: created.audio_dica_url || '',
-            itens: { A:created.item_a||'', B:created.item_b||'', C:created.item_c||'', D:created.item_d||'', E:created.item_e||'' },
-            correta: created.resposta_correta || 'A',
-            textoDica: created.dica || ''
-          });
-          nextPerguntaId = Math.max(nextPerguntaId, Number(created.id) + 1);
-          render();
-          closeAddModal();
-        } catch (err) {
-          console.error(err);
-          alert('Erro ao criar pergunta.');
-        }
-      }
-    });
-
     function getFab(){ return document.querySelector('.fab-add'); }
     function hideFab(){ const f = getFab(); if (f) f.classList.add('is-hidden'); }
     function showFab(){ const f = getFab(); if (f) f.classList.remove('is-hidden'); }
+
     document.addEventListener('click', (e) => {
       const editBtn = e.target.closest('#pagePerguntas .edit-pill');
       if (editBtn) hideFab();
-    }, true); 
+    }, true);
 
-    // ====== bootstrap: carregar dados e render ======
+    // bootstrap
     (async () => {
       try {
         await loadArvores();
