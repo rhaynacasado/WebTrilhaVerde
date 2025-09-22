@@ -45,18 +45,17 @@
           <!-- Gráfico de progresso (anel) -->
           <section class="card">
             <header class="card-head">
-              <h3>Progresso do Projeto</h3>
+              <h3>Árvores Ativadas</h3>
             </header>
             <div class="donut-wrap">
-              <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="Progresso em porcentagem">
+              <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="Árvores Ativadas">
                 <circle class="donut-track" cx="60" cy="60" r="52" />
                 <circle class="donut-indicator" cx="60" cy="60" r="52" stroke-dasharray="0 999" />
                 <text x="60" y="66" text-anchor="middle" class="donut-label" id="donutLabel">0%</text>
               </svg>
               <div class="legend">
-                <span class="dot done"></span> Concluído
-                <span class="dot doing"></span> Em andamento
-                <span class="dot pending"></span> Pendente
+                <span class="dot done"></span> Ativada
+                <span class="dot pending"></span> Desativada
               </div>
             </div>
           </section>
@@ -70,17 +69,6 @@
           </section>
         </div>
 
-        <!-- Mini “analytics” com barras -->
-        <section class="card">
-          <header class="card-head">
-            <h3>Analytics semanais</h3>
-          </header>
-          <div class="bars" id="bars">
-            <!-- as barras são preenchidas pelo JS com base em data-valor -->
-          </div>
-          <footer class="card-foot muted">S, T, Q, Q, S, S, D</footer>
-        </section>
-      </section>
     </main>
   </div>
 

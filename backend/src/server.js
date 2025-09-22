@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const trilhasRoutes = require('./routes/trilhas');
 const arvoresRoutes = require('./routes/arvores');
 const perguntasRoutes = require('./routes/perguntas');
+const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/arvores', arvoresRoutes);
 app.use('/api/trilhas', trilhasRoutes);
 app.use('/api/perguntas', perguntasRoutes);
 app.use('/api/logs', require('./routes/logs'));
+app.use('/api/dashboard', dashboardRoutes);
 
 
 // 404 padrão

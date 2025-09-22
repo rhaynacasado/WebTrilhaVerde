@@ -2,11 +2,12 @@
 const express = require('express');
 const router = express.Router();
 
-const { Pergunta } = require('../models');
+const { Pergunta, sequelize } = require('../models'); // <- precisa do sequelize exportado
 const auth = require('../middlewares/auth');
 const { logPergunta } = require('../utils/logHelpers');
 
-// GETs públicos (inalterados)
+// ==================== GETs públicos ====================
+
 router.get('/', async (req, res) => {
   try {
     const { trilha, arvore } = req.query;
@@ -41,8 +42,11 @@ router.get('/:trilha/:arvore/:id', async (req, res) => {
   }
 });
 
-// POST (criar) — gera id se não vier
+// ==================== Mutations (com auth) ====================
+
+// POST (criar) — gera id sequencial por (trilha, arvore) dentro de transação
 router.post('/', auth, async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const {
       trilha_nome, arvore_codigo, id,
@@ -51,13 +55,15 @@ router.post('/', auth, async (req, res) => {
     } = req.body;
 
     if (!trilha_nome || !arvore_codigo) {
+      await t.rollback();
       return res.status(400).json({ error: 'trilha_nome e arvore_codigo são obrigatórios' });
     }
 
     let newId = id;
     if (newId == null) {
       const max = await Pergunta.max('id', {
-        where: { trilha_nome, arvore_codigo: Number(arvore_codigo) }
+        where: { trilha_nome, arvore_codigo: Number(arvore_codigo) },
+        transaction: t
       });
       newId = (max || 0) + 1;
     }
@@ -68,19 +74,34 @@ router.post('/', auth, async (req, res) => {
       id: Number(newId),
       enunciado, item_a, item_b, item_c, item_d, item_e,
       texto, audio_url, resposta_correta, dica, audio_dica_url
-    });
+    }, { transaction: t });
 
-    await logPergunta(req, trilha_nome, Number(arvore_codigo), Number(newId),
-      `create:"${(enunciado || '').slice(0, 80)}"`);
+    await t.commit();
 
-    res.status(201).json(created.toJSON());
+    // Log de criação (best-effort)
+    try {
+      await logPergunta(
+        req,
+        trilha_nome,
+        Number(arvore_codigo),
+        Number(newId),
+        `create:"${(enunciado || '').slice(0, 80)}"`
+      );
+    } catch (logErr) {
+      console.warn('Falha ao registrar log de criação:', logErr.message);
+    }
+
+    return res.status(201).json(created.toJSON());
   } catch (e) {
+    await t.rollback();
     console.error('POST /perguntas', e);
-    res.status(400).json({ error: 'Erro ao criar pergunta' });
+    return res
+      .status(400)
+      .json({ error: e?.original?.detail || e.message || 'Erro ao criar pergunta' });
   }
 });
 
-// PUT (editar) — só salva e loga se algo mudou
+// PUT (editar) — só salva/loga se algo mudou
 router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
   try {
     const { trilha, arvore, id } = req.params;
@@ -106,16 +127,28 @@ router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
     }
 
     await q.save();
-    await logPergunta(req, trilha, Number(arvore), Number(id), `update:${changed.join(',')}`);
 
-    res.json(q.toJSON());
+    // Log de atualização (best-effort)
+    try {
+      await logPergunta(
+        req,
+        trilha,
+        Number(arvore),
+        Number(id),
+        `update:${changed.join(',')}`
+      );
+    } catch (logErr) {
+      console.warn('Falha ao registrar log de atualização:', logErr.message);
+    }
+
+    return res.json(q.toJSON());
   } catch (e) {
     console.error('PUT /perguntas', e);
-    res.status(400).json({ error: 'Erro ao atualizar pergunta' });
+    return res.status(400).json({ error: 'Erro ao atualizar pergunta' });
   }
 });
 
-// DELETE — grava log com snapshot do enunciado
+// DELETE — sem log (para evitar conflitos de FK)
 router.delete('/:trilha/:arvore/:id', auth, async (req, res) => {
   try {
     const { trilha, arvore, id } = req.params;
@@ -124,15 +157,11 @@ router.delete('/:trilha/:arvore/:id', auth, async (req, res) => {
     });
     if (!q) return res.status(404).json({ error: 'Pergunta não encontrada' });
 
-    const enunc = q.enunciado || '';
     await q.destroy();
-
-    await logPergunta(req, trilha, Number(arvore), Number(id), `delete:"${enunc.slice(0, 80)}"`);
-
-    res.status(204).end();
+    return res.status(204).end();
   } catch (e) {
     console.error('DELETE /perguntas', e);
-    res.status(400).json({ error: 'Erro ao excluir pergunta' });
+    return res.status(400).json({ error: 'Erro ao excluir pergunta' });
   }
 });
 

@@ -1,4 +1,5 @@
-// frontend/script/perguntas.js
+// frontend/script/perguntas.js (versão completa e corrigida)
+
 (function bootstrapPerguntas() {
   const onPage = document.getElementById('pagePerguntas') !== null;
   if (!onPage) return;
@@ -473,6 +474,81 @@
       const editBtn = e.target.closest('#pagePerguntas .edit-pill');
       if (editBtn) hideFab();
     }, true);
+    
+    // ==============================================================================
+    // == NOVO CÓDIGO ADICIONADO PARA O FORMULÁRIO DE 'ADICIONAR PERGUNTA'
+    // ==============================================================================
+    document.addEventListener('submit', async e => {
+      // Certifique-se que o id do seu formulário no modal de adição é 'perguntaAddForm'
+      if (e.target && e.target.id === 'perguntaAddForm') {
+        e.preventDefault();
+        if (!e.target.reportValidity()) return;
+
+        // 1. Coleta os dados do formulário de adição
+        const arvoreUIId = Number(document.getElementById('addArvore').value);
+        const arvoreRef = arvoreById.get(arvoreUIId);
+
+        if (!arvoreRef) {
+          alert('Árvore selecionada é inválida!');
+          return;
+        }
+
+        const payload = {
+          trilha_nome: arvoreRef.trilha_nome,
+          arvore_codigo: arvoreRef.codigo,
+          enunciado: document.getElementById('addEnunciado').value.trim(),
+          texto: document.getElementById('addTextoInfo').value.trim(),
+          audio_url: document.getElementById('addAudioInfo').value.trim(),
+          audio_dica_url: document.getElementById('addAudioDica').value.trim(),
+          item_a: document.getElementById('addItemA').value.trim(),
+          item_b: document.getElementById('addItemB').value.trim(),
+          item_c: document.getElementById('addItemC').value.trim(),
+          item_d: document.getElementById('addItemD').value.trim(),
+          item_e: document.getElementById('addItemE').value.trim(),
+          resposta_correta: document.getElementById('addResposta').value,
+          dica: document.getElementById('addTextoDica').value.trim(),
+        };
+
+        // 2. Envia os dados para o backend (POST)
+        try {
+          const resp = await authFetch('/api/perguntas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!resp.ok) {
+            const errData = await resp.json();
+            throw new Error(errData.error || `POST falhou: ${resp.status}`);
+          }
+
+          const novaPergunta = await resp.json();
+
+          // 3. Atualiza a lista na tela (UI) com a nova pergunta
+          perguntas.push({
+            id: Number(novaPergunta.id),
+            arvoreId: arvoreUIId,
+            enunciado: novaPergunta.enunciado || '',
+            textoInfo: novaPergunta.texto || '',
+            audioInfo: novaPergunta.audio_url || '',
+            audioDica: novaPergunta.audio_dica_url || '',
+            itens: {
+              A: novaPergunta.item_a || '', B: novaPergunta.item_b || '', C: novaPergunta.item_c || '',
+              D: novaPergunta.item_d || '', E: novaPergunta.item_e || ''
+            },
+            correta: novaPergunta.resposta_correta || 'A',
+            textoDica: novaPergunta.dica || ''
+          });
+          
+          render(); // Re-renderiza a lista de perguntas na tela
+          closeAddModal(); // Fecha o modal de adição
+
+        } catch (err) {
+          console.error(err);
+          alert(`Erro ao criar pergunta: ${err.message}`);
+        }
+      }
+    });
 
     // bootstrap
     (async () => {

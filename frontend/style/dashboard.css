@@ -23,9 +23,7 @@
   color: var(--branco);
 }
 .kpi .muted{ 
-  font-size: 12px; 
-  opacity: .9; 
-  color: var(--branco);
+  display: none !important;
 }
 
 .grid-2{ 
@@ -39,26 +37,32 @@
   border-radius: 16px; 
   box-shadow: var(--shadow); 
 }
-.card-head{ 
-  padding: 16px 16px 0; 
-}
+
 .card-head h3{ 
   margin: 0; 
 }
-.card-foot{ 
-  padding: 8px 16px 14px; 
+.card-head{ 
+  padding: 12px 16px 0;  /* 16px 16px 0 -> 12px 16px 0 */
 }
 
+.card-foot{ 
+  padding: 8px 16px 10px; /* 8px 16px 14px -> 8px 16px 10px */
+}
+
+/* SUBSTITUIR O BLOCO .donut-wrap ATUAL */
 .donut-wrap{ 
   display: flex; 
   align-items: center; 
-  gap: 24px; 
-  padding: 8px 16px 20px; 
+  gap: 16px;             /* 24px -> 16px */
+  padding: 12px 16px;    /* 8px 16px 20px -> 12px 16px (menos “área branca”) */
 }
+
+/* SUBSTITUIR O BLOCO .donut ATUAL */
 .donut{ 
-  width: 160px; 
-  height: 160px; 
+  width: 140px;          /* 160px -> 140px */
+  height: 140px;         /* 160px -> 140px */
 }
+
 .donut-track{ 
   fill: none; 
   stroke: #E9EFE3; 
