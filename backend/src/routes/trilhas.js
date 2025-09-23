@@ -22,7 +22,6 @@ router.get('/', async (req, res) => {
       nome: r.nome,
       arvores: Number(r.arvores) || 0,
       arvores_ativas: Number(r.arvores_ativas) || 0,
-      perguntas: Number(r.perguntas) || 0
     })));
   } catch (e) {
     console.error('ERRO /api/trilhas:', e);

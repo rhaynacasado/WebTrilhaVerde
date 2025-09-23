@@ -1,20 +1,20 @@
 const { DataTypes } = require('sequelize');
 
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => {
   const Arvore = sequelize.define('Arvore', {
-    codigo: { type: DataTypes.INTEGER, allowNull: false },
-    trilha_nome: { type: DataTypes.STRING(255), allowNull: true },
-    nome: { type: DataTypes.STRING(255), allowNull: false },
-    especie: { type: DataTypes.STRING(255) },
-    foto_url: { type: DataTypes.STRING(255) },
-    quantidade_perguntas: { type: DataTypes.INTEGER, defaultValue: 0 },
-    pos_x: { type: DataTypes.DECIMAL(10,6) },
-    pos_y: { type: DataTypes.DECIMAL(10,6) },
-    ativa: { type: DataTypes.BOOLEAN, defaultValue: true }
+    trilha_nome:  { type: DataTypes.STRING, primaryKey: true },
+    codigo:       { type: DataTypes.INTEGER, primaryKey: true },
+    nome:         { type: DataTypes.STRING, allowNull: false },
+    especie:      { type: DataTypes.STRING },
+    foto_url:     { type: DataTypes.TEXT },
+    ativa:        { type: DataTypes.BOOLEAN, defaultValue: true },
+    pos_x:        { type: DataTypes.DECIMAL(10,6), allowNull: true },
+    pos_y:        { type: DataTypes.DECIMAL(10,6), allowNull: true },
   }, {
     tableName: 'arvore',
     timestamps: false
   });
+
 
   // PK composta (trilha_nome, codigo)
   Arvore.removeAttribute('id');

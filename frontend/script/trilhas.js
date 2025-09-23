@@ -49,7 +49,7 @@
         // estes campos vêm da rota que sugeri (/api/trilhas)
         const ativas = Number(r.arvores_ativas ?? 0);
         const perguntas = Number(r.perguntas ?? 0);
-        span.textContent = `${ativas} árvores ativas • ${perguntas} perguntas`;
+        span.textContent = `${ativas} árvores ativas`;
         el.appendChild(span);
 
         el.onclick = () => {
