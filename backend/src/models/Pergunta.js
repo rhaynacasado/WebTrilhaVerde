@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     audio_dica_url: { type: DataTypes.STRING },
   }, {
     tableName: 'pergunta', // Postgres baixa para minúsculas sem aspas
+    schema: 'public',
     timestamps: false,
   });
   return Pergunta;

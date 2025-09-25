@@ -2,17 +2,15 @@
 const sequelize = require('../db');
 const { DataTypes } = require('sequelize');
 
-// ATENÇÃO: o nome do arquivo é sensível a maiúsculas/minúsculas no Linux.
-// Ex.: se o arquivo chama "Pergunta.js", use './Pergunta' aqui.
-const Trilha    = require('./Trilha')(sequelize, DataTypes);
-const Arvore    = require('./Arvore')(sequelize, DataTypes);
-const Pergunta  = require('./Pergunta')(sequelize, DataTypes);
-const Administrador  = require('./Administrador')(sequelize, DataTypes);
+const Trilha             = require('./Trilha')(sequelize, DataTypes);
+const Arvore             = require('./Arvore')(sequelize, DataTypes);
+const Pergunta           = require('./Pergunta')(sequelize, DataTypes);
+const Administrador      = require('./Administrador')(sequelize, DataTypes);
 const AlteracaoArvore    = require('./AlteracaoArvore')(sequelize, DataTypes);
 const AlteracaoPergunta  = require('./AlteracaoPergunta')(sequelize, DataTypes);
+const Usuario            = require('./Usuario')(sequelize, DataTypes);
 
-/**
- * Associações
+/* ========= Associações =========
  * Trilha(nome PK) 1—N Arvore(trilha_nome FK)
  */
 Trilha.hasMany(Arvore, {
@@ -26,11 +24,8 @@ Arvore.belongsTo(Trilha, {
   as: 'trilha',
 });
 
-/**
- * (Opcional) Associações convenientes entre Arvore e Pergunta.
- * Como a FK da Pergunta é composta (trilha_nome + arvore_codigo),
- * o Sequelize não dá suporte “nativo” a uma única associação composta.
- * Criamos duas associações sem constraints apenas para facilitar includes.
+/* ========= Associações convenientes Arvore <-> Pergunta =========
+ * FK composta (trilha_nome + arvore_codigo) → duas refs sem constraint
  */
 Pergunta.belongsTo(Arvore, {
   foreignKey: 'trilha_nome',
@@ -57,4 +52,13 @@ Arvore.hasMany(Pergunta, {
   constraints: false,
 });
 
-module.exports = { sequelize, Trilha, Arvore, Pergunta, Administrador, AlteracaoArvore, AlteracaoPergunta};
+module.exports = {
+  sequelize,
+  Trilha,
+  Arvore,
+  Pergunta,
+  Administrador,
+  AlteracaoArvore,
+  AlteracaoPergunta,
+  Usuario,
+};

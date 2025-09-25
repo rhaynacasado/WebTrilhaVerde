@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     pos_y:        { type: DataTypes.DECIMAL(10,6), allowNull: true },
   }, {
     tableName: 'arvore',
+    schema: 'public',
     timestamps: false
   });
 

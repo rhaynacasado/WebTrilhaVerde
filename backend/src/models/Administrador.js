@@ -2,14 +2,15 @@ const bcrypt = require('bcryptjs');
 
 module.exports = (sequelize, DataTypes) => {
   const Administrador = sequelize.define('Administrador', {
-    email:    { type: DataTypes.STRING, primaryKey: true, allowNull: false, validate:{ isEmail:true } },
-    senha:    { type: DataTypes.STRING, allowNull: false },
-    nome:     { type: DataTypes.STRING, allowNull: false },
-    vinculo:  { type: DataTypes.STRING },
-    foto:     { type: DataTypes.BLOB('long'), allowNull: true }, // BYTEA
-    foto_mime:{ type: DataTypes.TEXT,        allowNull: true },
+    email:     { type: DataTypes.STRING, primaryKey: true, allowNull: false, validate:{ isEmail:true } },
+    senha:     { type: DataTypes.STRING, allowNull: false },
+    nome:      { type: DataTypes.STRING, allowNull: false },
+    vinculo:   { type: DataTypes.STRING },
+    foto:      { type: DataTypes.BLOB('long'), allowNull: true }, // BYTEA no PG
+    foto_mime: { type: DataTypes.TEXT,        allowNull: true },
   }, {
-    tableName: 'administrador',  // minúsculo p/ bater com sua tabela
+    tableName: 'administrador',   // nome EXATO da tabela
+    schema: 'public',             // <<<<<< adicione isto
     timestamps: false,
     hooks: {
       async beforeCreate(a) { if (a.senha) a.senha = await bcrypt.hash(a.senha, 10); },

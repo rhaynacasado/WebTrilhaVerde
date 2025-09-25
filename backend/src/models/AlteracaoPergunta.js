@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     data_alteracao:{ type: DataTypes.DATE,    allowNull: false, primaryKey: true, defaultValue: DataTypes.NOW },
   }, {
     tableName: 'alteracao_pergunta',
+    schema: 'public',
     timestamps: false,
   });
 

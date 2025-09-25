@@ -8,6 +8,7 @@ module.exports = (sequelize) => {
     }
   }, {
     tableName: 'trilha',
+    schema: 'public',
     timestamps: false
   });
 
