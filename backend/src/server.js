@@ -1,6 +1,7 @@
 // src/server.js
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors'); // <-- PASSO 1: IMPORTE O PACOTE
 const { sequelize } = require('./models'); // exportado do models/index.js
 
 const app = express();
@@ -12,7 +13,7 @@ const PORT = process.env.PORT || 3001;
 const allowedOrigins = (
   (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN.trim().length > 0)
     ? process.env.CORS_ORIGIN
-    : 'http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:5173,http://localhost:5173'
+    : 'http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:5173,http://localhost:5173,http://localhost:8080' // <-- ADICIONE AQUI
 ).split(',').map(s => s.trim());
 
 /* ========= CORS universal (antes de tudo) ========= */
@@ -30,6 +31,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(cors({ origin: true, credentials: true }));
+app.options('*', cors()); // responde preflight com 204
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 

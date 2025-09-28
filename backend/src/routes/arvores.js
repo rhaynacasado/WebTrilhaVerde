@@ -2,7 +2,8 @@
 const express = require('express');
 const router = express.Router();
 
-const { Arvore, Pergunta, sequelize } = require('../models');
+// [ALTERADO] Adicionamos o modelo 'Trilha' para a nova rota
+const { Arvore, Pergunta, Trilha, sequelize } = require('../models');
 const auth = require('../middlewares/auth');
 const { logArvore } = require('../utils/logHelpers');
 
@@ -14,8 +15,8 @@ function toBool(v) {
   return false;
 }
 function toNumOrNull(v) {
-  if (v === undefined) return undefined;               // não tocar
-  if (v === '' || v == null) return null;              // limpar
+  if (v === undefined) return undefined;
+  if (v === '' || v == null) return null;
   const n = Number(String(v).replace(',', '.'));
   return Number.isFinite(n) ? n : null;
 }
@@ -24,7 +25,7 @@ const sameNum = (a, b) =>
 
 // ---------------------------------------------
 // PUT /api/arvores/:trilha/:codigo  (editar)
-// Só salva/loga se algo mudou; log detalhado
+// ... (toda a sua lógica de PUT, POST, DELETE continua aqui, intacta)
 // ---------------------------------------------
 router.put('/:trilha/:codigo', auth, async (req, res) => {
   try {
@@ -41,16 +42,11 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
 
     const changed = [];
 
-    // strings
     if (nome    !== undefined && nome    !== arv.nome)     { arv.nome    = nome;    changed.push('nome'); }
     if (especie !== undefined && especie !== arv.especie)  { arv.especie = especie; changed.push('especie'); }
     if (foto_url!== undefined && foto_url!== arv.foto_url) { arv.foto_url= foto_url;changed.push('foto_url'); }
-
-    // numéricos
     if (pos_x !== undefined && !sameNum(arv.pos_x, pos_x)) { arv.pos_x = pos_x; changed.push('pos_x'); }
     if (pos_y !== undefined && !sameNum(arv.pos_y, pos_y)) { arv.pos_y = pos_y; changed.push('pos_y'); }
-
-    // ativa (se enviado junto deste endpoint)
     if (ativa !== undefined && !!arv.ativa !== ativa) { arv.ativa = ativa; changed.push('ativa'); }
 
     if (changed.length === 0) {
@@ -67,10 +63,6 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
   }
 });
 
-// ---------------------------------------------
-// PUT /api/arvores/:trilha/:codigo/toggle-ativa
-// Alterna status e loga ativou/desativou
-// ---------------------------------------------
 router.put('/:trilha/:codigo/toggle-ativa', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
@@ -90,10 +82,6 @@ router.put('/:trilha/:codigo/toggle-ativa', auth, async (req, res) => {
   }
 });
 
-// ---------------------------------------------
-// PUT /api/arvores/:trilha/:codigo/ativa  { ativa }
-// Define explicitamente; só loga se mudou
-// ---------------------------------------------
 router.put('/:trilha/:codigo/ativa', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
@@ -117,9 +105,6 @@ router.put('/:trilha/:codigo/ativa', auth, async (req, res) => {
   }
 });
 
-// ---------------------------------------------
-// POST /api/arvores (criar)
-// ---------------------------------------------
 router.post('/', auth, async (req, res) => {
   try {
     const body = { ...req.body };
@@ -147,9 +132,6 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// ---------------------------------------------
-// DELETE /api/arvores/:trilha/:codigo (excluir)
-// ---------------------------------------------
 router.delete('/:trilha/:codigo', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
@@ -172,7 +154,19 @@ router.delete('/:trilha/:codigo', auth, async (req, res) => {
 // ---------------------------------------------
 // GETs públicos
 // ---------------------------------------------
-// GET /api/arvores  (com contagem)
+
+// [NOVO] ROTA PARA O APLICATIVO CALCULAR O TOTAL DE ÁRVORES
+router.get('/total', async (req, res) => {
+  try {
+    const total = await Trilha.sum('quantidade_arvores');
+    return res.status(200).json({ total: total || 0 });
+  } catch (e) {
+    console.error('GET /arvores/total', e);
+    return res.status(500).json({ error: 'Erro ao calcular o total de árvores' });
+  }
+});
+
+// GET /api/arvores  (com contagem) - ROTA DO SEU SITE
 router.get('/', async (req, res) => {
   try {
     const { trilha, ativas } = req.query;

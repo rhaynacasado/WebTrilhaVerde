@@ -7,11 +7,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     nome: {
-      type: DataTypes.STRING(120),
+      type: DataTypes.STRING(255), // Ajustado para corresponder ao BD
       allowNull: false,
     },
     avatar_foto: {
-      type: DataTypes.TEXT,
+      // Para 'bytea' no Postgres, o ideal é usar BLOB
+      type: DataTypes.BLOB('long'), 
       allowNull: true,
     },
     idade: {
@@ -19,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
     },
     ano_escolar: {
-      type: DataTypes.STRING(30),
+      type: DataTypes.STRING(50), // Ajustado para corresponder ao BD
       allowNull: true,
     },
     num_arvores_visitadas: {
@@ -27,10 +28,17 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0,
     },
+    // [NOVO] Adicione este campo para o MIME type
+    foto_mime: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   }, {
     tableName: 'usuario',
     timestamps: false,
-    underscored: true,
+    // underscored: true, // O Sequelize converte camelCase para snake_case por padrão, 
+                         // então essa linha pode não ser necessária se os nomes dos campos baterem.
+                         // Mas pode manter se preferir ser explícito.
   });
   return Usuario;
 };

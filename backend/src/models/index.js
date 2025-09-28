@@ -9,6 +9,7 @@ const Administrador      = require('./Administrador')(sequelize, DataTypes);
 const AlteracaoArvore    = require('./AlteracaoArvore')(sequelize, DataTypes);
 const AlteracaoPergunta  = require('./AlteracaoPergunta')(sequelize, DataTypes);
 const Usuario            = require('./Usuario')(sequelize, DataTypes);
+const Trofeu            = require('./Trofeu')(sequelize, DataTypes);
 
 /* ========= Associações =========
  * Trilha(nome PK) 1—N Arvore(trilha_nome FK)
@@ -52,6 +53,33 @@ Arvore.hasMany(Pergunta, {
   constraints: false,
 });
 
+// Relação Troféu <-> Usuário
+Usuario.hasMany(Trofeu, {
+  foreignKey: 'usuario_nickname',
+  sourceKey: 'nickname',
+  as: 'trofeus'
+});
+Trofeu.belongsTo(Usuario, {
+  foreignKey: 'usuario_nickname',
+  targetKey: 'nickname',
+  as: 'usuario'
+});
+
+// Relação Troféu <-> Árvore
+// A chave estrangeira é composta, então definimos as duas partes
+Arvore.hasMany(Trofeu, {
+  foreignKey: 'arvore_codigo',
+  sourceKey: 'codigo',
+  as: 'trofeus',
+  constraints: false
+});
+Trofeu.belongsTo(Arvore, {
+  foreignKey: 'arvore_codigo',
+  targetKey: 'codigo',
+  as: 'Arvore', // O 'as' deve bater com o nome do modelo usado no include
+  constraints: false
+});
+
 module.exports = {
   sequelize,
   Trilha,
@@ -61,4 +89,5 @@ module.exports = {
   AlteracaoArvore,
   AlteracaoPergunta,
   Usuario,
+  Trofeu
 };
