@@ -6,11 +6,6 @@ const multer = require('multer');
 // Importe os modelos necessários
 const { Usuario, Trofeu, Arvore } = require('../models');
 
-// [IMPORTANTE] Supondo que você tenha um middleware de autenticação
-// Se o nome do arquivo ou da função for diferente, ajuste aqui.
-// Removi o middleware temporariamente para depuração, como fizemos antes.
-// const authMiddleware = require('../middlewares/auth'); 
-
 // Configuração do Multer para guardar o arquivo na memória
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -133,20 +128,13 @@ router.get('/:nickname/trofeus', async (req, res) => {
   }
 });
 
-// =================================================================
 // ROTA PARA CRIAR UM TROFÉU
-// =================================================================
 router.post('/:nickname/trofeus', async (req, res) => {
-  console.log('--- REQUISIÇÃO PARA SALVAR TROFÉU RECEBIDA ---');
   try {
     const { nickname } = req.params;
     const { trilha_nome, arvore_codigo } = req.body;
-
-    console.log('Nickname do parâmetro:', nickname);
-    console.log('Dados recebidos no corpo:', req.body);
     
     if (!trilha_nome || !arvore_codigo) {
-      console.log('Erro: dados incompletos.');
       return res.status(400).json({ error: 'trilha_nome e arvore_codigo são obrigatórios' });
     }
     
@@ -159,28 +147,41 @@ router.post('/:nickname/trofeus', async (req, res) => {
     });
 
     if (created) {
-      console.log('Troféu CRIADO com sucesso no banco!');
-      
-      // >>>>>>>> LINHA ADICIONADA AQUI <<<<<<<<<<
       await Usuario.increment('num_arvores_visitadas', { where: { nickname: nickname } });
-      console.log(`Contador de árvores para o usuário ${nickname} incrementado.`);
-
       return res.status(201).json(trofeu.toJSON());
     } else {
-      console.log('Troféu JÁ EXISTIA. Nenhum erro, apenas retornando o existente.');
       return res.status(200).json(trofeu.toJSON());
     }
 
   } catch (error) {
-    console.error('--- ERRO AO TENTAR SALVAR O TROFÉU ---:', error);
+    console.error('ERRO AO TENTAR SALVAR O TROFÉU:', error);
     return res.status(500).json({ message: 'Erro interno ao salvar troféu' });
   }
 });
 
+// [NOVO] ROTA PARA DELETAR TODOS OS TROFÉUS (REINICIAR JOGO)
+router.delete('/:nickname/trofeus', async (req, res) => {
+  try {
+    const { nickname } = req.params;
 
-/*
-router.put('/:nickname', async (req, res) => { ... });
-*/
+    // Apaga todos os registros da tabela 'trofeu' para este usuário
+    await Trofeu.destroy({
+      where: { usuario_nickname: nickname }
+    });
+
+    // Zera o contador de árvores visitadas do usuário
+    await Usuario.update({ num_arvores_visitadas: 0 }, {
+      where: { nickname: nickname }
+    });
+    
+    console.log(`Progresso do usuário ${nickname} reiniciado.`);
+    return res.status(204).send(); // 204 No Content indica sucesso
+
+  } catch (e) {
+    console.error('DELETE /usuarios/:nickname/trofeus', e);
+    return res.status(500).json({ error: 'Erro ao reiniciar progresso' });
+  }
+});
 
 
 module.exports = router;
