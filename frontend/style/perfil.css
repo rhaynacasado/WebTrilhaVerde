@@ -63,7 +63,7 @@
   gap: 12px; 
   margin-top: 12px; 
 }
-.profile-actions .primary, .edit-photo{
+.profile-actions .primary, .edit-photo, #btnSaveAvatar, #btnCancelAvatar{
   all: unset; 
   background: var(--verde-floresta); 
   color: var(--branco);
@@ -73,6 +73,16 @@
   cursor: pointer; 
   transition: .3s;
 }
-.profile-actions .primary:hover, .edit-photo:hover{ 
+.profile-actions .primary:hover, .edit-photo:hover, #btnSaveAvatar:hover{ 
   background: #222; 
+}
+
+#btnCancelAvatar{
+  background: #fff1f2; 
+  color: #b91c1c; 
+}
+
+#btnCancelAvatar:hover{
+  background: #fecaca; 
+  color: #7f1d1d; 
 }

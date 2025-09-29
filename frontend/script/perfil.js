@@ -141,8 +141,8 @@
         clamp(); draw();
       });
 
-      const btnSave = document.createElement('button'); btnSave.textContent='Salvar';
-      const btnCancel = document.createElement('button'); btnCancel.textContent='Cancelar';
+      const btnSave = document.createElement('button'); btnSave.textContent='Salvar'; btnSave.id='btnSaveAvatar';
+      const btnCancel = document.createElement('button'); btnCancel.textContent='Cancelar'; btnCancel.id='btnCancelAvatar';
       btnSave.style.marginRight='10px';
       container.appendChild(btnSave); container.appendChild(btnCancel);
 
