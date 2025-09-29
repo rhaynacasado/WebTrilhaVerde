@@ -15,6 +15,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const atualInput        = document.getElementById("passwordAtual");  // modo logado
   const novaInput         = document.getElementById("passwordNova") || document.getElementById("passwordSenha");
   const confirmaInput     = document.getElementById("passwordConfirma");
+  
+  const userName = document.querySelector(".passwordNome");
+  const userImage = document.getElementById("profileImage");
 
   const showErr = (msg) => {
     if (errorBox) {
@@ -24,7 +27,12 @@ document.addEventListener("DOMContentLoaded", () => {
       alert(msg);
     }
   };
-  const clearErr = () => { if (errorBox) { errorBox.textContent = ""; errorBox.style.display = "none"; } };
+  const clearErr = () => { 
+    if (errorBox) { 
+      errorBox.textContent = ""; 
+      errorBox.style.display = "none"; 
+    } 
+  };
 
   async function authFetch(url, options = {}) {
     const token = localStorage.getItem("token");
@@ -43,6 +51,39 @@ document.addEventListener("DOMContentLoaded", () => {
     return resp;
   }
 
+// --- Função para decodificar token JWT sem verificar assinatura ---
+  function decodeJWT(token) {
+    try {
+      const payload = token.split('.')[1];
+      const decoded = atob(payload);
+      return JSON.parse(decoded);
+    } catch {
+      return null;
+    }
+  }
+
+  // --- Preencher nome e foto do usuário ---
+  async function preencherUsuario(token) {
+    try {
+      if (!token) return;
+
+      // Supondo que o backend tenha rota para pegar usuário pelo resetToken
+      const resp = await fetch(`${API_BASE}/api/auth/user-from-reset?token=${token}`);
+      // if (!resp.ok) throw new Error("Não foi possível obter informações do usuário.");
+
+      const user = await resp.json();
+      if (userName) userName.textContent = user.nome || "Usuário";
+      if (userImage && user.fotoUrl) userImage.src = user.fotoUrl || "../img/avatar.png";
+    } catch (err) {
+      alert(err.message || "Erro ao carregar dados do usuário.");
+      console.warn("Erro ao preencher usuário:", err.message);
+      if (userName) userName.textContent = "Usuário";
+      if (userImage) userImage.src = "../img/avatar.png";
+    }
+  }
+
+  preencherUsuario(resetToken);
+
   if (!form) return;
 
   form.addEventListener("submit", async (e) => {
@@ -56,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const conf = (confirmaInput?.value || "").trim();
 
         if (!nova || nova.length < 6) return showErr("A nova senha deve ter pelo menos 6 caracteres.");
-        if (conf && conf !== nova)    return showErr("Confirmação diferente da nova senha.");
+        if (conf && conf !== nova)    return showErr("As senhas devem ser iguais.");
 
         const resp = await fetch(`${API_BASE}/api/auth/reset-password`, {
           method: "POST",
@@ -79,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!atual)                    return showErr("Informe sua senha atual.");
         if (!nova || nova.length < 6)  return showErr("A nova senha deve ter pelo menos 6 caracteres.");
-        if (conf && conf !== nova)     return showErr("Confirmação diferente da nova senha.");
+        if (conf && conf !== nova)     return showErr("As senhas devem ser iguais.");
 
         const resp = await authFetch(`${API_BASE}/api/auth/change-password`, {
           method: "POST",
@@ -107,17 +148,22 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ email }),
         });
         const data = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(data.error || "Não foi possível iniciar a redefinição.");
+        // DEBUG ONLY:
+        // if (!resp.ok) throw new Error(data.error || "Não foi possível iniciar a redefinição.");
 
-        // Em dev, o backend devolve o link. Em produção, será enviado por e-mail.
-        if (data.resetUrl) {
-          alert(`Link de redefinição (dev): ${data.resetUrl}`);
+        // DEBUG ONLY:
+        // Backend em dev pode devolver um link direto (resetUrl).
+        // if (data.resetUrl) {
+          // alert(`Link de redefinição (dev): ${data.resetUrl}`);
           // window.location.href = data.resetUrl; // se quiser ir direto
-        } else {
-          alert("Se o e-mail existir, enviaremos um link de redefinição.");
-        }
+        // }
+
+        // DEBUG ONLY:
+        alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.");
+        window.location.href = "../login.html";
         return;
       }
+
 
       // fallback (form simples com um único campo de senha)
       if (novaInput && !atualInput && !emailInput) {

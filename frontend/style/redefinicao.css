@@ -1,12 +1,13 @@
 /* Formulário de redefinição de senha */
-.formPassword {
+.formPassword, .formEsqueci {
   display: flex;
   flex-direction: column;
+  flex: 1;
   height: 100%;
 }
 
 /* Faz o input ocupar 100% do espaço disponível */
-.formPassword input[type="password"] {
+.formPassword input, .formEsqueci input {
   width: 100%;
 }
 
@@ -25,19 +26,18 @@
   flex: 1;
 }
 
-.formPassword {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
 .form-content {
   flex: 1;
-  overflow-y: auto;
+  /* overflow-y: auto; */
   padding-top: 20px;
   padding-right: 10px;
   padding-bottom: 30px;
   box-sizing: border-box;
+}
+
+.formPassword .form-content{
+    overflow-y: auto; /* scroll vertical */
+    max-height: 400px;
 }
 
 /* Nome fixo acima do input */
@@ -49,8 +49,8 @@
 /* Mantém foto de perfil */
 .profile-pic {
   position: relative;
-  width: 90px;
-  height: 90px;
+  width: 70px;
+  height: 70px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -61,23 +61,4 @@
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--marrom-claro);
-}
-
-.edit-icon {
-  width: 40%;
-  height: auto;
-  object-fit: contain;
-  border-radius: 50%;
-  background-color: var(--cinza);
-  border: 2px solid var(--branco);
-  padding: 5px;
-  position: relative;
-  top: -35px;
-  right: -60px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-.edit-icon:hover {
-  background: #388E3C;
 }

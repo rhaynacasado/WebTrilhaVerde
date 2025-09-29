@@ -157,3 +157,126 @@ router.post('/me/avatar', auth, upload.single('avatar'), async (req, res) => {
 });
 
 module.exports = router;
+
+
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
+
+// memória só de exemplo (melhor usar tabela ResetTokens no DB)
+const resetTokens = new Map();
+
+/** ---------- ESQUECI MINHA SENHA ---------- */
+router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
+  if (bad(req, res)) return;
+  const email = normEmail(req.body.email);
+
+  try {
+    const admin = await Administrador.findByPk(email);
+    if (!admin) {
+      // sempre responde igual para não revelar cadastro
+      return res.json({ message: "Se o e-mail estiver cadastrado, enviaremos instruções." });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = Date.now() + 15 * 60 * 1000; // 15 min
+    resetTokens.set(token, { email, expires });
+
+    const resetUrl = `http://127.0.0.1:5500/frontend/pages/redefinicao.html?token=${token}`; // TODO: ajustar URL conforme deploy
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"Trilha Verde" <no-reply@trilhaverde.com>',
+      to: email,
+      subject: "Trilha Verde: Redefinição de senha",
+      html: `<p>Olá, recebemos uma solicitação para redefinir sua senha para Trilha Verde.</p>
+             <p>Se você não fez essa solicitação, pode ignorar este e-mail com segurança.</p>
+             <hr>
+             <p>Clique no link para redefinir sua senha:</p>
+             <a href="${resetUrl}">${resetUrl}</a>
+             <p>Este link é válido por 15 minutos.</p>
+             <p>Atenciosamente,<br>Equipe Trilha Verde</p>
+            <img src="http://127.0.0.1:5500/frontend/img/logo.png" alt="Logo Trilha Verde" style="max-width:120px; margin-top:16px;">`, // TODO: ajustar URL conforme deploy
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      return res.json({ message: "Link enviado (dev)", resetUrl });
+    }
+
+    res.json({ message: "Se o e-mail estiver cadastrado, enviaremos instruções." });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+/** ---------- RESETAR SENHA ---------- */
+router.post(
+  "/reset-password",
+  [body("token").isString(), body("novaSenha").isString().isLength({ min: 6 })],
+  async (req, res) => {
+    if (bad(req, res)) return;
+    const { token, novaSenha } = req.body;
+
+    const entry = resetTokens.get(token);
+    if (!entry || entry.expires < Date.now()) {
+      return res.status(400).json({ error: "Token inválido ou expirado" });
+    }
+
+    try {
+      const admin = await Administrador.findByPk(entry.email);
+      if (!admin) return res.status(404).json({ error: "Administrador não encontrado" });
+
+      admin.senha = novaSenha; // hook do modelo faz o hash
+      await admin.save();
+
+      resetTokens.delete(token); // invalida token usado
+
+      res.json({ ok: true, message: "Senha redefinida com sucesso" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: "Erro interno" });
+    }
+  }
+);
+
+/** ---------- OBTER DADOS DO USUÁRIO PELO RESET TOKEN ---------- */
+router.get("/user-from-reset", async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ error: "Token não fornecido" });
+
+  const entry = resetTokens.get(token);
+  if (!entry || entry.expires < Date.now()) {
+    return res.status(400).json({ error: "Token inválido ou expirado" });
+  }
+
+  try {
+    const admin = await Administrador.findByPk(entry.email, {
+      attributes: ["nome", "foto", "foto_mime"]
+    });
+
+    if (!admin) return res.status(404).json({ error: "Administrador não encontrado" });
+
+    // Converte BLOB da foto para base64 para enviar direto (opcional)
+    let fotoUrl = null;
+    if (admin.foto) {
+      const base64 = admin.foto.toString("base64");
+      fotoUrl = `data:${admin.foto_mime || "image/jpeg"};base64,${base64}`;
+    }
+
+    res.json({
+      nome: admin.nome,
+      fotoUrl: fotoUrl || "/img/avatar.png",
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
