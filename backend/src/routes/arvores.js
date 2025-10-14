@@ -35,7 +35,7 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     const arv = await Arvore.findOne({ where: { trilha_nome: trilha, codigo: cod } });
     if (!arv) return res.status(404).json({ error: 'Árvore não encontrada' });
 
-    const { nome, especie, foto_url } = req.body;
+    const { nome, especie, foto_url, ordem } = req.body;
     const pos_x = toNumOrNull(req.body.pos_x);
     const pos_y = toNumOrNull(req.body.pos_y);
     const ativa = req.body.ativa === undefined ? undefined : !!req.body.ativa;
@@ -48,7 +48,8 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     if (pos_x !== undefined && !sameNum(arv.pos_x, pos_x)) { arv.pos_x = pos_x; changed.push('pos_x'); }
     if (pos_y !== undefined && !sameNum(arv.pos_y, pos_y)) { arv.pos_y = pos_y; changed.push('pos_y'); }
     if (ativa !== undefined && !!arv.ativa !== ativa) { arv.ativa = ativa; changed.push('ativa'); }
-
+    if (ordem !== undefined && !sameNum(arv.ordem, ordem)) { arv.ordem = ordem; changed.push('ordem'); }
+    
     if (changed.length === 0) {
       return res.json({ unchanged: true, ...arv.toJSON() });
     }

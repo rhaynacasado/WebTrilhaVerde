@@ -10,6 +10,8 @@ module.exports = (sequelize, DataTypes) => {
     ativa:        { type: DataTypes.BOOLEAN, defaultValue: true },
     pos_x:        { type: DataTypes.DECIMAL(10,6), allowNull: true },
     pos_y:        { type: DataTypes.DECIMAL(10,6), allowNull: true },
+    ordem:        { type: DataTypes.INTEGER, allowNull: true },
+    
   }, {
     tableName: 'arvore',
     schema: 'public',
