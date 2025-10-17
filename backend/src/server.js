@@ -1,39 +1,21 @@
 // src/server.js
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors'); // <-- PASSO 1: IMPORTE O PACOTE
-const { sequelize } = require('./models'); // exportado do models/index.js
+const cors = require('cors');
+const { sequelize } = require('./models');
 
 const app = express();
 
 /* ========= Config ========= */
+// A sua lógica de porta já está perfeita para a hospedagem!
 const PORT = process.env.PORT || 3001;
 
-// Origens permitidas (env ou defaults)
-const allowedOrigins = (
-  (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN.trim().length > 0)
-    ? process.env.CORS_ORIGIN
-    : 'http://127.0.0.1:5500,http://localhost:5500,http://127.0.0.1:5173,http://localhost:5173,http://localhost:8080' // <-- ADICIONE AQUI
-).split(',').map(s => s.trim());
+/* ========= Middlewares ========= */
 
-/* ========= CORS universal (antes de tudo) ========= */
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.setHeader('Vary', 'Origin');
+// [ALTERADO] Simplifica o CORS para permitir acesso da sua API pública (mobile e web)
+app.use(cors());
 
-  if (req.method === 'OPTIONS') return res.sendStatus(204); // preflight
-  next();
-});
-
-app.use(cors({ origin: true, credentials: true }));
-app.options('*', cors()); // responde preflight com 204
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb' })); // Para o upload de imagens
 app.use(express.urlencoded({ extended: true }));
 
 /* ========= Health ========= */
@@ -58,10 +40,12 @@ app.use((err, _req, res, _next) => {
 /* ========= Start ========= */
 const start = async () => {
   try {
-    await sequelize.authenticate(); // conexão com a Neon
-    await sequelize.sync();         // cuidado com force/alter em prod
-    app.listen(PORT, () =>
-      console.log(`API rodando em http://localhost:${PORT}`)
+    await sequelize.authenticate();
+    await sequelize.sync();
+    
+    // [ALTERADO] Adiciona '0.0.0.0' para aceitar conexões externas na hospedagem
+    app.listen(PORT, '0.0.0.0', () =>
+      console.log(`API rodando na porta ${PORT}`)
     );
   } catch (e) {
     console.error('Falha ao iniciar:', e);
