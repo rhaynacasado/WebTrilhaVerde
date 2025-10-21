@@ -1,6 +1,6 @@
 // frontend/script/trilhas.js
 (function () {
-  const API_BASE = 'http://localhost:3001'; // ajuste se necessário
+  const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
 
   function byId(id) { return document.getElementById(id); }
 

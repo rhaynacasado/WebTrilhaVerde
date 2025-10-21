@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = window.__API_BASE__ || "http://localhost:3001";
+  const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
 
   const qs = new URLSearchParams(location.search);
   const resetToken = qs.get("token");

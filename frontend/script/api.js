@@ -1,6 +1,5 @@
 // frontend/script/api.js
-const API_BASE = 'http://localhost:3001'; // ajuste se mudar porta/host
-
+const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
 async function apiGet(path) {
   const r = await fetch(`${API_BASE}${path}`, { credentials: 'omit' });
   if (!r.ok) throw new Error(`GET ${path} ${r.status}`);

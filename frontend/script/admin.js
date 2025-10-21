@@ -1,7 +1,7 @@
 // frontend/script/admin.js
 
 // Base da API (pode sobrescrever no HTML: window.__API_BASE__ = "https://api...";)
-const API_BASE = window.__API_BASE__ || "http://localhost:3001";
+const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
 const DEFAULT_AVATAR = "../img/avatar.png";
 
 /* STORAGE */

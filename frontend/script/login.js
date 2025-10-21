@@ -19,7 +19,7 @@ window.initLogin = function initLogin() {
   }
 
   // Base da API — pode ser definida no HTML: window.__API_BASE__ = "http://127.0.0.1:3001";
-  const API_BASE = window.__API_BASE__ || "http://127.0.0.1:3001";
+  const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();

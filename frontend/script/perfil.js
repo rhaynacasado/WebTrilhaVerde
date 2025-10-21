@@ -1,6 +1,6 @@
 // frontend/script/perfil.js
 (function initPerfil() {
-  const API_BASE = window.__API_BASE__ || "http://127.0.0.1:3001";
+  const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
 
   function setSelectValue(selectEl, value) {
     if (!selectEl) return;
