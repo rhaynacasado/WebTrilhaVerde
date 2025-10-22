@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!leftSection) return runAllInits();
 
   // Use caminho ABSOLUTO para funcionar em qualquer página
-  fetch("/frontend/partials/acesso.html", { cache: "no-store" })
+  fetch("/partials/acesso.html", { cache: "no-store" })
     .then((resp) => {
       if (!resp.ok) throw new Error("Falha ao carregar acesso.html");
       return resp.text();
