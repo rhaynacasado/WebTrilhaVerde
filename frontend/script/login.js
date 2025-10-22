@@ -65,7 +65,7 @@ window.initLogin = function initLogin() {
       await fetchAndCacheAvatarAsDataURL(API_BASE, data.token);
 
       // Redireciona para a área interna
-      window.location.href = "/frontend/pages/dashboard.html";
+      window.location.href = "/pages/dashboard.html";
     } catch (e) {
       console.error(e);
       showError(e.message || "Falha no login.");
@@ -75,7 +75,7 @@ window.initLogin = function initLogin() {
   if (forgotPasswordLink) {
     forgotPasswordLink.addEventListener("click", (event) => {
       event.preventDefault();
-      window.location.href = "/frontend/pages/redefinicao.html";
+      window.location.href = "/pages/redefinicao.html";
     });
   }
 

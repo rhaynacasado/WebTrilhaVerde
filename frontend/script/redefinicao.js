@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (resp.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("admin");
-      window.location.href = "../login.html";
+      window.location.href = "../index.html";
       throw new Error("Sessão expirada");
     }
     return resp;
@@ -108,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!resp.ok) throw new Error(data.error || "Não foi possível redefinir a senha.");
 
         alert("Senha redefinida com sucesso! Faça login novamente.");
-        window.location.href = "../login.html";
+        window.location.href = "../index.html";
         return;
       }
 
@@ -133,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // por segurança: encerra sessão
         localStorage.removeItem("token");
         localStorage.removeItem("admin");
-        window.location.href = "../login.html";
+        window.location.href = "../index.html";
         return;
       }
 
@@ -160,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // DEBUG ONLY:
         alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.");
-        window.location.href = "../login.html";
+        window.location.href = "../index.html";
         return;
       }
 

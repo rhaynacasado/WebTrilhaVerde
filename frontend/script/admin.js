@@ -24,7 +24,7 @@ async function ensureAuth() {
   const token = localStorage.getItem("token");
   if (!token) {
     // sem token -> volta pro login
-    window.location.href = "/frontend/login.html";
+    window.location.href = "/index.html";
     return;
   }
   // tenta validar/atualizar dados do usuário
@@ -45,7 +45,7 @@ async function ensureAuth() {
     // token inválido/expirado
     localStorage.removeItem("token");
     localStorage.removeItem("admin");
-    window.location.href = "/frontend/login.html";
+    window.location.href = "/index.html";
   }
 }
 
@@ -61,7 +61,7 @@ async function authFetch(url, options = {}) {
     // sessão caiu -> limpa e volta pro login
     localStorage.removeItem("token");
     localStorage.removeItem("admin");
-    window.location.href = "/frontend/login.html";
+    window.location.href = "/index.html";
     throw new Error("Sessão expirada");
   }
   return resp;
@@ -114,7 +114,7 @@ function loadSideBar() {
       e.preventDefault();
       localStorage.removeItem("token");
       localStorage.removeItem("admin");
-      window.location.href = "/frontend/login.html";
+      window.location.href = "/index.html";
     });
   }
 }
