@@ -49,6 +49,7 @@
   async function tryLoad(url) {
     try {
       const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) return false;
       const text = await res.text();
       const doc  = new DOMParser().parseFromString(text, 'text/html');
       const toAppend = Array.from(doc.body.children);
