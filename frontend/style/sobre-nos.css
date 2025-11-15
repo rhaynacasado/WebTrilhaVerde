@@ -3,7 +3,7 @@
 body {
   margin: 0;
   padding: 0 20px 40px;
-  background: var(--bege);
+  background: radial-gradient(circle at top, rgba(167, 201, 87, 0.25), transparent 50%) var(--bege);
   font-family: 'Poppins', sans-serif;
   color: var(--preto);
 }
@@ -12,13 +12,22 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 0;
+  padding: 24px 30px;
+  background: linear-gradient(120deg, var(--verde-floresta), var(--marrom));
+  border-radius: 18px;
+  color: var(--branco);
+  box-shadow: 0 15px 35px rgba(79, 111, 82, 0.3);
 }
 
 .top-bar h1 {
   margin: 0;
   font-size: 32px;
-  color: var(--marrom-claro);
+  color: var(--branco);
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px 20px;
+  border-radius: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .btn-link {
@@ -165,7 +174,11 @@ body {
 
   .top-bar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 16px;
+  }
+
+  .btn-link {
+    text-align: center;
   }
 }
