@@ -5,6 +5,10 @@
   height: 100%;
 }
 
+.formLogin .toggleForm {
+  margin-bottom: 10px;
+}
+
 /* Deixa o form-box visível diretamente */
 .form-box {
   display: flex;
