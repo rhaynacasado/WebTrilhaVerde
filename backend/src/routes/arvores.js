@@ -64,19 +64,50 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
   }
 });
 
+async function loadArvoreOr404(trilha, codigo, res) {
+  const found = await Arvore.findOne({ where: { trilha_nome: trilha, codigo } });
+  if (!found) {
+    res.status(404).json({ error: 'Árvore não encontrada' });
+    return null;
+  }
+  return found;
+}
+
+async function persistAtivaChange(req, res, trilha, codigo, novaFlag, logPrefix) {
+  const arvore = await loadArvoreOr404(trilha, codigo, res);
+  if (!arvore) return null;
+
+  if (novaFlag !== undefined) {
+    const target = !!novaFlag;
+    if (!!arvore.ativa === target) {
+      return res.json({
+        unchanged: true,
+        trilha_nome: arvore.trilha_nome,
+        codigo: arvore.codigo,
+        ativa: arvore.ativa,
+      });
+    }
+    arvore.ativa = target;
+  } else {
+    arvore.ativa = !arvore.ativa;
+  }
+
+  await arvore.save();
+  const logSufix = arvore.ativa ? 'ativou' : 'desativou';
+  await logArvore(req, trilha, codigo, `${logPrefix}:${logSufix}`);
+
+  return res.json({
+    trilha_nome: arvore.trilha_nome,
+    codigo: arvore.codigo,
+    ativa: arvore.ativa,
+  });
+}
+
 router.put('/:trilha/:codigo/toggle-ativa', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
     const cod = Number(codigo);
-
-    const a = await Arvore.findOne({ where: { trilha_nome: trilha, codigo: cod } });
-    if (!a) return res.status(404).json({ error: 'Árvore não encontrada' });
-
-    a.ativa = !a.ativa;
-    await a.save();
-
-    await logArvore(req, trilha, cod, `toggle:${a.ativa ? 'ativou' : 'desativou'}`);
-    return res.json({ ativa: a.ativa });
+    return await persistAtivaChange(req, res, trilha, cod, undefined, 'toggle');
   } catch (e) {
     console.error('PUT /arvores/:trilha/:codigo/toggle-ativa', e);
     return res.status(400).json({ error: 'Erro ao alterar status' });
@@ -87,19 +118,15 @@ router.put('/:trilha/:codigo/ativa', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
     const cod = Number(codigo);
-    const a = await Arvore.findOne({ where: { trilha_nome: trilha, codigo: cod } });
-    if (!a) return res.status(404).json({ error: 'Árvore não encontrada' });
-
     const newAtiva = toBool(req.body.ativa);
-    if (!!a.ativa === newAtiva) {
-      return res.json({ unchanged: true, trilha_nome: a.trilha_nome, codigo: a.codigo, ativa: a.ativa });
-    }
-
-    a.ativa = newAtiva;
-    await a.save();
-    await logArvore(req, trilha, cod, `set:${newAtiva ? 'ativou' : 'desativou'}`);
-
-    return res.json({ trilha_nome: a.trilha_nome, codigo: a.codigo, ativa: a.ativa });
+    return await persistAtivaChange(
+      req,
+      res,
+      trilha,
+      cod,
+      newAtiva,
+      'set'
+    );
   } catch (e) {
     console.error('PUT /arvores/:trilha/:codigo/ativa', e);
     return res.status(400).json({ error: 'Erro ao alterar status' });
