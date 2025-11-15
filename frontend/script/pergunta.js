@@ -21,28 +21,30 @@
   const needsEdit = !document.getElementById('perguntaModal');
   const needsAdd  = !document.getElementById('perguntaAddModal');
   const tasks = [];
-  if (needsEdit) {
-    tasks.push(
-      fetch('../partials/modal-pergunta.html')
-        .then(r => r.text())
-        .then(txt => {
-          const doc = new DOMParser().parseFromString(txt, 'text/html');
-          Array.from(doc.body.children).forEach(n => host.appendChild(n));
-        })
-        .catch(() => {})
-    );
+  const partialPaths = (file) => ([
+    `../partials/${file}`,
+    `./partials/${file}`,
+    `/partials/${file}`,
+    `../pages/partials/${file}`
+  ]);
+  async function loadPartial(file) {
+    for (const url of partialPaths(file)) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) continue;
+        const txt = await res.text();
+        const doc = new DOMParser().parseFromString(txt, 'text/html');
+        const children = Array.from(doc.body.children);
+        if (!children.length) continue;
+        children.forEach(n => host.appendChild(n));
+        return true;
+      } catch { /* tenta próximo caminho */ }
+    }
+    return false;
   }
-  if (needsAdd) {
-    tasks.push(
-      fetch('../partials/modal-pergunta-add.html')
-        .then(r => r.text())
-        .then(txt => {
-          const doc = new DOMParser().parseFromString(txt, 'text/html');
-          Array.from(doc.body.children).forEach(n => host.appendChild(n));
-        })
-        .catch(() => {})
-    );
-  }
+
+  if (needsEdit) tasks.push(loadPartial('modal-pergunta.html').catch(() => {}));
+  if (needsAdd)  tasks.push(loadPartial('modal-pergunta-add.html').catch(() => {}));
   Promise.all(tasks).then(initPerguntas).catch(initPerguntas);
 
   // ====== estado ======
