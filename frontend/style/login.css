@@ -12,14 +12,19 @@
   height: 100%;
 }
 
-.secondary-btn {
-  background: transparent;
-  color: var(--verde-floresta);
-  border: 1px solid var(--verde-floresta);
+.about-link {
+  display: flex;
+  justify-content: flex-end;
   margin-top: 10px;
 }
 
-.secondary-btn:hover {
-  background: var(--verde-folha);
-  color: var(--preto);
+.about-link a {
+  font-size: 12px;
+  color: var(--marrom-claro);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.about-link a:hover {
+  text-decoration: underline;
 }
