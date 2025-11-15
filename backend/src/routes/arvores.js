@@ -1,6 +1,7 @@
 // backend/src/routes/arvores.js
 const express = require('express');
 const router = express.Router();
+const { Op } = require('sequelize');
 
 // [ALTERADO] Adicionamos o modelo 'Trilha' para a nova rota
 const { Arvore, Pergunta, Trilha, sequelize } = require('../models');
@@ -73,24 +74,57 @@ async function loadArvoreOr404(trilha, codigo, res) {
   return found;
 }
 
+async function isExtremityTree(arvore) {
+  if (arvore.ordem == null) return false;
+
+  const stats = await Arvore.findAll({
+    attributes: [
+      [sequelize.fn('MIN', sequelize.col('ordem')), 'min_ordem'],
+      [sequelize.fn('MAX', sequelize.col('ordem')), 'max_ordem'],
+    ],
+    where: {
+      trilha_nome: arvore.trilha_nome,
+      ordem: { [Op.ne]: null },
+    },
+    raw: true,
+    limit: 1,
+  });
+
+  const meta = stats[0] || {};
+  const min = meta.min_ordem == null ? null : Number(meta.min_ordem);
+  const max = meta.max_ordem == null ? null : Number(meta.max_ordem);
+  if (min == null && max == null) return false;
+
+  const ordemAtual = Number(arvore.ordem);
+  return (min != null && ordemAtual === min) || (max != null && ordemAtual === max);
+}
+
 async function persistAtivaChange(req, res, trilha, codigo, novaFlag, logPrefix) {
   const arvore = await loadArvoreOr404(trilha, codigo, res);
   if (!arvore) return null;
 
-  if (novaFlag !== undefined) {
-    const target = !!novaFlag;
-    if (!!arvore.ativa === target) {
-      return res.json({
-        unchanged: true,
-        trilha_nome: arvore.trilha_nome,
-        codigo: arvore.codigo,
-        ativa: arvore.ativa,
+  const atual  = !!arvore.ativa;
+  const target = novaFlag !== undefined ? !!novaFlag : !atual;
+
+  if (atual === target) {
+    return res.json({
+      unchanged: true,
+      trilha_nome: arvore.trilha_nome,
+      codigo: arvore.codigo,
+      ativa: arvore.ativa,
+    });
+  }
+
+  if (atual && !target) {
+    const isExtremity = await isExtremityTree(arvore);
+    if (isExtremity) {
+      return res.status(400).json({
+        error: 'Não é permitido desativar a primeira ou a última árvore da trilha.',
       });
     }
-    arvore.ativa = target;
-  } else {
-    arvore.ativa = !arvore.ativa;
   }
+
+  arvore.ativa = target;
 
   await arvore.save();
   const logSufix = arvore.ativa ? 'ativou' : 'desativou';

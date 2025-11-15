@@ -203,20 +203,42 @@
       const idx = arvores.findIndex(x => x.trilha_nome === trilha && Number(x.codigo) === codigo);
       if (idx === -1) return;
 
-      const novaAtiva = !arvores[idx].ativa;
+      const alvo = arvores[idx];
+      const novaAtiva = !alvo.ativa;
+
+      if (alvo.ativa && !novaAtiva) {
+        const comOrdem = arvores.filter(x => x.trilha_nome === trilha && x.ordem != null);
+        if (comOrdem.length) {
+          const ordens = comOrdem.map(x => Number(x.ordem)).filter(n => Number.isFinite(n));
+          if (ordens.length) {
+            const min = Math.min(...ordens);
+            const max = Math.max(...ordens);
+            const atual = Number(alvo.ordem);
+            if (Number.isFinite(atual) && (atual === min || atual === max)) {
+              alert('Não é possível desativar a primeira ou a última árvore da trilha.');
+              return;
+            }
+          }
+        }
+      }
+
       try {
         const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/ativa`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ativa: novaAtiva })
         });
-        if (!resp.ok) throw new Error(`Falha ao salvar: ${resp.status}`);
+        if (!resp.ok) {
+          const payload = await resp.json().catch(() => ({}));
+          const msg = payload && payload.error ? payload.error : `Falha ao salvar: ${resp.status}`;
+          throw new Error(msg);
+        }
         const data = await resp.json();
         arvores[idx].ativa = !!data.ativa;
         render(); closeModal();
       } catch (err) {
         console.error(err);
-        alert('Erro ao alterar status no servidor.');
+        alert(err.message || 'Erro ao alterar status no servidor.');
       }
     }
   });
@@ -277,6 +299,7 @@
         // novos campos
         pos_x: a.pos_x == null ? null : Number(a.pos_x),
         pos_y: a.pos_y == null ? null : Number(a.pos_y),
+        ordem: a.ordem == null ? null : Number(a.ordem),
       }));
       render();
     } catch (err) {
