@@ -1,0 +1,98 @@
+@import url('variables.css');
+
+body {
+  margin: 0;
+  padding: 0 20px 40px;
+  background: var(--bege);
+  font-family: 'Poppins', sans-serif;
+  color: var(--preto);
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+}
+
+.top-bar h1 {
+  margin: 0;
+  font-size: 32px;
+  color: var(--marrom-claro);
+}
+
+.btn-link {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--verde-floresta);
+  color: var(--verde-floresta);
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.btn-link:hover {
+  background: var(--verde-floresta);
+  color: var(--branco);
+}
+
+.content {
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--branco);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  line-height: 1.6;
+}
+
+.intro p {
+  margin-bottom: 16px;
+}
+
+.purpose h2,
+.collaborators h2 {
+  margin-top: 32px;
+  margin-bottom: 12px;
+  color: var(--verde-floresta);
+}
+
+.purpose ul {
+  padding-left: 18px;
+}
+
+.purpose li {
+  margin-bottom: 8px;
+}
+
+.collaborator-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.collaborator-card {
+  border: 2px dashed var(--verde-folha);
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--cinza);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 24px;
+  }
+
+  .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
