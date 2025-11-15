@@ -46,6 +46,23 @@ body {
   line-height: 1.6;
 }
 
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.hero-logo {
+  width: 110px;
+  height: auto;
+}
+
+.hero-text h2 {
+  margin-bottom: 6px;
+  color: var(--verde-floresta);
+}
+
 .intro p {
   margin-bottom: 16px;
 }
@@ -57,12 +74,63 @@ body {
   color: var(--verde-floresta);
 }
 
+.purpose,
+.collaborators,
+.partners {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 20px;
+  margin-top: 30px;
+}
+
 .purpose ul {
   padding-left: 18px;
 }
 
 .purpose li {
   margin-bottom: 8px;
+}
+
+.values {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 30px;
+}
+
+.values article {
+  background: var(--bege);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.values h3 {
+  margin-bottom: 8px;
+  color: var(--marrom-claro);
+}
+
+.partners h2 {
+  margin-bottom: 8px;
+}
+
+.partner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.partner-card {
+  border: 2px dashed var(--verde-floresta);
+  border-radius: 14px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(79, 111, 82, 0.05);
+  text-align: center;
+  font-weight: 600;
+  color: var(--cinza);
 }
 
 .collaborator-list {
@@ -88,6 +156,11 @@ body {
 @media (max-width: 640px) {
   .content {
     padding: 24px;
+  }
+
+  .hero {
+    flex-direction: column;
+    text-align: center;
   }
 
   .top-bar {
