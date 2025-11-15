@@ -2,67 +2,51 @@
 
 body {
   margin: 0;
-  padding: 30px 20px 40px;
-  background:
-    linear-gradient(135deg, rgba(79, 111, 82, 0.05) 25%, transparent 25%) -40px 0 / 80px 80px,
-    linear-gradient(225deg, rgba(79, 111, 82, 0.05) 25%, transparent 25%) -40px 0 / 80px 80px,
-    var(--bege);
+  padding: 0 20px 40px;
+  background: var(--bege);
   font-family: 'Poppins', sans-serif;
   color: var(--preto);
 }
 
 .top-bar {
-  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 28px 32px;
-  background: var(--branco);
-  border-radius: 28px;
-  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  gap: 24px;
+  padding: 24px 0;
 }
 
-.top-bar::after {
-  content: '';
-  position: absolute;
-  width: 220px;
-  height: 220px;
-  right: -60px;
-  top: -80px;
-  background: radial-gradient(circle, rgba(167, 201, 87, 0.5), transparent 60%);
-  z-index: 0;
+.top-info {
+  flex: 1;
+  text-align: center;
+  background: rgba(167, 201, 87, 0.25);
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-size: 14px;
+  color: var(--marrom);
+  box-shadow: inset 0 0 0 1px rgba(79, 111, 82, 0.15);
 }
 
 .top-bar h1 {
-  position: relative;
   margin: 0;
-  font-size: 28px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--branco);
-  padding: 14px 28px;
-  border-radius: 18px;
-  background: linear-gradient(120deg, var(--verde-floresta), var(--verde-folha));
-  box-shadow: 0 12px 30px rgba(79, 111, 82, 0.35);
+  font-size: 32px;
+  color: var(--marrom-claro);
 }
 
 .btn-link {
-  position: relative;
-  z-index: 1;
-  padding: 12px 22px;
+  padding: 10px 20px;
   border-radius: 24px;
-  border: none;
-  background: rgba(79, 111, 82, 0.1);
+  border: 1px solid var(--verde-floresta);
+  background: transparent;
   color: var(--verde-floresta);
   text-decoration: none;
   font-weight: 600;
-  transition: transform 0.2s, background 0.3s;
+  transition: background 0.3s;
 }
 
 .btn-link:hover {
-  background: rgba(79, 111, 82, 0.2);
-  transform: translateY(-2px);
+  background: var(--verde-floresta);
+  color: var(--branco);
 }
 
 .content {
@@ -187,18 +171,16 @@ body {
     padding: 24px;
   }
 
-  .hero {
-    flex-direction: column;
-    text-align: center;
-  }
-
   .top-bar {
     flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
   }
 
-  .btn-link {
+  .top-info {
+    width: 100%;
+  }
+
+  .hero {
+    flex-direction: column;
     text-align: center;
   }
 }
