@@ -127,16 +127,18 @@ body {
 }
 
 .partner-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
   margin-top: 16px;
 }
 
 .partner-card {
   border: 2px dashed var(--verde-floresta);
   border-radius: 14px;
-  min-height: 120px;
+  width: 260px;
+  height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -144,6 +146,21 @@ body {
   text-align: center;
   font-weight: 600;
   color: var(--cinza);
+  padding: 12px;
+}
+
+.partner-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.partner-card span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 .collaborator-list {
