@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // DEBUG ONLY:
-        alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.");
+        // alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.");
         window.location.href = "../index.html";
         return;
       }
