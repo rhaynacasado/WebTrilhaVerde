@@ -158,6 +158,8 @@ document.addEventListener("DOMContentLoaded", () => {
           window.location.href = data.resetUrl; // se quiser ir direto
         }
 
+        alert("popup de teste")
+
         // DEBUG ONLY:
         // alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.");
         window.location.href = "../index.html";
