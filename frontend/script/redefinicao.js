@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Supondo que o backend tenha rota para pegar usuário pelo resetToken
       const resp = await fetch(`${API_BASE}/api/auth/user-from-reset?token=${token}`);
-      // if (!resp.ok) throw new Error("Não foi possível obter informações do usuário.");
+      if (!resp.ok) throw new Error("Não foi possível obter informações do usuário.");
 
       const user = await resp.json();
       if (userName) userName.textContent = user.nome || "Usuário";
@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const nova = (novaInput?.value || "").trim();
         const conf = (confirmaInput?.value || "").trim();
 
-        if (!nova || nova.length < 6) return showErr("A nova senha deve ter pelo menos 6 caracteres.");
+        // if (!nova || nova.length < 6) return showErr("A nova senha deve ter pelo menos 6 caracteres.");
         if (conf && conf !== nova)    return showErr("As senhas devem ser iguais.");
 
         const resp = await fetch(`${API_BASE}/api/auth/reset-password`, {
@@ -149,14 +149,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         const data = await resp.json().catch(() => ({}));
         // DEBUG ONLY:
-        // if (!resp.ok) throw new Error(data.error || "Não foi possível iniciar a redefinição.");
+        if (!resp.ok) throw new Error(data.error || "Não foi possível iniciar a redefinição.");
 
         // DEBUG ONLY:
         // Backend em dev pode devolver um link direto (resetUrl).
-        // if (data.resetUrl) {
-          // alert(`Link de redefinição (dev): ${data.resetUrl}`);
-          // window.location.href = data.resetUrl; // se quiser ir direto
-        // }
+        if (data.resetUrl) {
+          alert(`Link de redefinição (dev): ${data.resetUrl}`);
+          window.location.href = data.resetUrl; // se quiser ir direto
+        }
 
         // DEBUG ONLY:
         alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.");

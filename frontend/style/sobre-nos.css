@@ -128,7 +128,7 @@ body {
 
 .partner-grid {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 18px;
   margin-top: 16px;
@@ -171,16 +171,34 @@ body {
 }
 
 .collaborator-card {
-  border: 2px dashed var(--verde-folha);
   border-radius: 12px;
   padding: 20px;
-  min-height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: var(--cinza);
+  border: 2px dashed var(--verde-folha);
+}
+
+.collaborator-card p {
+  margin: 0 0 8px 0;
+}
+
+.collaborator-card p:first-child {
   font-weight: 600;
+  color: var(--marrom-claro);
+}
+
+.collaborator-card p:last-child {
+  font-size: 14px;
+  color: var(--marrom);
+}
+
+.collaborator-card a {
+  color: var(--marrom);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.collaborator-card a:hover {
+  color: var(--verde-floresta);
+  text-decoration: underline;
 }
 
 @media (max-width: 640px) {

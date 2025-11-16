@@ -78,7 +78,7 @@ router.post(
       res.json({ token: sign(payload), admin: payload });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: 'Erro interno' });
+      res.status(500).json({ error: 'Erro interno 2' });
     }
   }
 );
@@ -93,7 +93,7 @@ router.get('/me', auth, async (req, res) => {
     res.json({ email: a.email, nome: a.nome, vinculo: a.vinculo });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Erro interno' });
+    res.status(500).json({ error: 'Erro interno 3' });
   }
 });
 
@@ -121,7 +121,7 @@ router.put(
       res.json({ ok: true, nome: a.nome, vinculo: a.vinculo });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: 'Erro interno' });
+      res.status(500).json({ error: 'Erro interno 4' });
     }
   }
 );
@@ -213,7 +213,7 @@ router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
     res.json({ message: "Se o e-mail estiver cadastrado, enviaremos instruções." });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Erro interno" });
+    res.status(500).json({ error: "Erro interno 5" });
   }
 });
 
@@ -242,7 +242,7 @@ router.post(
       res.json({ ok: true, message: "Senha redefinida com sucesso" });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: "Erro interno" });
+      res.status(500).json({ error: "Erro interno 6" });
     }
   }
 );
@@ -277,6 +277,6 @@ router.get("/user-from-reset", async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "Erro interno" });
+    res.status(500).json({ error: "Erro interno 7" });
   }
 });

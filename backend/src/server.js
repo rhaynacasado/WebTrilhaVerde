@@ -34,7 +34,7 @@ app.use('/api/usuarios', require('./routes/usuarios'));
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 app.use((err, _req, res, _next) => {
   console.error(err);
-  res.status(err.status || 500).json({ error: err.message || 'Erro interno' });
+  res.status(err.status || 500).json({ error: err.message || 'Erro interno 1' });
 });
 
 /* ========= Start ========= */
