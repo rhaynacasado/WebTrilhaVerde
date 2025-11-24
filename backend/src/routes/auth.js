@@ -183,9 +183,14 @@ router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL}/pages/redefinicao.html?token=${token}`;
 
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error("SMTP_USER ou SMTP_PASS não definidos!");
+    }
+
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
+      secure: false,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -203,7 +208,10 @@ router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
              <a href="${resetUrl}">${resetUrl}</a>
              <p>Este link é válido por 15 minutos.</p>
              <p>Atenciosamente,<br>Equipe Trilha Verde</p>
-            <img src="http://127.0.0.1:5500/frontend/img/logo.png" alt="Logo Trilha Verde" style="max-width:120px; margin-top:16px;">`, // TODO: ajustar URL conforme deploy
+            <img src="${process.env.FRONTEND_URL}/img/logo.png" alt="Logo Trilha Verde" style="max-width:120px; margin-top:16px;">`, // TODO: ajustar URL conforme deploy
+    }).catch(err => {
+      console.error("Erro ao enviar e-mail:", err);
+      throw err;
     });
 
     if (process.env.NODE_ENV !== "production") {
