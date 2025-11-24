@@ -181,7 +181,7 @@ router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
     const expires = Date.now() + 15 * 60 * 1000; // 15 min
     resetTokens.set(token, { email, expires });
 
-    const resetUrl = `http://127.0.0.1:5500/frontend/pages/redefinicao.html?token=${token}`; // TODO: ajustar URL conforme deploy
+    const resetUrl = `${process.env.FRONTEND_URL}/pages/redefinicao.html?token=${token}`;
 
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
