@@ -57,7 +57,7 @@ router.post(
       return res.status(201).json({ token: sign(payload), admin: payload });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: 'Erro interno' });
+      res.status(500).json({ error: 'Erro interno 8' });
     }
   }
 );
