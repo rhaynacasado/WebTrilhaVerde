@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resetToken = qs.get("token");
 
   // campos possíveis (suporte a 3 modos com o mesmo JS)
-  const form = document.querySelector(".formPassword") || document.querySelector("form");
+  const form = document.querySelector(".formPassword") || document.querySelector(".formEsqueci") || document.querySelector("form");
   const errorBox =
     document.getElementById("passwordError") ||
     document.getElementById("resetError") ||
