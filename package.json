@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/rhaynacasado/WebTrilhaVerde/issues"
   },
-  "homepage": "https://github.com/rhaynacasado/WebTrilhaVerde#readme"
+  "homepage": "https://github.com/rhaynacasado/WebTrilhaVerde#readme",
+  "dependencies": {
+    "openai": "^6.33.0"
+  }
 }
