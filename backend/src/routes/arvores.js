@@ -1,39 +1,39 @@
-// backend/src/routes/arvores.js
 const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
 
-// [ALTERADO] Adicionamos o modelo 'Trilha' para a nova rota
 const { Arvore, Pergunta, Trilha, sequelize } = require('../models');
 const auth = require('../middlewares/auth');
 const { logArvore } = require('../utils/logHelpers');
 
-// --------- helpers ----------
+// ================= HELPERS =================
 function toBool(v) {
   if (typeof v === 'boolean') return v;
   if (typeof v === 'number') return v === 1;
   if (typeof v === 'string') return v.toLowerCase() === 'true' || v === '1';
   return false;
 }
+
 function toNumOrNull(v) {
   if (v === undefined) return undefined;
   if (v === '' || v == null) return null;
   const n = Number(String(v).replace(',', '.'));
   return Number.isFinite(n) ? n : null;
 }
+
 const sameNum = (a, b) =>
   (a == null && b == null) || (Number(a) === Number(b));
 
-// ---------------------------------------------
-// PUT /api/arvores/:trilha/:codigo  (editar)
-// ... (toda a sua lógica de PUT, POST, DELETE continua aqui, intacta)
-// ---------------------------------------------
+// ================= PUT (EDITAR) =================
 router.put('/:trilha/:codigo', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
     const cod = Number(codigo);
 
-    const arv = await Arvore.findOne({ where: { trilha_nome: trilha, codigo: cod } });
+    const arv = await Arvore.findOne({
+      where: { trilha_nome: trilha, codigo: cod }
+    });
+
     if (!arv) return res.status(404).json({ error: 'Árvore não encontrada' });
 
     const { nome, especie, foto_url, ordem } = req.body;
@@ -50,7 +50,7 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     if (pos_y !== undefined && !sameNum(arv.pos_y, pos_y)) { arv.pos_y = pos_y; changed.push('pos_y'); }
     if (ativa !== undefined && !!arv.ativa !== ativa) { arv.ativa = ativa; changed.push('ativa'); }
     if (ordem !== undefined && !sameNum(arv.ordem, ordem)) { arv.ordem = ordem; changed.push('ordem'); }
-    
+
     if (changed.length === 0) {
       return res.json({ unchanged: true, ...arv.toJSON() });
     }
@@ -65,8 +65,12 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
   }
 });
 
+// ================= HELPERS INTERNOS =================
 async function loadArvoreOr404(trilha, codigo, res) {
-  const found = await Arvore.findOne({ where: { trilha_nome: trilha, codigo } });
+  const found = await Arvore.findOne({
+    where: { trilha_nome: trilha, codigo }
+  });
+
   if (!found) {
     res.status(404).json({ error: 'Árvore não encontrada' });
     return null;
@@ -93,10 +97,13 @@ async function isExtremityTree(arvore) {
   const meta = stats[0] || {};
   const min = meta.min_ordem == null ? null : Number(meta.min_ordem);
   const max = meta.max_ordem == null ? null : Number(meta.max_ordem);
+
   if (min == null && max == null) return false;
 
   const ordemAtual = Number(arvore.ordem);
-  return (min != null && ordemAtual === min) || (max != null && ordemAtual === max);
+
+  return (min != null && ordemAtual === min) ||
+         (max != null && ordemAtual === max);
 }
 
 async function persistAtivaChange(req, res, trilha, codigo, novaFlag, logPrefix) {
@@ -125,8 +132,8 @@ async function persistAtivaChange(req, res, trilha, codigo, novaFlag, logPrefix)
   }
 
   arvore.ativa = target;
-
   await arvore.save();
+
   const logSufix = arvore.ativa ? 'ativou' : 'desativou';
   await logArvore(req, trilha, codigo, `${logPrefix}:${logSufix}`);
 
@@ -137,13 +144,13 @@ async function persistAtivaChange(req, res, trilha, codigo, novaFlag, logPrefix)
   });
 }
 
+// ================= STATUS =================
 router.put('/:trilha/:codigo/toggle-ativa', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
-    const cod = Number(codigo);
-    return await persistAtivaChange(req, res, trilha, cod, undefined, 'toggle');
+    return await persistAtivaChange(req, res, trilha, Number(codigo), undefined, 'toggle');
   } catch (e) {
-    console.error('PUT /arvores/:trilha/:codigo/toggle-ativa', e);
+    console.error(e);
     return res.status(400).json({ error: 'Erro ao alterar status' });
   }
 });
@@ -151,22 +158,21 @@ router.put('/:trilha/:codigo/toggle-ativa', auth, async (req, res) => {
 router.put('/:trilha/:codigo/ativa', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
-    const cod = Number(codigo);
-    const newAtiva = toBool(req.body.ativa);
     return await persistAtivaChange(
       req,
       res,
       trilha,
-      cod,
-      newAtiva,
+      Number(codigo),
+      toBool(req.body.ativa),
       'set'
     );
   } catch (e) {
-    console.error('PUT /arvores/:trilha/:codigo/ativa', e);
+    console.error(e);
     return res.status(400).json({ error: 'Erro ao alterar status' });
   }
 });
 
+// ================= POST (CRIAR) =================
 router.post('/', auth, async (req, res) => {
   try {
     const body = { ...req.body };
@@ -177,16 +183,22 @@ router.post('/', auth, async (req, res) => {
 
     const created = await Arvore.create({
       trilha_nome: body.trilha_nome,
-      codigo:      Number(body.codigo),
-      nome:        body.nome || '',
-      especie:     body.especie || '',
-      foto_url:    body.foto_url || '',
-      ativa:       body.ativa == null ? true : !!body.ativa,
-      pos_x:       toNumOrNull(body.pos_x),
-      pos_y:       toNumOrNull(body.pos_y),
+      codigo: Number(body.codigo),
+      nome: body.nome || '',
+      especie: body.especie || '',
+      foto_url: body.foto_url || '',
+      ativa: body.ativa == null ? true : !!body.ativa,
+      pos_x: toNumOrNull(body.pos_x),
+      pos_y: toNumOrNull(body.pos_y),
     });
 
-    await logArvore(req, created.trilha_nome, Number(created.codigo), `create:"${(created.nome || '').slice(0,80)}"`);
+    await logArvore(
+      req,
+      created.trilha_nome,
+      Number(created.codigo),
+      `create:"${(created.nome || '').slice(0,80)}"`
+    );
+
     return res.status(201).json(created.toJSON());
   } catch (e) {
     console.error('POST /arvores', e);
@@ -194,56 +206,55 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// ================= DELETE =================
 router.delete('/:trilha/:codigo', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
-    const cod = Number(codigo);
 
-    const a = await Arvore.findOne({ where: { trilha_nome: trilha, codigo: cod } });
+    const a = await Arvore.findOne({
+      where: { trilha_nome: trilha, codigo: Number(codigo) }
+    });
+
     if (!a) return res.status(404).json({ error: 'Árvore não encontrada' });
 
     const nome = a.nome || '';
     await a.destroy();
 
-    await logArvore(req, trilha, cod, `delete:"${nome.slice(0,80)}"`);
+    await logArvore(req, trilha, Number(codigo), `delete:"${nome.slice(0,80)}"`);
+
     return res.status(204).end();
   } catch (e) {
-    console.error('DELETE /arvores/:trilha/:codigo', e);
+    console.error(e);
     return res.status(400).json({ error: 'Erro ao excluir árvore' });
   }
 });
 
-// ---------------------------------------------
-// GETs públicos
-// ---------------------------------------------
-
-// [NOVO] ROTA PARA O APLICATIVO CALCULAR O TOTAL DE ÁRVORES
+// ================= GET TOTAL =================
 router.get('/total', async (req, res) => {
   try {
     const total = await Trilha.sum('quantidade_arvores');
-    return res.status(200).json({ total: total || 0 });
+    return res.json({ total: total || 0 });
   } catch (e) {
-    console.error('GET /arvores/total', e);
-    return res.status(500).json({ error: 'Erro ao calcular o total de árvores' });
+    console.error(e);
+    return res.status(500).json({ error: 'Erro ao calcular total' });
   }
 });
 
-// GET /api/arvores  (com contagem) - ROTA DO SEU SITE
+// ================= GET LIST =================
 router.get('/', async (req, res) => {
   try {
     const { trilha, ativas } = req.query;
     const where = {};
+
     if (trilha) where.trilha_nome = trilha;
     if (ativas === 'true') where.ativa = true;
 
-    // 1) árvores
     const trees = await Arvore.findAll({
       where,
       order: [['codigo', 'ASC']],
       raw: true
     });
 
-    // 2) contagem de perguntas por árvore
     const counts = await Pergunta.findAll({
       attributes: [
         'trilha_nome',
@@ -254,7 +265,6 @@ router.get('/', async (req, res) => {
       raw: true
     });
 
-    // 3) junta
     const map = new Map(
       counts.map(c => [`${c.trilha_nome}:${c.arvore_codigo}`, Number(c.qtd)])
     );
@@ -266,17 +276,20 @@ router.get('/', async (req, res) => {
 
     return res.json(out);
   } catch (e) {
-    console.error('GET /arvores', e);
+    console.error(e);
     return res.status(500).json({ error: 'Erro ao listar árvores' });
   }
 });
 
+// ================= GET ONE =================
 router.get('/:trilha/:codigo', async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
+
     const a = await Arvore.findOne({
       where: { trilha_nome: trilha, codigo: Number(codigo) }
     });
+
     if (!a) return res.status(404).json({ error: 'Árvore não encontrada' });
 
     const qtd = await Pergunta.count({
@@ -288,9 +301,9 @@ router.get('/:trilha/:codigo', async (req, res) => {
 
     return res.json(out);
   } catch (e) {
-    console.error('GET /arvores/:trilha/:codigo', e);
+    console.error(e);
     return res.status(500).json({ error: 'Erro ao buscar árvore' });
   }
 });
 
-module.exports = router;
+  module.exports = router;

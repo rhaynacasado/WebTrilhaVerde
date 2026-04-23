@@ -1,5 +1,3 @@
-// frontend/script/perguntas.js (versão completa e corrigida)
-
 (function bootstrapPerguntas() {
   const onPage = document.getElementById('pagePerguntas') !== null;
   if (!onPage) return;

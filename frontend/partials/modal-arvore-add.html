@@ -1,0 +1,69 @@
+<!-- Modal: Adicionar Árvore -->
+<div id="arvoreAddModal" class="modal" aria-hidden="true">
+  <div class="modal__backdrop" data-close></div>
+
+  <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="arvoreAddTitle">
+    
+    <header class="modal__head">
+      <h3 id="arvoreAddTitle">Adicionar árvore</h3>
+      <button class="icon-btn close" title="Fechar" data-close>&times;</button>
+    </header>
+
+    <form id="arvoreAddForm" class="form">
+
+      <!-- Trilha -->
+      <div class="form__row">
+        <label for="addTrilha">Trilha *</label>
+        <select id="addTrilha" required>
+          <!-- opções vêm do backend -->
+        </select>
+      </div>
+
+      <!-- Código -->
+      <div class="form__row">
+        <label for="addCodigo">Código *</label>
+        <input id="addCodigo" type="number" required />
+      </div>
+
+      <!-- Nome -->
+      <div class="form__row">
+        <label for="addNome">Nome *</label>
+        <input id="addNome" type="text" placeholder="Nome da árvore" required />
+      </div>
+
+      <!-- Espécie -->
+      <div class="form__row">
+        <label for="addEspecie">Espécie *</label>
+        <input id="addEspecie" type="text" placeholder="Ex: Caesalpinia pluviosa" required />
+      </div>
+
+      <!-- Foto -->
+      <div class="form__row">
+        <label for="addFoto">Foto (URL)</label>
+        <input id="addFoto" type="url" placeholder="https://..." />
+      </div>
+
+      <!-- Posição -->
+      <div class="form__grid">
+        <div class="form__row">
+          <label for="addPosX">Posição X *</label>
+          <input id="addPosX" type="number" step="any" placeholder="Ex: 123.45" required />
+        </div>
+
+        <div class="form__row">
+          <label for="addPosY">Posição Y *</label>
+          <input id="addPosY" type="number" step="any" placeholder="Ex: 678.90" required />
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <footer class="modal__foot">
+        <button type="button" class="btn" data-close>Cancelar</button>
+        <button type="submit" class="btn primary" id="btnAdicionarArvore">
+          Adicionar
+        </button>
+      </footer>
+
+    </form>
+  </div>
+</div>

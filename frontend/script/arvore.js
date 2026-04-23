@@ -42,6 +42,22 @@
     return svg;
   }
 
+  function makePlusSvg() {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 24 24');
+  svg.setAttribute('fill','none');
+  svg.setAttribute('aria-hidden','true');
+
+  const v = document.createElementNS('http://www.w3.org/2000/svg','path');
+  v.setAttribute('d','M12 5v14M5 12h14');
+  v.setAttribute('stroke','#fff');
+  v.setAttribute('stroke-width','2.2');
+  v.setAttribute('stroke-linecap','round');
+
+  svg.appendChild(v);
+  return svg;
+}
+
   // ===== modal =====
   function getHost() {
     return document.getElementById('modals') || document.body;
@@ -54,59 +70,100 @@
       const doc  = new DOMParser().parseFromString(text, 'text/html');
       const toAppend = Array.from(doc.body.children);
       if (toAppend.length) toAppend.forEach(n => getHost().appendChild(n));
-      return !!document.getElementById('arvoreModal');
+      return !!(
+        document.getElementById('arvoreModal') ||
+        document.getElementById('arvoreAddModal')
+      );
     } catch { return false; }
   }
   async function ensureModal() {
-    if (document.getElementById('arvoreModal')) return;
+  const hasEdit = document.getElementById('arvoreModal');
+  const hasAdd  = document.getElementById('arvoreAddModal');
 
-    // tenta carregar o partial
-    const candidates = [
-      '../partials/modal-arvore.html',
-      './partials/modal-arvore.html',
-      '/partials/modal-arvore.html'
-    ];
-    for (const url of candidates) {
-      const ok = await tryLoad(url);
-      if (ok) return;
+  // se já tem os dois, não faz nada
+  if (hasEdit && hasAdd) return;
+
+  // tenta carregar os dois SEM parar no meio
+  const candidates = [
+    { url: '../partials/modal-arvore.html',     check: () => document.getElementById('arvoreModal') },
+    { url: '../partials/modal-arvore-add.html', check: () => document.getElementById('arvoreAddModal') },
+  ];
+
+  for (const c of candidates) {
+    if (!c.check()) {
+      await tryLoad(c.url);
     }
+  }
 
-    // fallback construído via JS (já com Posição X/Y)
+  // fallback só pro modal de edição (mantém seu comportamento original)
+  if (!document.getElementById('arvoreModal')) {
     const host   = getHost();
     const modal  = document.createElement('div');
-    modal.id = 'arvoreModal'; modal.className = 'modal'; modal.setAttribute('aria-hidden','true');
+    modal.id = 'arvoreModal';
+    modal.className = 'modal';
+    modal.setAttribute('aria-hidden','true');
 
     const backdrop = document.createElement('div');
-    backdrop.className = 'modal__backdrop'; backdrop.setAttribute('data-close','');
+    backdrop.className = 'modal__backdrop';
+    backdrop.setAttribute('data-close','');
 
     const dialog = document.createElement('div');
-    dialog.className = 'modal__dialog'; dialog.setAttribute('role','dialog'); dialog.setAttribute('aria-modal','true');
+    dialog.className = 'modal__dialog';
+    dialog.setAttribute('role','dialog');
+    dialog.setAttribute('aria-modal','true');
 
-    const head = document.createElement('header'); head.className = 'modal__head';
-    const h3 = document.createElement('h3'); h3.textContent = 'Editar árvore';
-    const close = document.createElement('button'); close.type='button'; close.className='icon-btn'; close.setAttribute('data-close',''); close.appendChild(document.createTextNode('×'));
-    head.appendChild(h3); head.appendChild(close);
+    const head = document.createElement('header');
+    head.className = 'modal__head';
 
-    const form = document.createElement('form'); form.id='arvoreForm'; form.className='form';
+    const h3 = document.createElement('h3');
+    h3.textContent = 'Editar árvore';
 
-    const gridIds = document.createElement('div'); gridIds.className='form__grid';
+    const close = document.createElement('button');
+    close.type='button';
+    close.className='icon-btn';
+    close.setAttribute('data-close','');
+    close.appendChild(document.createTextNode('×'));
+
+    head.appendChild(h3);
+    head.appendChild(close);
+
+    const form = document.createElement('form');
+    form.id='arvoreForm';
+    form.className='form';
+
+    const gridIds = document.createElement('div');
+    gridIds.className='form__grid';
     gridIds.appendChild(row('Trilha', input('arvoreTrilha','text',true)));
     gridIds.appendChild(row('Código', input('arvoreCodigo','text',true)));
 
     const rowNome = row('Nome', input('arvoreNome','text',false,{required:true}));
     const rowEsp  = row('Espécie', input('arvoreEspecie','text',false,{required:true}));
 
-    const grid1 = document.createElement('div'); grid1.className='form__grid';
+    const grid1 = document.createElement('div');
+    grid1.className='form__grid';
     grid1.appendChild(row('Foto (URL)', input('arvoreFoto','url',false,{placeholder:'https://...'})));
-    grid1.appendChild(row('Posição X', input('arvorePosX','number',false,{step:'any', placeholder:'ex.: -42.123456'})));
+    grid1.appendChild(row('Posição X', input('arvorePosX','number',false,{step:'any'})));
 
-    const grid2 = document.createElement('div'); grid2.className='form__grid';
-    grid2.appendChild(row('Posição Y', input('arvorePosY','number',false,{step:'any', placeholder:'ex.: -22.654321'})));
+    const grid2 = document.createElement('div');
+    grid2.className='form__grid';
+    grid2.appendChild(row('Posição Y', input('arvorePosY','number',false,{step:'any'})));
 
-    const foot = document.createElement('footer'); foot.className='modal__foot';
-    const btnToggle = document.createElement('button'); btnToggle.id='btnToggleStatus'; btnToggle.type='button'; btnToggle.className='btn danger'; btnToggle.textContent='Desativar';
-    const btnSalvar = document.createElement('button'); btnSalvar.type='submit'; btnSalvar.className='btn primary'; btnSalvar.textContent='Alterar';
-    foot.appendChild(btnToggle); foot.appendChild(btnSalvar);
+    const foot = document.createElement('footer');
+    foot.className='modal__foot';
+
+    const btnToggle = document.createElement('button');
+    btnToggle.id='btnToggleStatus';
+    btnToggle.type='button';
+    btnToggle.className='btn danger';
+    btnToggle.textContent='Desativar';
+
+    const btnSalvar = document.createElement('button');
+    btnSalvar.type='submit';
+    btnSalvar.className='btn primary';
+    btnSalvar.textContent='Alterar';
+
+    foot.appendChild(btnToggle);
+    foot.appendChild(btnSalvar);
 
     form.appendChild(gridIds);
     form.appendChild(rowNome);
@@ -115,24 +172,37 @@
     form.appendChild(grid2);
     form.appendChild(foot);
 
-    dialog.appendChild(head); dialog.appendChild(form);
-    modal.appendChild(backdrop); modal.appendChild(dialog);
+    dialog.appendChild(head);
+    dialog.appendChild(form);
+    modal.appendChild(backdrop);
+    modal.appendChild(dialog);
     host.appendChild(modal);
 
     function row(label, inputEl) {
-      const r = document.createElement('div'); r.className='form__row';
-      const l = document.createElement('label'); l.textContent = label;
-      r.appendChild(l); r.appendChild(inputEl); return r;
+      const r = document.createElement('div');
+      r.className='form__row';
+      const l = document.createElement('label');
+      l.textContent = label;
+      r.appendChild(l);
+      r.appendChild(inputEl);
+      return r;
     }
+
     function input(id, type, ro=false, opts={}) {
-      const el = document.createElement('input'); el.id=id; el.type=type;
-      if (ro){ el.readOnly=true; el.classList.add('input-readonly'); }
-      if (opts.placeholder) el.placeholder=opts.placeholder;
+      const el = document.createElement('input');
+      el.id=id;
+      el.type=type;
+      if (ro){
+        el.readOnly=true;
+        el.classList.add('input-readonly');
+      }
       if (opts.required) el.required=true;
+      if (opts.placeholder) el.placeholder=opts.placeholder;
       if (opts.step) el.step=opts.step;
       return el;
     }
   }
+}
 
   function setToggle(isActive){
     const btn = document.getElementById('btnToggleStatus'); if (!btn) return;
@@ -150,7 +220,7 @@
       const title = document.createElement('strong'); title.className='item-title'; title.textContent=a.nome;
 
       const sub   = document.createElement('div'); sub.className='subline';
-      const t  = document.createElement('span'); t.className='meta'; t.textContent = `Trilha ${a.trilha_nome}`;
+      const t  = document.createElement('span'); t.className='meta'; t.textContent = `Trilhas: ${a.trilhas.join(', ')}`;
       const s1 = document.createElement('span'); s1.className='sep';  s1.textContent='•';
       const q  = document.createElement('span'); q.className='meta'; q.textContent = `${a.quantidade_perguntas ?? 0} perguntas`;
       const s2 = document.createElement('span'); s2.className='sep';  s2.textContent='•';
@@ -168,6 +238,49 @@
       listRoot.appendChild(item);
     });
   }
+
+  async function loadTrilhas() {
+    const select = document.getElementById('filtroTrilha');
+    if (!select) return;
+
+    try {
+      const resp = await fetch(`${API_BASE}/api/trilhas`);
+      if (!resp.ok) throw new Error();
+
+      const trilhas = await resp.json();
+
+      trilhas.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.nome; // ajuste se for outro campo
+        opt.textContent = t.nome;
+        select.appendChild(opt);
+      });
+
+      // se veio pela URL (?trilha=...)
+      const trilhaParam = getParam('trilha');
+      if (trilhaParam) {
+        select.value = trilhaParam;
+      }
+
+    } catch (err) {
+      console.error('Erro ao carregar trilhas', err);
+    }
+  }
+
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'filtroTrilha') {
+      const trilha = e.target.value;
+
+      // atualiza URL (opcional, mas bom)
+      const url = new URL(window.location);
+      if (trilha) url.searchParams.set('trilha', trilha);
+      else url.searchParams.delete('trilha');
+
+      window.history.replaceState({}, '', url);
+
+      loadArvores(); // recarrega lista
+    }
+  });
 
   // ===== eventos =====
   document.addEventListener('click', async (e) => {
@@ -192,8 +305,16 @@
     }
 
     // fechar modal por backdrop / X
-    if (e.target && (e.target.matches('#arvoreModal [data-close]') || e.target.matches('#arvoreModal .modal__backdrop'))) {
-      closeModal(); return;
+    if (e.target && (
+      e.target.matches('[data-close]') ||
+      e.target.classList.contains('modal__backdrop')
+    )) {
+      const modal = e.target.closest('.modal');
+      if (modal) {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden','true');
+      }
+      return;
     }
 
     // toggle ativa
@@ -280,6 +401,35 @@
     }
   });
 
+  // ================= FAB (ADICIONAR ÁRVORE) =================
+const fab = document.createElement('button');
+fab.className = 'fab-add';
+fab.title = 'Adicionar árvore';
+fab.appendChild(makePlusSvg());
+document.body.appendChild(fab);
+
+fab.addEventListener('click', async () => {
+  await ensureModal();
+
+  const modal = document.getElementById('arvoreAddModal');
+
+  if (!modal) {
+    alert('Modal de adicionar árvore não encontrado');
+    return;
+  }
+
+  [
+    'addTrilha','addCodigo','addNome','addEspecie',
+    'addFoto','addPosX','addPosY'
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+});
+
   // ===== carregar lista =====
   async function loadArvores() {
     const trilhaParam = getParam('trilha');
@@ -288,19 +438,30 @@
       const resp = await fetch(`${API_BASE}/api/arvores${qs}`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
-      arvores = (Array.isArray(data) ? data : []).map(a => ({
-        trilha_nome: a.trilha_nome,
-        codigo: Number(a.codigo),
-        nome: a.nome,
-        especie: a.especie || '',
-        foto_url: a.foto_url || '',
-        quantidade_perguntas: Number(a.quantidade_perguntas ?? 0),
-        ativa: !!a.ativa,
-        // novos campos
-        pos_x: a.pos_x == null ? null : Number(a.pos_x),
-        pos_y: a.pos_y == null ? null : Number(a.pos_y),
-        ordem: a.ordem == null ? null : Number(a.ordem),
-      }));
+      const raw = (Array.isArray(data) ? data : []);
+
+      const map = new Map();
+
+      raw.forEach(a => {
+        const key = a.codigo; // ou use nome+codigo se necessário
+
+        if (!map.has(key)) {
+          map.set(key, {
+            ...a,
+            codigo: Number(a.codigo),
+            trilhas: [a.trilha_nome],
+            quantidade_perguntas: Number(a.quantidade_perguntas ?? 0),
+            ativa: !!a.ativa,
+            pos_x: a.pos_x == null ? null : Number(a.pos_x),
+            pos_y: a.pos_y == null ? null : Number(a.pos_y),
+            ordem: a.ordem == null ? null : Number(a.ordem),
+          });
+        } else {
+          map.get(key).trilhas.push(a.trilha_nome);
+        }
+      });
+
+      arvores = Array.from(map.values());
       render();
     } catch (err) {
       console.error('Falha ao carregar árvores:', err);
@@ -308,5 +469,6 @@
     }
   }
 
+  loadTrilhas();
   loadArvores();
 })();
