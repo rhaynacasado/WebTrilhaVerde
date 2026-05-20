@@ -27,6 +27,9 @@
       }
 
       const trilhas = await resp.json();
+      trilhas.sort((a, b) => 
+        a.nome.localeCompare(b.nome, 'pt-BR')
+      );
       console.log('Trilhas recebidas:', trilhas);
 
       box.innerHTML = '';
@@ -53,7 +56,7 @@
         el.appendChild(span);
 
         el.onclick = () => {
-          window.location.href = `arvores.html?trilha=${encodeURIComponent(r.nome)}`;
+          window.location.href = `arvores?trilha=${encodeURIComponent(r.nome)}`;
         };
 
         box.appendChild(el);

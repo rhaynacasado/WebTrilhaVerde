@@ -331,3 +331,7 @@
   pointer-events: none;
   transition: opacity .15s ease, transform .15s ease;
 }
+
+ .item{
+  cursor:pointer;
+}

@@ -216,6 +216,7 @@
     while (listRoot.firstChild) listRoot.removeChild(listRoot.firstChild);
     arvores.forEach(a => {
       const item  = document.createElement('div'); item.className = 'item' + (a.ativa ? '' : ' disabled');
+      item.dataset.href = `perguntas.html?trilha=${encodeURIComponent(a.trilha_nome)}&codigo=${encodeURIComponent(String(a.codigo))}`;
       const body  = document.createElement('div'); body.className  = 'item-body';
       const title = document.createElement('strong'); title.className='item-title'; title.textContent=a.nome;
 
@@ -240,8 +241,8 @@
   }
 
   async function loadTrilhas() {
-    const select = document.getElementById('filtroTrilha');
-    if (!select) return;
+    const filtroSelect = document.getElementById('filtroTrilha');
+    const addSelect    = document.getElementById('addTrilha');
 
     try {
       const resp = await fetch(`${API_BASE}/api/trilhas`);
@@ -249,17 +250,47 @@
 
       const trilhas = await resp.json();
 
-      trilhas.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.nome; // ajuste se for outro campo
-        opt.textContent = t.nome;
-        select.appendChild(opt);
-      });
+      // ordena alfabeticamente
+      trilhas.sort((a, b) =>
+        a.nome.localeCompare(b.nome, 'pt-BR')
+      );
 
-      // se veio pela URL (?trilha=...)
-      const trilhaParam = getParam('trilha');
-      if (trilhaParam) {
-        select.value = trilhaParam;
+      // ===== filtro =====
+      if (filtroSelect) {
+        filtroSelect.innerHTML = '<option value="">Todas</option>';
+
+        trilhas.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.nome;
+          opt.textContent = t.nome;
+          filtroSelect.appendChild(opt);
+        });
+
+        // mantém filtro vindo da URL
+        const trilhaParam = getParam('trilha');
+        if (trilhaParam) {
+          filtroSelect.value = trilhaParam;
+        }
+      }
+
+      // ===== modal adicionar =====
+      if (addSelect) {
+        addSelect.innerHTML = '';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Selecione uma trilha';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+
+        addSelect.appendChild(placeholder);
+
+        trilhas.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.nome;
+          opt.textContent = t.nome;
+          addSelect.appendChild(opt);
+        });
       }
 
     } catch (err) {
@@ -284,6 +315,20 @@
 
   // ===== eventos =====
   document.addEventListener('click', async (e) => {
+    // clicar no card -> abrir perguntas filtradas
+    const card = e.target.closest('#arvoresList .item');
+
+    if (
+      card &&
+      !e.target.closest('.edit-pill')
+    ) {
+      const href = card.dataset.href;
+      if (href) {
+        window.location.href = href;
+        return;
+      }
+    }
+
     // abrir modal
     const btn = e.target.closest('.edit-pill');
     if (btn && btn.closest('#arvoresList')) {
@@ -410,6 +455,7 @@ document.body.appendChild(fab);
 
 fab.addEventListener('click', async () => {
   await ensureModal();
+  await loadTrilhas();
 
   const modal = document.getElementById('arvoreAddModal');
 
@@ -461,7 +507,10 @@ fab.addEventListener('click', async () => {
         }
       });
 
-      arvores = Array.from(map.values());
+      arvores = Array.from(map.values()).sort((a, b) =>
+        a.nome.localeCompare(b.nome, 'pt-BR')
+      );
+
       render();
     } catch (err) {
       console.error('Falha ao carregar árvores:', err);

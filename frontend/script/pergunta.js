@@ -50,6 +50,11 @@
   let perguntas = [];               // [{ id, arvoreId, ...campos UI }]
   let arvoreById = new Map();       // id(ui) -> { trilha_nome, codigo, nome }
   let nextPerguntaId = 1;
+  let filtroTrilha = '';
+  let filtroArvore = '';
+
+  const getParam = (n) =>
+    new URLSearchParams(window.location.search).get(n);
 
   async function loadArvores() {
     const resp = await fetch(`${API_BASE}/api/arvores`);
@@ -61,8 +66,29 @@
       trilha_nome: a.trilha_nome,
       codigo: Number(a.codigo),
       nome: a.nome
-    }));
+    }))
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     arvoreById = new Map(arvores.map(a => [a.id, a]));
+
+    // filtros vindos da URL
+    const trilhaParam = getParam('trilha');
+    const codigoParam = getParam('codigo');
+
+    if (trilhaParam) {
+      filtroTrilha = trilhaParam;
+    }
+
+    if (codigoParam) {
+      const found = arvores.find(
+        a =>
+          a.trilha_nome === trilhaParam &&
+          String(a.codigo) === String(codigoParam)
+      );
+
+      if (found) {
+        filtroArvore = String(found.id);
+      }
+    }
   }
 
   async function loadPerguntas() {
@@ -128,16 +154,81 @@
       return svg;
     }
 
+    function loadFiltros() {
+      const trilhaSelect = document.getElementById('filtroTrilha');
+      const arvoreSelect = document.getElementById('filtroArvore');
+
+      if (!trilhaSelect || !arvoreSelect) return;
+
+      // ===== trilhas únicas =====
+      const trilhas = [...new Set(arvores.map(a => a.trilha_nome))]
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+      trilhaSelect.innerHTML = '<option value="">Todas</option>';
+
+      trilhas.forEach(nome => {
+        const opt = document.createElement('option');
+        opt.value = nome;
+        opt.textContent = nome;
+        trilhaSelect.appendChild(opt);
+      });
+
+      trilhaSelect.value = filtroTrilha;
+
+      updateFiltroArvores();
+    }
+
+    function updateFiltroArvores() {
+      const arvoreSelect = document.getElementById('filtroArvore');
+      if (!arvoreSelect) return;
+
+      arvoreSelect.innerHTML = '<option value="">Todas</option>';
+
+      let lista = [...arvores];
+
+      if (filtroTrilha) {
+        lista = lista.filter(a => a.trilha_nome === filtroTrilha);
+      }
+
+      lista
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+        .forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = String(a.id);
+          opt.textContent = a.nome;
+          arvoreSelect.appendChild(opt);
+        });
+
+      arvoreSelect.value = filtroArvore;
+    }
+
     function render() {
       while (container.firstChild) container.removeChild(container.firstChild);
 
       const byTree = new Map();
+
       perguntas.forEach(q => {
+        if (filtroArvore && String(q.arvoreId) !== filtroArvore) return;
+
         if (!byTree.has(q.arvoreId)) byTree.set(q.arvoreId, []);
         byTree.get(q.arvoreId).push(q);
       });
 
-      arvores.forEach(arv => {
+      let arvoresFiltradas = [...arvores];
+
+      if (filtroTrilha) {
+        arvoresFiltradas = arvoresFiltradas.filter(
+          a => a.trilha_nome === filtroTrilha
+        );
+      }
+
+      if (filtroArvore) {
+        arvoresFiltradas = arvoresFiltradas.filter(
+          a => String(a.id) === filtroArvore
+        );
+      }
+
+      arvoresFiltradas.forEach(arv => {
         const groupQuestions = byTree.get(arv.id) || [];
 
         const h = document.createElement('h3');
@@ -291,30 +382,44 @@
       }
     });
 
-    // abrir modal de edição
+    // abrir modal de edição ao clicar no box inteiro
     container.addEventListener('click', e => {
-      const btn = e.target.closest('.edit-pill');
-      if (!btn) return;
-      const id = Number(btn.dataset.id);
-      const arvoreId = Number(btn.dataset.arvoreId);
-      const q  = perguntas.find(x => x.id === id && x.arvoreId === arvoreId);
+      const item = e.target.closest('.item');
+      if (!item) return;
+
+      const editBtn = item.querySelector('.edit-pill');
+      if (!editBtn) return;
+
+      const id = Number(editBtn.dataset.id);
+      const arvoreId = Number(editBtn.dataset.arvoreId);
+
+      const q = perguntas.find(
+        x => x.id === id && x.arvoreId === arvoreId
+      );
+
       if (!q) return;
 
       document.getElementById('perguntaHiddenId').value = q.id;
       document.getElementById('perguntaArvoreId').value = String(q.arvoreId);
-      document.getElementById('perguntaArvoreNome').value = arvoreById.get(q.arvoreId)?.nome || '';
+      document.getElementById('perguntaArvoreNome').value =
+        arvoreById.get(q.arvoreId)?.nome || '';
 
-      document.getElementById('perguntaEnunciado').value   = q.enunciado || '';
-      document.getElementById('perguntaTextoInfo').value   = q.textoInfo || '';
-      document.getElementById('perguntaAudioInfo').value   = q.audioInfo || '';
-      document.getElementById('perguntaAudioDica').value   = q.audioDica || '';
-      document.getElementById('perguntaItemA').value       = q.itens?.A || '';
-      document.getElementById('perguntaItemB').value       = q.itens?.B || '';
-      document.getElementById('perguntaItemC').value       = q.itens?.C || '';
-      document.getElementById('perguntaItemD').value       = q.itens?.D || '';
-      document.getElementById('perguntaItemE').value       = q.itens?.E || '';
-      document.getElementById('perguntaResposta').value    = q.correta || 'A';
-      document.getElementById('perguntaTextoDica').value   = q.textoDica || '';
+      document.getElementById('perguntaEnunciado').value = q.enunciado || '';
+      document.getElementById('perguntaTextoInfo').value = q.textoInfo || '';
+      document.getElementById('perguntaAudioInfo').value = q.audioInfo || '';
+      document.getElementById('perguntaAudioDica').value = q.audioDica || '';
+
+      document.getElementById('perguntaItemA').value = q.itens?.A || '';
+      document.getElementById('perguntaItemB').value = q.itens?.B || '';
+      document.getElementById('perguntaItemC').value = q.itens?.C || '';
+      document.getElementById('perguntaItemD').value = q.itens?.D || '';
+      document.getElementById('perguntaItemE').value = q.itens?.E || '';
+
+      document.getElementById('perguntaResposta').value =
+        q.correta || 'A';
+
+      document.getElementById('perguntaTextoDica').value =
+        q.textoDica || '';
 
       hideFab();
       openModal();
@@ -450,6 +555,16 @@
       const sel = document.getElementById('addArvore');
       if (sel) {
         while (sel.firstChild) sel.removeChild(sel.firstChild);
+
+        // opção padrão
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Selecione uma árvore';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        sel.appendChild(placeholder);
+
+        // árvores
         arvores.forEach(a => {
           const opt = document.createElement('option');
           opt.value = String(a.id);
@@ -550,11 +665,30 @@
       }
     });
 
+    document.addEventListener('change', e => {
+      // filtro trilha
+      if (e.target && e.target.id === 'filtroTrilha') {
+        filtroTrilha = e.target.value;
+
+        filtroArvore = '';
+
+        updateFiltroArvores();
+        render();
+      }
+
+      // filtro árvore
+      if (e.target && e.target.id === 'filtroArvore') {
+        filtroArvore = e.target.value;
+        render();
+      }
+    });
+
     // bootstrap
     (async () => {
       try {
         await loadArvores();
         await loadPerguntas();
+        loadFiltros();
         render();
       } catch (e) {
         console.error(e);
