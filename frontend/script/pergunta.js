@@ -58,17 +58,29 @@
 
   async function loadArvores() {
     const resp = await fetch(`${API_BASE}/api/arvores`);
-    if (!resp.ok) throw new Error('Falha ao carregar árvores');
+
+    if (!resp.ok) {
+      throw new Error('Falha ao carregar árvores');
+    }
+
     const data = await resp.json();
 
-    arvores = data.map((a, idx) => ({
+    // primeiro ordena
+    const sorted = data.sort((a, b) =>
+      a.nome.localeCompare(b.nome, 'pt-BR')
+    );
+
+    // depois cria IDs
+    arvores = sorted.map((a, idx) => ({
       id: idx + 1,
       trilha_nome: a.trilha_nome,
       codigo: Number(a.codigo),
       nome: a.nome
-    }))
-      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    arvoreById = new Map(arvores.map(a => [a.id, a]));
+    }));
+
+    arvoreById = new Map(
+      arvores.map(a => [a.id, a])
+    );
 
     // filtros vindos da URL
     const trilhaParam = getParam('trilha');
@@ -79,10 +91,10 @@
     }
 
     if (codigoParam) {
-      const found = arvores.find(
-        a =>
-          a.trilha_nome === trilhaParam &&
-          String(a.codigo) === String(codigoParam)
+
+      const found = arvores.find(a =>
+        a.trilha_nome === trilhaParam &&
+        String(a.codigo) === String(codigoParam)
       );
 
       if (found) {
@@ -666,22 +678,65 @@
     });
 
     document.addEventListener('change', e => {
-      // filtro trilha
-      if (e.target && e.target.id === 'filtroTrilha') {
-        filtroTrilha = e.target.value;
 
-        filtroArvore = '';
+    // ================= filtro trilha =================
+    if (e.target && e.target.id === 'filtroTrilha') {
 
-        updateFiltroArvores();
-        render();
+      filtroTrilha = e.target.value;
+      filtroArvore = '';
+
+      // atualiza URL
+      const url = new URL(window.location);
+
+      if (filtroTrilha) {
+        url.searchParams.set('trilha', filtroTrilha);
+      } else {
+        url.searchParams.delete('trilha');
       }
 
-      // filtro árvore
-      if (e.target && e.target.id === 'filtroArvore') {
-        filtroArvore = e.target.value;
-        render();
+      // remove árvore ao trocar trilha
+      url.searchParams.delete('codigo');
+
+      window.history.replaceState({}, '', url);
+
+      updateFiltroArvores();
+      render();
+    }
+
+    // ================= filtro árvore =================
+    if (e.target && e.target.id === 'filtroArvore') {
+
+      filtroArvore = e.target.value;
+
+      const url = new URL(window.location);
+
+      // mantém trilha
+      if (filtroTrilha) {
+        url.searchParams.set('trilha', filtroTrilha);
+      } else {
+        url.searchParams.delete('trilha');
       }
-    });
+
+      // adiciona/remover código da árvore
+      if (filtroArvore) {
+
+        const arv = arvores.find(
+          a => String(a.id) === String(filtroArvore)
+        );
+
+        if (arv) {
+          url.searchParams.set('codigo', arv.codigo);
+        }
+
+      } else {
+        url.searchParams.delete('codigo');
+      }
+
+      window.history.replaceState({}, '', url);
+
+      render();
+    }
+  });
 
     // bootstrap
     (async () => {

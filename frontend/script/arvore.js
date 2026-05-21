@@ -447,34 +447,100 @@
   });
 
   // ================= FAB (ADICIONAR ÁRVORE) =================
-const fab = document.createElement('button');
-fab.className = 'fab-add';
-fab.title = 'Adicionar árvore';
-fab.appendChild(makePlusSvg());
-document.body.appendChild(fab);
+  const fab = document.createElement('button');
+  fab.className = 'fab-add';
+  fab.title = 'Adicionar árvore';
+  fab.appendChild(makePlusSvg());
+  document.body.appendChild(fab);
 
-fab.addEventListener('click', async () => {
-  await ensureModal();
-  await loadTrilhas();
+  fab.addEventListener('click', async () => {
+    await ensureModal();
+    await loadTrilhas();
 
-  const modal = document.getElementById('arvoreAddModal');
+    const modal = document.getElementById('arvoreAddModal');
 
-  if (!modal) {
-    alert('Modal de adicionar árvore não encontrado');
-    return;
-  }
+    if (!modal) {
+      alert('Modal de adicionar árvore não encontrado');
+      return;
+    }
 
-  [
-    'addTrilha','addCodigo','addNome','addEspecie',
-    'addFoto','addPosX','addPosY'
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
+    [
+      'addTrilha','addCodigo','addNome','addEspecie',
+      'addFoto','addPosX','addPosY'
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
   });
 
-  modal.classList.add('open');
-  modal.setAttribute('aria-hidden','false');
-});
+  // ===== submit (adicionar árvore) =====
+  document.addEventListener('submit', async (e) => {
+    if (!(e.target && e.target.id === 'arvoreAddForm')) return;
+
+    e.preventDefault();
+
+    const trilha  = document.getElementById('addTrilha')?.value || '';
+    const codigo  = Number(document.getElementById('addCodigo')?.value || 0);
+    const nome    = document.getElementById('addNome')?.value?.trim() || '';
+    const especie = document.getElementById('addEspecie')?.value?.trim() || '';
+    const foto    = document.getElementById('addFoto')?.value?.trim() || '';
+
+    const pos_x = parseNum(
+      document.getElementById('addPosX')?.value
+    );
+
+    const pos_y = parseNum(
+      document.getElementById('addPosY')?.value
+    );
+
+    if (!trilha || !codigo || !nome) {
+      alert('Preencha os campos obrigatórios.');
+      return;
+    }
+
+    try {
+      const resp = await authFetch('/api/arvores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          trilha_nome: trilha,
+          codigo,
+          nome,
+          especie,
+          foto_url: foto,
+          pos_x,
+          pos_y
+        })
+      });
+
+      const payload = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        throw new Error(payload.error || `Erro ${resp.status}`);
+      }
+
+      // recarrega lista do backend
+      await loadArvores();
+      alert('Árvore adicionada com sucesso!');
+
+      // fecha modal
+      const modal = document.getElementById('arvoreAddModal');
+
+      if (modal) {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Erro ao adicionar árvore');
+    }
+  });
 
   // ===== carregar lista =====
   async function loadArvores() {
