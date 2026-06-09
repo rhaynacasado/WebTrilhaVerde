@@ -11,18 +11,17 @@ module.exports = (sequelize, DataTypes) => {
     pos_x:        { type: DataTypes.DECIMAL(10,6), allowNull: true },
     pos_y:        { type: DataTypes.DECIMAL(10,6), allowNull: true },
     ordem:        { type: DataTypes.INTEGER, allowNull: true },
-    
+    latitude:     { type: DataTypes.DECIMAL(12,8), allowNull: true },  // ← NOVO
+    longitude:    { type: DataTypes.DECIMAL(12,8), allowNull: true },  // ← NOVO
   }, {
     tableName: 'arvore',
     schema: 'public',
     timestamps: false
   });
 
-
-  // PK composta (trilha_nome, codigo)
   Arvore.removeAttribute('id');
   Arvore.primaryKeyAttributes = ['trilha_nome','codigo'];
-  Arvore.addHook('afterSync', async () => {}); // no-op só pra manter o meta
+  Arvore.addHook('afterSync', async () => {});
 
   return Arvore;
 };
