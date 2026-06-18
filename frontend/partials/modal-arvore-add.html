@@ -11,57 +11,171 @@
 
     <form id="arvoreAddForm" class="form">
 
-      <!-- Trilha -->
-      <div class="form__row">
-        <label for="addTrilha">Trilha *</label>
-        <select id="addTrilha" required>
-          <!-- opções vêm do backend -->
-        </select>
+      <!-- IDENTIFICAÇÃO -->
+      <div class="form__grid">
+
+        <div class="form__row">
+          <label for="addTrilha">Trilha *</label>
+          <select id="addTrilha" required>
+            <!-- opções vêm do backend -->
+          </select>
+        </div>
+
+        <div class="form__row">
+          <label for="addCodigo">Código QRCode *</label>
+          <input id="addCodigo" type="number" required />
+        </div>
+
       </div>
 
-      <!-- Código -->
+      <!-- ORDEM -->
       <div class="form__row">
-        <label for="addCodigo">Código QRCode *</label>
-        <input id="addCodigo" type="number" required />
+        <label for="addOrdem">Ordem na trilha</label>
+        <input
+          id="addOrdem"
+          type="number"
+          min="1"
+          placeholder="Sequência da árvore na trilha"
+        />
       </div>
 
-      <!-- Nome -->
-      <div class="form__row">
-        <label for="addNome">Nome *</label>
-        <input id="addNome" type="text" placeholder="Nome da árvore" required />
+      <!-- DADOS DA ÁRVORE -->
+      <div class="form__grid">
+
+        <div class="form__row">
+          <label for="addNome">Nome *</label>
+          <input
+            id="addNome"
+            type="text"
+            placeholder="Nome da árvore"
+            required
+          />
+        </div>
+
+        <div class="form__row">
+          <label for="addEspecie">Espécie *</label>
+          <input
+            id="addEspecie"
+            type="text"
+            placeholder="Ex: Caesalpinia pluviosa"
+            required
+          />
+        </div>
+
       </div>
 
-      <!-- Espécie -->
-      <div class="form__row">
-        <label for="addEspecie">Espécie *</label>
-        <input id="addEspecie" type="text" placeholder="Ex: Caesalpinia pluviosa" required />
+      <div class="form__grid">
+
+        <div class="form__row">
+          <label for="addFamilia">Família</label>
+          <input
+            id="addFamilia"
+            type="text"
+            placeholder="Ex: Fabaceae"
+          />
+        </div>
+
+        <div class="form__row">
+          <label for="addOrigem">Origem</label>
+          <input
+            id="addOrigem"
+            type="text"
+            placeholder="Ex: Brasil"
+          />
+        </div>
+
       </div>
 
-      <!-- Foto -->
+      <div class="form__row">
+        <label for="addTipoOrigem">Tipo de origem</label>
+        <input
+          id="addTipoOrigem"
+          type="text"
+          placeholder="Ex: Nativa, Exótica..."
+        />
+      </div>
+
+      <!-- FOTO -->
       <div class="form__row">
         <label for="addFoto">Foto (URL)</label>
-        <input id="addFoto" type="url" placeholder="https://..." />
+        <input
+          id="addFoto"
+          type="url"
+          placeholder="https://..."
+        />
       </div>
 
-      <!-- Posição -->
+      <!-- COORDENADAS -->
       <div class="form__grid">
+
+        <div class="form__row">
+          <label for="addLatitude">Latitude</label>
+          <input
+            id="addLatitude"
+            type="number"
+            step="any"
+            placeholder="-22.123456"
+          />
+        </div>
+
+        <div class="form__row">
+          <label for="addLongitude">Longitude</label>
+          <input
+            id="addLongitude"
+            type="number"
+            step="any"
+            placeholder="-47.123456"
+          />
+        </div>
+
+      </div>
+
+      <!-- POSIÇÃO -->
+      <div class="form__grid">
+
         <div class="form__row">
           <label for="addPosX">Posição X *</label>
-          <input id="addPosX" type="number" step="any" placeholder="Ex: 123.45" required />
+          <input
+            id="addPosX"
+            type="number"
+            step="any"
+            placeholder="Ex: 123.45"
+            required
+          />
         </div>
 
         <div class="form__row">
           <label for="addPosY">Posição Y *</label>
-          <input id="addPosY" type="number" step="any" placeholder="Ex: 678.90" required />
+          <input
+            id="addPosY"
+            type="number"
+            step="any"
+            placeholder="Ex: 678.90"
+            required
+          />
         </div>
+
       </div>
 
-      <!-- Botões -->
+      <!-- BOTÕES -->
       <footer class="modal__foot">
-        <button type="button" class="btn" data-close>Cancelar</button>
-        <button type="submit" class="btn primary" id="btnAdicionarArvore">
+
+        <button
+          type="button"
+          class="btn"
+          data-close
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="btn primary"
+          id="btnAdicionarArvore"
+        >
           Adicionar
         </button>
+
       </footer>
 
     </form>

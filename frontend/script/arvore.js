@@ -344,6 +344,12 @@
       setVal('arvoreFoto', a.foto_url || '');
       setVal('arvorePosX', a.pos_x ?? '');
       setVal('arvorePosY', a.pos_y ?? '');
+      setVal('arvoreOrdem', a.ordem ?? '');
+      setVal('arvoreFamilia', a.familia || '');
+      setVal('arvoreOrigem', a.origem || '');
+      setVal('arvoreTipoOrigem', a.tipo_origem || '');
+      setVal('arvoreLatitude', a.latitude ?? '');
+      setVal('arvoreLongitude', a.longitude ?? '');
       setToggle(!!a.ativa);
       openModal();
       return;
@@ -424,16 +430,47 @@
     const foto    = (document.getElementById('arvoreFoto') || {}).value?.trim() ?? '';
     const pos_x   = parseNum((document.getElementById('arvorePosX') || {}).value);
     const pos_y   = parseNum((document.getElementById('arvorePosY') || {}).value);
+    const ordem = parseNum(document.getElementById('arvoreOrdem')?.value);
+    const familia = (document.getElementById('arvoreFamilia') || {}).value?.trim() ?? '';
+    const origem = (document.getElementById('arvoreOrigem') || {}).value?.trim() ?? '';
+    const tipo_origem = (document.getElementById('arvoreTipoOrigem') || {}).value?.trim() ?? '';
+    const latitude = parseNum(document.getElementById('arvoreLatitude')?.value);
+    const longitude = parseNum(document.getElementById('arvoreLongitude')?.value);
 
     // otimista
-    arvores[idx] = { ...arvores[idx], nome, especie, foto_url: foto, pos_x, pos_y };
+    arvores[idx] = {
+      ...arvores[idx],
+      nome,
+      especie,
+      familia,
+      origem,
+      tipo_origem,
+      ordem,
+      latitude,
+      longitude,
+      foto_url: foto,
+      pos_x,
+      pos_y
+    };
     render();
 
     try {
       const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, especie, foto_url: foto, pos_x, pos_y })
+        body: JSON.stringify({
+          nome,
+          especie,
+          familia,
+          origem,
+          tipo_origem,
+          ordem,
+          latitude,
+          longitude,
+          foto_url: foto,
+          pos_x,
+          pos_y
+        })
       });
       if (!resp.ok) throw new Error(`Falha ao salvar: ${resp.status}`);
       const saved = await resp.json();
@@ -465,8 +502,19 @@
     }
 
     [
-      'addTrilha','addCodigo','addNome','addEspecie',
-      'addFoto','addPosX','addPosY'
+      'addTrilha',
+      'addCodigo',
+      'addNome',
+      'addEspecie',
+      'addFamilia',
+      'addOrigem',
+      'addTipoOrigem',
+      'addOrdem',
+      'addFoto',
+      'addLatitude',
+      'addLongitude',
+      'addPosX',
+      'addPosY'
     ].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
@@ -487,6 +535,29 @@
     const nome    = document.getElementById('addNome')?.value?.trim() || '';
     const especie = document.getElementById('addEspecie')?.value?.trim() || '';
     const foto    = document.getElementById('addFoto')?.value?.trim() || '';
+    const ordem = parseNum(
+  document.getElementById('addOrdem')?.value
+);
+
+const familia = (
+  document.getElementById('addFamilia') || {}
+).value?.trim() || '';
+
+const origem = (
+  document.getElementById('addOrigem') || {}
+).value?.trim() || '';
+
+const tipo_origem = (
+  document.getElementById('addTipoOrigem') || {}
+).value?.trim() || '';
+
+const latitude = parseNum(
+  document.getElementById('addLatitude')?.value
+);
+
+const longitude = parseNum(
+  document.getElementById('addLongitude')?.value
+);
 
     const pos_x = parseNum(
       document.getElementById('addPosX')?.value
@@ -512,6 +583,12 @@
           codigo,
           nome,
           especie,
+          familia,
+          origem,
+          tipo_origem,
+          ordem,
+          latitude,
+          longitude,
           foto_url: foto,
           pos_x,
           pos_y
@@ -552,30 +629,54 @@
       const data = await resp.json();
       const raw = (Array.isArray(data) ? data : []);
 
+      function ordinal(n) {
+        if (n == null || Number.isNaN(Number(n))) return '';
+        const num = Number(n);
+        const mod100 = num % 100;
+        const suffix = (mod100 >= 11 && mod100 <= 13)
+          ? 'ª'
+          : (num % 10 === 1 ? 'ª' : 'ª');
+        return `${num}${suffix}`;
+      }
+
       const map = new Map();
 
       raw.forEach(a => {
-        const key = a.codigo; // ou use nome+codigo se necessário
+        const key = a.codigo;
+        const ordem = a.ordem == null ? null : Number(a.ordem);
+        const trilhaInfo = { nome: a.trilha_nome, ordem };
 
         if (!map.has(key)) {
           map.set(key, {
             ...a,
             codigo: Number(a.codigo),
-            trilhas: [a.trilha_nome],
+            trilhas: [trilhaInfo],
             quantidade_perguntas: Number(a.quantidade_perguntas ?? 0),
             ativa: !!a.ativa,
             pos_x: a.pos_x == null ? null : Number(a.pos_x),
             pos_y: a.pos_y == null ? null : Number(a.pos_y),
-            ordem: a.ordem == null ? null : Number(a.ordem),
+            ordem: ordem,
           });
         } else {
-          map.get(key).trilhas.push(a.trilha_nome);
+          map.get(key).trilhas.push(trilhaInfo);
         }
       });
 
-      arvores = Array.from(map.values()).sort((a, b) =>
-        a.nome.localeCompare(b.nome, 'pt-BR')
-      );
+      const sortByOrdem = trilhaParam != null && trilhaParam !== '';
+      arvores = Array.from(map.values()).sort((a, b) => {
+        if (sortByOrdem) {
+          const oa = a.ordem == null ? Number.POSITIVE_INFINITY : Number(a.ordem);
+          const ob = b.ordem == null ? Number.POSITIVE_INFINITY : Number(b.ordem);
+          if (oa !== ob) return oa - ob;
+        }
+        return a.nome.localeCompare(b.nome, 'pt-BR');
+      });
+
+      arvores.forEach(a => {
+        a.trilhas = a.trilhas.map(t =>
+          t.ordem != null ? `${t.nome} (${ordinal(t.ordem)})` : t.nome
+        );
+      });
 
       render();
     } catch (err) {

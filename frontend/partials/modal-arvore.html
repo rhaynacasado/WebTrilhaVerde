@@ -7,48 +7,117 @@
     </header>
 
     <form id="arvoreForm" class="form">
+
+      <!-- IDENTIFICAÇÃO -->
       <div class="form__grid">
         <div class="form__row">
           <label for="arvoreTrilha">Trilha</label>
           <input id="arvoreTrilha" type="text" readonly aria-readonly="true" class="input-readonly" />
         </div>
+
         <div class="form__row">
           <label for="arvoreCodigo">Código QRCode</label>
           <input id="arvoreCodigo" type="text" readonly aria-readonly="true" class="input-readonly" />
         </div>
       </div>
 
-      <div class="form__row">
-        <label for="arvoreNome">Nome</label>
-        <input id="arvoreNome" type="text" required />
+      <!-- ORDEM -->
+      <div class="form__grid">
+        <div class="form__row">
+          <label for="arvoreOrdem">Ordem na trilha</label>
+          <input
+            id="arvoreOrdem"
+            type="number"
+            min="1"
+            placeholder="Sequência da árvore na trilha"
+          />
+        </div>
       </div>
 
-      <div class="form__row">
-        <label for="arvoreEspecie">Espécie</label>
-        <input id="arvoreEspecie" type="text" required />
+      <!-- INFORMAÇÕES DA ÁRVORE -->
+      <div class="form__grid">
+        <div class="form__row">
+          <label for="arvoreNome">Nome</label>
+          <input id="arvoreNome" type="text" required />
+        </div>
+
+        <div class="form__row">
+          <label for="arvoreEspecie">Espécie</label>
+          <input id="arvoreEspecie" type="text" required />
+        </div>
       </div>
 
       <div class="form__grid">
         <div class="form__row">
-          <label for="arvoreFoto">Foto (URL)</label>
-          <input id="arvoreFoto" type="url" placeholder="https://..." />
+          <label for="arvoreFamilia">Família</label>
+          <input id="arvoreFamilia" type="text" />
         </div>
+
+        <div class="form__row">
+          <label for="arvoreOrigem">Origem</label>
+          <input id="arvoreOrigem" type="text" />
+        </div>
+      </div>
+
+      <div class="form__row">
+        <label for="arvoreTipoOrigem">Tipo de origem</label>
+        <input
+          id="arvoreTipoOrigem"
+          type="text"
+          placeholder="Ex.: Nativa, Exótica..."
+        />
+      </div>
+
+      <!-- FOTO -->
+      <div class="form__row">
+        <label for="arvoreFoto">Foto (URL)</label>
+        <input id="arvoreFoto" type="url" placeholder="https://..." />
+      </div>
+
+      <!-- POSIÇÃO NO MAPA -->
+      <div class="form__grid">
+        <div class="form__row">
+          <label for="arvoreLatitude">Latitude</label>
+          <input
+            id="arvoreLatitude"
+            type="number"
+            step="any"
+            placeholder="-22.123456"
+          />
+        </div>
+
+        <div class="form__row">
+          <label for="arvoreLongitude">Longitude</label>
+          <input
+            id="arvoreLongitude"
+            type="number"
+            step="any"
+            placeholder="-47.123456"
+          />
+        </div>
+      </div>
+
+      <!-- POSIÇÃO ANTIGA -->
+      <div class="form__grid">
         <div class="form__row">
           <label for="arvorePosX">Posição X</label>
-          <input id="arvorePosX" type="number" step="any" placeholder="ex.: -42.123456" />
+          <input id="arvorePosX" type="number" step="any" />
         </div>
-      </div>
 
-      <div class="form__grid">
         <div class="form__row">
           <label for="arvorePosY">Posição Y</label>
-          <input id="arvorePosY" type="number" step="any" placeholder="ex.: -22.654321" />
+          <input id="arvorePosY" type="number" step="any" />
         </div>
       </div>
 
       <footer class="modal__foot">
-        <button id="btnToggleStatus" type="button" class="btn danger">Desativar</button>
-        <button type="submit" class="btn primary">Alterar</button>
+        <button id="btnToggleStatus" type="button" class="btn danger">
+          Desativar
+        </button>
+
+        <button type="submit" class="btn primary">
+          Alterar
+        </button>
       </footer>
     </form>
   </div>

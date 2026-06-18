@@ -12,8 +12,10 @@ router.get('/', async (req, res) => {
         COALESCE(SUM(CASE WHEN a.ativa THEN 1 ELSE 0 END), 0) AS arvores_ativas,
         COALESCE(SUM(a.quantidade_perguntas), 0) AS perguntas
       FROM trilha t
+      LEFT JOIN arvore_trilha at
+        ON at.trilha_nome = t.nome
       LEFT JOIN arvore a
-        ON a.trilha_nome = t.nome
+        ON a.codigo = at.arvore_codigo
       GROUP BY t.nome
       ORDER BY t.nome ASC;
     `);

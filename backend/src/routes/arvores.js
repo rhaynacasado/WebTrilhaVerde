@@ -30,11 +30,8 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     const { trilha, codigo } = req.params;
     const cod = Number(codigo);
 
-    const arv = await Arvore.findOne({
-      where: { trilha_nome: trilha, codigo: cod }
-    });
-
-    if (!arv) return res.status(404).json({ error: 'Árvore não encontrada' });
+    const arv = await loadArvoreOr404(trilha, cod, res);
+    if (!arv) return; // loadArvoreOr404 already sent 404
 
     const { nome, especie, foto_url, ordem } = req.body;
     const pos_x = toNumOrNull(req.body.pos_x);
@@ -49,16 +46,38 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     if (pos_x !== undefined && !sameNum(arv.pos_x, pos_x)) { arv.pos_x = pos_x; changed.push('pos_x'); }
     if (pos_y !== undefined && !sameNum(arv.pos_y, pos_y)) { arv.pos_y = pos_y; changed.push('pos_y'); }
     if (ativa !== undefined && !!arv.ativa !== ativa) { arv.ativa = ativa; changed.push('ativa'); }
-    if (ordem !== undefined && !sameNum(arv.ordem, ordem)) { arv.ordem = ordem; changed.push('ordem'); }
 
-    if (changed.length === 0) {
+    // ordem lives in arvore_trilha now
+    let ordemChanged = false;
+    const ordemNum = toNumOrNull(ordem);
+    if (ordem !== undefined) {
+      const currentOrder = arv.ordem == null ? null : Number(arv.ordem);
+      if (!sameNum(currentOrder, ordemNum)) {
+        ordemChanged = true;
+        changed.push('ordem');
+      }
+    }
+
+    if (!changed.length && !ordemChanged) {
       return res.json({ unchanged: true, ...arv.toJSON() });
     }
 
+    // persist changes
     await arv.save();
+
+    if (ordemChanged) {
+      await sequelize.query(
+        `UPDATE arvore_trilha SET ordem = $1 WHERE trilha_nome = $2 AND arvore_codigo = $3`,
+        { bind: [ordemNum, trilha, cod] }
+      );
+      arv.ordem = ordemNum;
+    }
+
     await logArvore(req, trilha, cod, `update:${changed.join(',')}`);
 
-    return res.json(arv.toJSON());
+    const out = arv.toJSON();
+    out.ordem = arv.ordem;
+    return res.json(out);
   } catch (e) {
     console.error('PUT /arvores/:trilha/:codigo', e);
     return res.status(400).json({ error: 'Erro ao atualizar árvore' });
@@ -67,34 +86,45 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
 
 // ================= HELPERS INTERNOS =================
 async function loadArvoreOr404(trilha, codigo, res) {
-  const found = await Arvore.findOne({
-    where: { trilha_nome: trilha, codigo }
+  const found = await Arvore.findByPk(Number(codigo), {
+    attributes: [
+      'codigo', 'nome', 'especie', 'foto_url', 'ativa',
+      'pos_x', 'pos_y', 'familia', 'origem', 'tipo_origem',
+      'latitude', 'longitude', 'quantidade_perguntas'
+    ]
   });
-
   if (!found) {
     res.status(404).json({ error: 'Árvore não encontrada' });
     return null;
   }
+
+  // ensure association exists and load ordem
+  const [rows] = await sequelize.query(
+    `SELECT ordem FROM arvore_trilha WHERE trilha_nome = $1 AND arvore_codigo = $2`,
+    { bind: [trilha, Number(codigo)] }
+  );
+
+  if (!rows || rows.length === 0) {
+    res.status(404).json({ error: 'Árvore não encontrada na trilha' });
+    return null;
+  }
+
+  found.trilha_nome = trilha;
+  found.ordem = rows[0].ordem == null ? null : Number(rows[0].ordem);
   return found;
 }
 
 async function isExtremityTree(arvore) {
   if (arvore.ordem == null) return false;
 
-  const stats = await Arvore.findAll({
-    attributes: [
-      [sequelize.fn('MIN', sequelize.col('ordem')), 'min_ordem'],
-      [sequelize.fn('MAX', sequelize.col('ordem')), 'max_ordem'],
-    ],
-    where: {
-      trilha_nome: arvore.trilha_nome,
-      ordem: { [Op.ne]: null },
-    },
-    raw: true,
-    limit: 1,
-  });
+  const [stats] = await sequelize.query(
+    `SELECT MIN(ordem) AS min_ordem, MAX(ordem) AS max_ordem
+     FROM arvore_trilha
+     WHERE trilha_nome = $1 AND ordem IS NOT NULL`,
+    { bind: [arvore.trilha_nome] }
+  );
 
-  const meta = stats[0] || {};
+  const meta = (stats && stats[0]) || stats || {};
   const min = meta.min_ordem == null ? null : Number(meta.min_ordem);
   const max = meta.max_ordem == null ? null : Number(meta.max_ordem);
 
@@ -102,8 +132,7 @@ async function isExtremityTree(arvore) {
 
   const ordemAtual = Number(arvore.ordem);
 
-  return (min != null && ordemAtual === min) ||
-         (max != null && ordemAtual === max);
+  return (min != null && ordemAtual === min) || (max != null && ordemAtual === max);
 }
 
 async function persistAtivaChange(req, res, trilha, codigo, novaFlag, logPrefix) {
@@ -182,7 +211,6 @@ router.post('/', auth, async (req, res) => {
     }
 
     const created = await Arvore.create({
-      trilha_nome: body.trilha_nome,
       codigo: Number(body.codigo),
       nome: body.nome || '',
       especie: body.especie || '',
@@ -190,16 +218,20 @@ router.post('/', auth, async (req, res) => {
       ativa: body.ativa == null ? true : !!body.ativa,
       pos_x: toNumOrNull(body.pos_x),
       pos_y: toNumOrNull(body.pos_y),
-    });
+    }, { returning: false });
 
-    await logArvore(
-      req,
-      created.trilha_nome,
-      Number(created.codigo),
-      `create:"${(created.nome || '').slice(0,80)}"`
+    // create association in arvore_trilha
+    await sequelize.query(
+      `INSERT INTO arvore_trilha (trilha_nome, arvore_codigo, ordem) VALUES ($1,$2,$3)` ,
+      { bind: [body.trilha_nome, Number(body.codigo), toNumOrNull(body.ordem)] }
     );
 
-    return res.status(201).json(created.toJSON());
+    await logArvore(req, body.trilha_nome, Number(body.codigo), `create:"${(created.nome || '').slice(0,80)}"`);
+
+    const out = created.toJSON();
+    out.trilha_nome = body.trilha_nome;
+    out.ordem = toNumOrNull(body.ordem);
+    return res.status(201).json(out);
   } catch (e) {
     console.error('POST /arvores', e);
     return res.status(400).json({ error: 'Erro ao criar árvore' });
@@ -211,18 +243,37 @@ router.delete('/:trilha/:codigo', auth, async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
 
-    const a = await Arvore.findOne({
-      where: { trilha_nome: trilha, codigo: Number(codigo) }
-    });
+    const cod = Number(codigo);
+    // remove association and possibly the arvore row if no other associations remain
+    const t = await sequelize.transaction();
+    try {
+      // fetch name for log
+      const [rows] = await sequelize.query(`SELECT nome FROM arvore WHERE codigo = $1`, { bind: [cod], transaction: t });
+      const nome = (rows && rows[0] && rows[0].nome) ? rows[0].nome : '';
 
-    if (!a) return res.status(404).json({ error: 'Árvore não encontrada' });
+      const del = await sequelize.query(
+        `DELETE FROM arvore_trilha WHERE trilha_nome = $1 AND arvore_codigo = $2`,
+        { bind: [trilha, cod], transaction: t }
+      );
 
-    const nome = a.nome || '';
-    await a.destroy();
+      const [rem] = await sequelize.query(
+        `SELECT COUNT(*)::int AS cnt FROM arvore_trilha WHERE arvore_codigo = $1`,
+        { bind: [cod], transaction: t }
+      );
 
-    await logArvore(req, trilha, Number(codigo), `delete:"${nome.slice(0,80)}"`);
+      const remaining = rem && rem[0] ? Number(rem[0].cnt) : 0;
+      if (remaining === 0) {
+        await sequelize.query(`DELETE FROM arvore WHERE codigo = $1`, { bind: [cod], transaction: t });
+      }
 
-    return res.status(204).end();
+      await t.commit();
+
+      await logArvore(req, trilha, cod, `delete:"${nome.slice(0,80)}"`);
+      return res.status(204).end();
+    } catch (err) {
+      await t.rollback();
+      throw err;
+    }
   } catch (e) {
     console.error(e);
     return res.status(400).json({ error: 'Erro ao excluir árvore' });
@@ -244,30 +295,37 @@ router.get('/total', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { trilha, ativas } = req.query;
-    const where = {};
+    const replacements = [];
+    let whereSql = '';
+    if (trilha) { whereSql += ' AND at.trilha_nome = $' + (replacements.push(trilha) ); }
+    if (ativas === 'true') { whereSql += ' AND a.ativa = true'; }
 
-    if (trilha) where.trilha_nome = trilha;
-    if (ativas === 'true') where.ativa = true;
+    const orderSql = trilha
+      ? 'ORDER BY at.ordem ASC NULLS LAST, a.nome ASC'
+      : 'ORDER BY a.nome ASC';
 
-    const trees = await Arvore.findAll({
-      where,
-      order: [['codigo', 'ASC']],
-      raw: true
-    });
+    const sql = `
+      SELECT at.trilha_nome, at.ordem, a.*
+      FROM arvore a
+      JOIN arvore_trilha at ON at.arvore_codigo = a.codigo
+      WHERE 1=1 ${whereSql}
+      ${orderSql}`;
 
-    const counts = await Pergunta.findAll({
-      attributes: [
-        'trilha_nome',
-        'arvore_codigo',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'qtd']
-      ],
-      group: ['trilha_nome', 'arvore_codigo'],
-      raw: true
-    });
+    const [trees] = await sequelize.query(sql, { bind: replacements.length ? replacements : undefined });
 
-    const map = new Map(
-      counts.map(c => [`${c.trilha_nome}:${c.arvore_codigo}`, Number(c.qtd)])
-    );
+    // build counts by joining pergunta -> arvore_trilha to ensure trilha_nome is available
+    const countsSql = `
+      SELECT at.trilha_nome, p.arvore_codigo, COUNT(p.id)::int AS qtd
+      FROM pergunta p
+      JOIN arvore_trilha at ON at.arvore_codigo = p.arvore_codigo
+      ${trilha ? 'WHERE at.trilha_nome = $1' : ''}
+      GROUP BY at.trilha_nome, p.arvore_codigo
+    `;
+
+    const countsBind = trilha ? [trilha] : [];
+    const [countsRows] = await sequelize.query(countsSql, { bind: countsBind });
+
+    const map = new Map(countsRows.map(c => [`${c.trilha_nome}:${c.arvore_codigo}`, Number(c.qtd)]));
 
     const out = trees.map(t => ({
       ...t,
@@ -276,7 +334,7 @@ router.get('/', async (req, res) => {
 
     return res.json(out);
   } catch (e) {
-    console.error(e);
+    console.error('GET /api/arvores error', { error: e && e.stack ? e.stack : e });
     return res.status(500).json({ error: 'Erro ao listar árvores' });
   }
 });
@@ -285,12 +343,8 @@ router.get('/', async (req, res) => {
 router.get('/:trilha/:codigo', async (req, res) => {
   try {
     const { trilha, codigo } = req.params;
-
-    const a = await Arvore.findOne({
-      where: { trilha_nome: trilha, codigo: Number(codigo) }
-    });
-
-    if (!a) return res.status(404).json({ error: 'Árvore não encontrada' });
+    const a = await loadArvoreOr404(trilha, Number(codigo), res);
+    if (!a) return;
 
     const qtd = await Pergunta.count({
       where: { trilha_nome: trilha, arvore_codigo: Number(codigo) }
@@ -298,6 +352,7 @@ router.get('/:trilha/:codigo', async (req, res) => {
 
     const out = a.toJSON();
     out.quantidade_perguntas = qtd;
+    out.ordem = a.ordem;
 
     return res.json(out);
   } catch (e) {
