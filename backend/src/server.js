@@ -1,5 +1,6 @@
 // src/server.js
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
@@ -17,6 +18,16 @@ app.use(cors());
 
 app.use(express.json({ limit: '10mb' })); // Para o upload de imagens
 app.use(express.urlencoded({ extended: true }));
+
+// Entrega os arquivos estáticos do frontend
+app.use(express.static(path.join(__dirname, '../../frontend')));
+
+// Redireciona rotas sem extensão para os arquivos HTML correspondentes
+app.get('/pages/dashboard', (_req, res) => res.redirect('/pages/dashboard.html'));
+app.get('/pages/redefinicao', (_req, res) => res.redirect('/pages/redefinicao.html'));
+app.get('/pages/cadastro', (_req, res) => res.redirect('/pages/cadastro.html'));
+app.get('/pages/esqueci', (_req, res) => res.redirect('/pages/esqueci.html'));
+app.get('/', (_req, res) => res.sendFile(path.join(__dirname, '../../frontend/index.html')));
 
 /* ========= Health ========= */
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
