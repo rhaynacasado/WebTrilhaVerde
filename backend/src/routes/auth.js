@@ -3,6 +3,10 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { Administrador } = require('../models');
 const auth = require('../middlewares/auth');
 
@@ -158,10 +162,6 @@ router.post('/me/avatar', auth, upload.single('avatar'), async (req, res) => {
 
 module.exports = router;
 
-
-const crypto = require("crypto");
-const nodemailer = require("nodemailer");
-
 // memória só de exemplo (melhor usar tabela ResetTokens no DB)
 const resetTokens = new Map();
 
@@ -185,6 +185,23 @@ const getFrontendBaseUrl = (req) => {
   return configured;
 };
 
+const buildResetUrl = (req, token) => {
+  const configured = String(process.env.FRONTEND_URL || "").trim();
+  const baseUrl = configured ? configured.replace(/\/$/, "") : getFrontendBaseUrl(req);
+  return `${baseUrl}/pages/redefinicao.html?token=${encodeURIComponent(token)}&mode=reset`;
+};
+
+const getEmailLogoAttachment = () => {
+  const logoPath = path.resolve(__dirname, '../../../frontend/img/logo.png');
+  if (!fs.existsSync(logoPath)) return null;
+
+  return {
+    filename: 'logo.png',
+    path: logoPath,
+    cid: 'trilha-verde-logo',
+  };
+};
+
 /** ---------- ESQUECI MINHA SENHA ---------- */
 router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
   if (bad(req, res)) return;
@@ -197,10 +214,10 @@ router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = Date.now() + 60 * 60 * 1000; // 1 hora
+    const expires = Date.now() + 15 * 60 * 1000; // 15 minutos
     resetTokens.set(token, { email, expires });
 
-    const resetUrl = `${getFrontendBaseUrl(req)}/pages/redefinicao.html?token=${token}`;
+    const resetUrl = buildResetUrl(req, token);
     const smtpUser = String(process.env.SMTP_USER || "").trim();
     const smtpPass = String(process.env.SMTP_PASS || "").replace(/\s+/g, "");
     const canSendMail = Boolean(smtpUser && smtpPass);
@@ -219,19 +236,50 @@ router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
       });
 
       try {
-        await transporter.sendMail({
+        const logoAttachment = getEmailLogoAttachment();
+        const mailOptions = {
           from: '"Trilha Verde" <no-reply@trilhaverde.com>',
           to: email,
           subject: "Trilha Verde: Redefinição de senha",
-          html: `<p>Olá, recebemos uma solicitação para redefinir sua senha para Trilha Verde.</p>
-                 <p>Se você não fez essa solicitação, pode ignorar este e-mail com segurança.</p>
-                 <hr>
-                 <p>Clique no link para redefinir sua senha:</p>
-                 <a href="${resetUrl}">${resetUrl}</a>
-                 <p>Este link é válido por 15 minutos.</p>
-                 <p>Atenciosamente,<br>Equipe Trilha Verde</p>
-                 <img src="${getFrontendBaseUrl()}/img/logo.png" alt="Logo Trilha Verde" style="max-width:120px; margin-top:16px;">`,
-        });
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #ffffff; color: #1f2937;">
+              <div style="background: #f7fafc; padding: 24px 32px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 14px;">
+                <img src="cid:${logoAttachment?.cid || ''}" alt="Logo Trilha Verde" style="width: 56px; height: 56px; border-radius: 12px; object-fit: cover;">
+                <div>
+                  <div style="font-size: 18px; font-weight: 700; color: #0f766e;">Trilha Verde</div>
+                  <div style="font-size: 13px; color: #6b7280;">Redefinição de senha</div>
+                </div>
+              </div>
+              <div style="padding: 28px 32px 24px;">
+                <p style="margin: 0 0 12px; font-size: 16px;">Olá,</p>
+                <p style="margin: 0 0 12px; font-size: 15px; line-height: 1.6;">Recebemos uma solicitação para redefinir a senha da sua conta no Trilha Verde.</p>
+                <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6;">Se você não fez essa solicitação, pode ignorar este e-mail com segurança.</p>
+                <div style="margin: 20px 0;">
+                  <a href="${resetUrl}" style="display: inline-block; background: #0f766e; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 8px; font-weight: 700;">Redefinir minha senha</a>
+                </div>
+                <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Ou copie e cole este link no navegador:</p>
+                <p style="margin: 0 0 16px; font-size: 13px; word-break: break-all; color: #2563eb;">${resetUrl}</p>
+                <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Este link é válido por 15 minutos.</p>
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; align-items: center; gap: 12px;">
+                  <img src="cid:trilha-verde-avatar" alt="Avatar do remetente" style="width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e7eb;">
+                  <div>
+                    <div style="font-size: 14px; font-weight: 700; color: #111827;">Equipe Trilha Verde</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `,
+          attachments: [
+            ...(logoAttachment ? [logoAttachment] : []),
+            {
+              filename: 'avatar.png',
+              path: path.resolve(__dirname, '../../../frontend/img/avatar.png'),
+              cid: 'trilha-verde-avatar',
+            },
+          ],
+        };
+
+        await transporter.sendMail(mailOptions);
         mailSent = true;
       } catch (mailError) {
         console.warn("Falha ao enviar e-mail de recuperação.", mailError.message);

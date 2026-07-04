@@ -6,19 +6,24 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("Search string:", window.location.search);
 
   const qs = new URLSearchParams(window.location.search);
-  let resetToken = qs.get("token");
-  
-  // Se não houver token na URL, tente recuperar do sessionStorage
+  const hashParams = new URLSearchParams((window.location.hash || "").replace(/^#/, ""));
+
+  let resetToken = qs.get("token") || qs.get("resetToken") || qs.get("t") || hashParams.get("token") || hashParams.get("resetToken") || hashParams.get("t");
+
+  // Se não houver token na URL, tente recuperar do sessionStorage ou localStorage
   if (!resetToken) {
-    resetToken = sessionStorage.getItem("resetToken");
-    console.log("Token recuperado do sessionStorage:", resetToken ? resetToken.substring(0, 8) + "..." : "nenhum");
+    resetToken = sessionStorage.getItem("resetToken") || localStorage.getItem("resetToken");
+    console.log("Token recuperado do sessionStorage/localStorage:", resetToken ? resetToken.substring(0, 8) + "..." : "nenhum");
   } else {
-    // Se token vem da URL, armazene no sessionStorage
+    // Se token vem da URL, armazene no sessionStorage e no localStorage para facilitar a volta
     sessionStorage.setItem("resetToken", resetToken);
-    console.log("Token armazenado no sessionStorage");
+    localStorage.setItem("resetToken", resetToken);
+    console.log("Token armazenado no sessionStorage/localStorage");
   }
-  
+
+  const isResetMode = Boolean(resetToken || qs.get("mode") === "reset" || hashParams.get("mode") === "reset");
   console.log("Token capturado/recuperado:", resetToken ? resetToken.substring(0, 8) + "..." : "nenhum");
+  console.log("Modo de reset identificado:", isResetMode);
 
   // campos possíveis (suporte a 3 modos com o mesmo JS)
   const form = document.querySelector(".formPassword") || document.querySelector(".formEsqueci") || document.querySelector("form");
@@ -108,8 +113,14 @@ document.addEventListener("DOMContentLoaded", () => {
         userName.textContent = user.nome || "Usuário";
         console.log("Nome atualizado:", user.nome);
       }
-      if (userImage && user.fotoUrl) {
-        userImage.src = user.fotoUrl || "../img/avatar.png";
+      if (userImage) {
+        const fallbackAvatar = "../img/avatar.png";
+        const fotoUrl = user.fotoUrl || fallbackAvatar;
+        userImage.src = fotoUrl;
+        userImage.onerror = () => {
+          userImage.src = fallbackAvatar;
+          userImage.onerror = null;
+        };
         console.log("Foto atualizada");
       }
       return true;
@@ -117,7 +128,10 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Erro ao preencher usuário:", err.message);
       showErr(err.message);
       if (userName) userName.textContent = "Usuário";
-      if (userImage) userImage.src = "../img/avatar.png";
+      if (userImage) {
+        userImage.src = "../img/avatar.png";
+        userImage.onerror = null;
+      }
       return false;
     }
   }
@@ -138,8 +152,8 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Formulário submetido. resetToken:", resetToken, "loggedIn:", !!localStorage.getItem("token"), "emailInput-value:", emailInput?.value);
 
     try {
-      // --- FLUXO 1: reset via link com ?token= ---
-      if (resetToken) {
+      // --- FLUXO 1: reset via link com token ---
+      if (isResetMode && resetToken) {
         console.log("Entrando em FLUXO 1: reset via token");
         const nova = (novaInput?.value || "").trim();
         const conf = (confirmaInput?.value || "").trim();
@@ -200,11 +214,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) throw new Error(data.error || "Não foi possível iniciar a redefinição.");
 
-        if (data.resetUrl) {
-          alert("Solicitação recebida. Em modo de desenvolvimento, você será direcionado para a página de redefinição.");
-          window.location.href = data.resetUrl;
-          return;
-        }
+        // if (data.resetUrl) {
+        //   alert("Solicitação recebida. Em modo de desenvolvimento, você será direcionado para a página de redefinição.");
+        //   window.location.href = data.resetUrl;
+        //   return;
+        // }
 
         alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.");
         window.location.href = "../index.html";
