@@ -151,11 +151,6 @@
       p2.setAttribute('stroke-linecap','round');
       svg.appendChild(p1); svg.appendChild(p2);
       return svg;
-
-
-
-
-      
     }
 
     function makePlusSvg() {

@@ -64,7 +64,7 @@
       );
 
       await fetchAndCacheAvatarAsDataURL(API_BASE, token);
-      window.location.assign("/pages/dashboard.html");
+      window.location.href = "/pages/dashboard.html";
     } catch (err) {
       console.error(err);
       alert(err.message || "Erro inesperado no cadastro");
