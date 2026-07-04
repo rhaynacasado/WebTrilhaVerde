@@ -165,6 +165,26 @@ const nodemailer = require("nodemailer");
 // memória só de exemplo (melhor usar tabela ResetTokens no DB)
 const resetTokens = new Map();
 
+const getFrontendBaseUrl = (req) => {
+  const referer = req?.headers?.referer;
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      const pathname = url.pathname.replace(/\/$/, "");
+      if (pathname.includes("/pages/")) {
+        const basePath = pathname.slice(0, pathname.lastIndexOf("/pages"));
+        return `${url.origin}${basePath}`;
+      }
+      return `${url.origin}${pathname === "/" ? "" : pathname}`;
+    } catch (_err) {
+      // fallback abaixo
+    }
+  }
+
+  const configured = String(process.env.FRONTEND_URL || "http://127.0.0.1:5500/frontend").replace(/\/$/, "");
+  return configured;
+};
+
 /** ---------- ESQUECI MINHA SENHA ---------- */
 router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
   if (bad(req, res)) return;
@@ -173,52 +193,65 @@ router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
   try {
     const admin = await Administrador.findByPk(email);
     if (!admin) {
-      // sempre responde igual para não revelar cadastro
       return res.json({ message: "Se o e-mail estiver cadastrado, enviaremos instruções." });
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = Date.now() + 15 * 60 * 1000; // 15 min
+    const expires = Date.now() + 60 * 60 * 1000; // 1 hora
     resetTokens.set(token, { email, expires });
 
-    const resetUrl = `${process.env.FRONTEND_URL}/pages/redefinicao.html?token=${token}`;
+    const resetUrl = `${getFrontendBaseUrl(req)}/pages/redefinicao.html?token=${token}`;
+    const smtpUser = String(process.env.SMTP_USER || "").trim();
+    const smtpPass = String(process.env.SMTP_PASS || "").replace(/\s+/g, "");
+    const canSendMail = Boolean(smtpUser && smtpPass);
 
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.error("SMTP_USER ou SMTP_PASS não definidos!");
+    let mailSent = false;
+
+    if (canSendMail) {
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+
+      try {
+        await transporter.sendMail({
+          from: '"Trilha Verde" <no-reply@trilhaverde.com>',
+          to: email,
+          subject: "Trilha Verde: Redefinição de senha",
+          html: `<p>Olá, recebemos uma solicitação para redefinir sua senha para Trilha Verde.</p>
+                 <p>Se você não fez essa solicitação, pode ignorar este e-mail com segurança.</p>
+                 <hr>
+                 <p>Clique no link para redefinir sua senha:</p>
+                 <a href="${resetUrl}">${resetUrl}</a>
+                 <p>Este link é válido por 15 minutos.</p>
+                 <p>Atenciosamente,<br>Equipe Trilha Verde</p>
+                 <img src="${getFrontendBaseUrl()}/img/logo.png" alt="Logo Trilha Verde" style="max-width:120px; margin-top:16px;">`,
+        });
+        mailSent = true;
+      } catch (mailError) {
+        console.warn("Falha ao enviar e-mail de recuperação.", mailError.message);
+      }
+    } else {
+      console.warn("SMTP_USER ou SMTP_PASS não definidos; usando modo de desenvolvimento para recuperação de senha.");
     }
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: '"Trilha Verde" <no-reply@trilhaverde.com>',
-      to: email,
-      subject: "Trilha Verde: Redefinição de senha",
-      html: `<p>Olá, recebemos uma solicitação para redefinir sua senha para Trilha Verde.</p>
-             <p>Se você não fez essa solicitação, pode ignorar este e-mail com segurança.</p>
-             <hr>
-             <p>Clique no link para redefinir sua senha:</p>
-             <a href="${resetUrl}">${resetUrl}</a>
-             <p>Este link é válido por 15 minutos.</p>
-             <p>Atenciosamente,<br>Equipe Trilha Verde</p>
-            <img src="${process.env.FRONTEND_URL}/img/logo.png" alt="Logo Trilha Verde" style="max-width:120px; margin-top:16px;">`, // TODO: ajustar URL conforme deploy
-    }).catch(err => {
-      console.error("Erro ao enviar e-mail:", err);
-      throw err;
-    });
+    if (mailSent) {
+      if (process.env.NODE_ENV !== "production") {
+        return res.json({ message: "E-mail enviado com sucesso (dev)", resetUrl, devMode: true, mailSent: true });
+      }
+      return res.json({ message: "Se o e-mail estiver cadastrado, enviaremos instruções." });
+    }
 
     if (process.env.NODE_ENV !== "production") {
-      return res.json({ message: "Link enviado (dev)", resetUrl });
+      return res.json({ message: "Link pronto para uso (dev - sem envio)", resetUrl, devMode: true, mailSent: false });
     }
 
-    res.json({ message: "Se o e-mail estiver cadastrado, enviaremos instruções." });
+    return res.status(502).json({ error: "Não foi possível enviar o e-mail. Verifique as credenciais SMTP." });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Erro interno 5" });
