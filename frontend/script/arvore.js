@@ -29,6 +29,132 @@
     return Number.isFinite(n) ? n : null;
   };
 
+  // ===== Google Maps helper =====
+  const DEFAULT_CENTER = { lat: -22.7105478704092, lng: -47.632867682507566 };
+  let googleMapsLoaded = false;
+  function loadGoogleMaps() {
+    if (googleMapsLoaded) return Promise.resolve();
+    const key = window.__GOOGLE_MAPS_API_KEY__ || '';
+    return new Promise((resolve, reject) => {
+      if (!key) {
+        console.warn('Google Maps API key not set (window.__GOOGLE_MAPS_API_KEY__)');
+        resolve();
+        return;
+      }
+      const existing = document.querySelector('script[data-gmaps]');
+      if (existing) {
+        existing.addEventListener('load', () => { googleMapsLoaded = true; resolve(); });
+        existing.addEventListener('error', () => resolve());
+        return;
+      }
+      const s = document.createElement('script');
+      s.setAttribute('data-gmaps','1');
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}`;
+      s.async = true; s.defer = true;
+      s.onload = () => { googleMapsLoaded = true; resolve(); };
+      s.onerror = () => { console.warn('Failed loading Google Maps script'); resolve(); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function setupMap(containerId, latInputId, lngInputId) {
+    let map, marker;
+
+    const el = document.getElementById(containerId);
+    if (!el) return null;
+
+    function getLatLngFromInputs() {
+      const lat = parseNum(document.getElementById(latInputId)?.value);
+      const lng = parseNum(document.getElementById(lngInputId)?.value);
+      if (lat == null || lng == null) return null;
+      return { lat, lng };
+    }
+
+    function centerTo(latlng, zoom = 16) {
+      if (!map) return;
+      map.setCenter(latlng);
+      if (zoom) map.setZoom(zoom);
+    }
+
+    function placeMarker(latlng) {
+      if (!map) return;
+      if (!marker) {
+        marker = new google.maps.Marker({ position: latlng, map, draggable: true });
+        marker.addListener('dragend', () => {
+          const p = marker.getPosition();
+          if (!p) return;
+          const lat = Number(p.lat());
+          const lng = Number(p.lng());
+          const latEl = document.getElementById(latInputId);
+          const lngEl = document.getElementById(lngInputId);
+          if (latEl) latEl.value = lat;
+          if (lngEl) lngEl.value = lng;
+        });
+      } else {
+        marker.setPosition(latlng);
+      }
+    }
+
+    async function init() {
+      await loadGoogleMaps();
+      if (typeof google === 'undefined' || !google.maps) {
+        // Google Maps not available; nothing to do
+        return { map: null, updateFromInputs: () => {} };
+      }
+
+      // initial center
+      const ll = getLatLngFromInputs() || DEFAULT_CENTER;
+
+      map = new google.maps.Map(el, { center: ll, zoom: 16 });
+      placeMarker(ll);
+
+      // click to move marker (ask confirmation first)
+      map.addListener('click', (ev) => {
+        const lat = ev.latLng.lat();
+        const lng = ev.latLng.lng();
+        const prettyLat = Number(lat).toFixed(6);
+        const prettyLng = Number(lng).toFixed(6);
+        const msg = `Confirmar alteração da posição para\nLatitude: ${prettyLat}\nLongitude: ${prettyLng}`;
+        try {
+          if (!window.confirm(msg)) return;
+        } catch (e) {
+          // if confirm is not available, proceed silently
+        }
+
+        const latlng = { lat, lng };
+        placeMarker(latlng);
+        const latEl = document.getElementById(latInputId);
+        const lngEl = document.getElementById(lngInputId);
+        if (latEl) latEl.value = lat;
+        if (lngEl) lngEl.value = lng;
+      });
+
+      // monitor input changes to update map immediately
+      const latEl = document.getElementById(latInputId);
+      const lngEl = document.getElementById(lngInputId);
+      let pending;
+      function onInputChange() {
+        if (pending) clearTimeout(pending);
+        pending = setTimeout(() => {
+          const ll = getLatLngFromInputs();
+          if (ll) {
+            placeMarker(ll);
+            centerTo(ll, 16);
+          } else {
+            // no coords -> center default
+            centerTo(DEFAULT_CENTER, 12);
+          }
+        }, 200);
+      }
+      if (latEl) latEl.addEventListener('input', onInputChange);
+      if (lngEl) lngEl.addEventListener('input', onInputChange);
+
+      return { map, updateFromInputs: onInputChange };
+    }
+
+    return { init };
+  }
+
   function makeBrushSvg(stroke = '#1f2937') {
     const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
     svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none'); svg.setAttribute('aria-hidden','true');
@@ -142,11 +268,6 @@
     const grid1 = document.createElement('div');
     grid1.className='form__grid';
     grid1.appendChild(row('Foto (URL)', input('arvoreFoto','url',false,{placeholder:'https://...'})));
-    grid1.appendChild(row('Posição X', input('arvorePosX','number',false,{step:'any'})));
-
-    const grid2 = document.createElement('div');
-    grid2.className='form__grid';
-    grid2.appendChild(row('Posição Y', input('arvorePosY','number',false,{step:'any'})));
 
     const foot = document.createElement('footer');
     foot.className='modal__foot';
@@ -169,7 +290,6 @@
     form.appendChild(rowNome);
     form.appendChild(rowEsp);
     form.appendChild(grid1);
-    form.appendChild(grid2);
     form.appendChild(foot);
 
     dialog.appendChild(head);
@@ -342,8 +462,6 @@
       setVal('arvoreNome', a.nome);
       setVal('arvoreEspecie', a.especie || '');
       setVal('arvoreFoto', a.foto_url || '');
-      setVal('arvorePosX', a.pos_x ?? '');
-      setVal('arvorePosY', a.pos_y ?? '');
       setVal('arvoreOrdem', a.ordem ?? '');
       setVal('arvoreFamilia', a.familia || '');
       setVal('arvoreOrigem', a.origem || '');
@@ -352,6 +470,13 @@
       setVal('arvoreLongitude', a.longitude ?? '');
       setToggle(!!a.ativa);
       openModal();
+
+      // init map in edit modal
+      (async () => {
+        const mapObj = setupMap('arvoreMap','arvoreLatitude','arvoreLongitude');
+        if (!mapObj) return;
+        await mapObj.init();
+      })();
       return;
     }
 
@@ -428,8 +553,6 @@
     const nome    = (document.getElementById('arvoreNome') || {}).value?.trim() ?? '';
     const especie = (document.getElementById('arvoreEspecie') || {}).value?.trim() ?? '';
     const foto    = (document.getElementById('arvoreFoto') || {}).value?.trim() ?? '';
-    const pos_x   = parseNum((document.getElementById('arvorePosX') || {}).value);
-    const pos_y   = parseNum((document.getElementById('arvorePosY') || {}).value);
     const ordem = parseNum(document.getElementById('arvoreOrdem')?.value);
     const familia = (document.getElementById('arvoreFamilia') || {}).value?.trim() ?? '';
     const origem = (document.getElementById('arvoreOrigem') || {}).value?.trim() ?? '';
@@ -448,9 +571,7 @@
       ordem,
       latitude,
       longitude,
-      foto_url: foto,
-      pos_x,
-      pos_y
+      foto_url: foto
     };
     render();
 
@@ -467,9 +588,7 @@
           ordem,
           latitude,
           longitude,
-          foto_url: foto,
-          pos_x,
-          pos_y
+          foto_url: foto
         })
       });
       if (!resp.ok) throw new Error(`Falha ao salvar: ${resp.status}`);
@@ -512,9 +631,7 @@
       'addOrdem',
       'addFoto',
       'addLatitude',
-      'addLongitude',
-      'addPosX',
-      'addPosY'
+      'addLongitude'
     ].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
@@ -522,6 +639,13 @@
 
     modal.classList.add('open');
     modal.setAttribute('aria-hidden','false');
+
+    // init map in add modal
+    (async () => {
+      const mapObj = setupMap('arvoreAddMap','addLatitude','addLongitude');
+      if (!mapObj) return;
+      await mapObj.init();
+    })();
   });
 
   // ===== submit (adicionar árvore) =====
@@ -559,13 +683,7 @@ const longitude = parseNum(
   document.getElementById('addLongitude')?.value
 );
 
-    const pos_x = parseNum(
-      document.getElementById('addPosX')?.value
-    );
-
-    const pos_y = parseNum(
-      document.getElementById('addPosY')?.value
-    );
+    // pos_x/pos_y removed
 
     if (!trilha || !codigo || !nome) {
       alert('Preencha os campos obrigatórios.');
@@ -589,9 +707,7 @@ const longitude = parseNum(
           ordem,
           latitude,
           longitude,
-          foto_url: foto,
-          pos_x,
-          pos_y
+          foto_url: foto
         })
       });
 
@@ -653,8 +769,7 @@ const longitude = parseNum(
             trilhas: [trilhaInfo],
             quantidade_perguntas: Number(a.quantidade_perguntas ?? 0),
             ativa: !!a.ativa,
-            pos_x: a.pos_x == null ? null : Number(a.pos_x),
-            pos_y: a.pos_y == null ? null : Number(a.pos_y),
+            // pos_x/pos_y removed from UI
             ordem: ordem,
           });
         } else {

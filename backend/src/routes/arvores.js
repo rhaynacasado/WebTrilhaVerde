@@ -34,8 +34,6 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     if (!arv) return; // loadArvoreOr404 already sent 404
 
     const { nome, especie, foto_url, ordem } = req.body;
-    const pos_x = toNumOrNull(req.body.pos_x);
-    const pos_y = toNumOrNull(req.body.pos_y);
     const latitude = toNumOrNull(req.body.latitude);
     const longitude = toNumOrNull(req.body.longitude);
     const familia = req.body.familia === undefined ? undefined : (String(req.body.familia));
@@ -48,8 +46,6 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     if (nome    !== undefined && nome    !== arv.nome)     { arv.nome    = nome;    changed.push('nome'); }
     if (especie !== undefined && especie !== arv.especie)  { arv.especie = especie; changed.push('especie'); }
     if (foto_url!== undefined && foto_url!== arv.foto_url) { arv.foto_url= foto_url;changed.push('foto_url'); }
-    if (pos_x !== undefined && !sameNum(arv.pos_x, pos_x)) { arv.pos_x = pos_x; changed.push('pos_x'); }
-    if (pos_y !== undefined && !sameNum(arv.pos_y, pos_y)) { arv.pos_y = pos_y; changed.push('pos_y'); }
     if (latitude !== undefined && !sameNum(arv.latitude, latitude)) { arv.latitude = latitude; changed.push('latitude'); }
     if (longitude !== undefined && !sameNum(arv.longitude, longitude)) { arv.longitude = longitude; changed.push('longitude'); }
     if (ativa !== undefined && !!arv.ativa !== ativa) { arv.ativa = ativa; changed.push('ativa'); }
@@ -104,7 +100,7 @@ async function loadArvoreOr404(trilha, codigo, res) {
   const found = await Arvore.findByPk(Number(codigo), {
     attributes: [
       'codigo', 'nome', 'especie', 'foto_url', 'ativa',
-      'pos_x', 'pos_y', 'familia', 'origem', 'tipo_origem',
+      'familia', 'origem', 'tipo_origem',
       'latitude', 'longitude', 'quantidade_perguntas'
     ]
   });
@@ -231,8 +227,6 @@ router.post('/', auth, async (req, res) => {
       especie: body.especie || '',
       foto_url: body.foto_url || '',
       ativa: body.ativa == null ? true : !!body.ativa,
-      pos_x: toNumOrNull(body.pos_x),
-      pos_y: toNumOrNull(body.pos_y),
       latitude: toNumOrNull(body.latitude),
       longitude: toNumOrNull(body.longitude),
       familia: body.familia || null,
