@@ -49,9 +49,8 @@
 
         const span = document.createElement('span');
         span.className = 'meta';
-        // estes campos vêm da rota que sugeri (/api/trilhas)
-        const ativas = Number(r.arvores_ativas ?? 0);
-        const perguntas = Number(r.perguntas ?? 0);
+        // este campo vem da rota /api/trilhas
+        const ativas = Number(r.quantidade_arvores ?? 0);
         span.textContent = `${ativas} árvores ativas`;
         el.appendChild(span);
 

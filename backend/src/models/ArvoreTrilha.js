@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     ordem: {
       type: DataTypes.INTEGER,
-      primaryKey: true
+      allowNull: false
     }
   }, {
     tableName: 'arvore_trilha',

@@ -8,22 +8,19 @@ router.get('/', async (req, res) => {
     const [rows] = await sequelize.query(`
       SELECT
         t.nome AS nome,
-        COALESCE(COUNT(a.*), 0) AS arvores,
-        COALESCE(SUM(CASE WHEN a.ativa THEN 1 ELSE 0 END), 0) AS arvores_ativas,
-        COALESCE(SUM(a.quantidade_perguntas), 0) AS perguntas
+        COALESCE(COUNT(a.codigo), 0) AS quantidade_arvores
       FROM trilha t
-      LEFT JOIN arvore_trilha at
-        ON at.trilha_nome = t.nome
+      LEFT JOIN arvore_trilha at2
+        ON at2.trilha_nome = t.nome
       LEFT JOIN arvore a
-        ON a.codigo = at.arvore_codigo
+        ON a.codigo = at2.arvore_codigo AND a.ativa = true
       GROUP BY t.nome
       ORDER BY t.nome ASC;
     `);
 
     res.json(rows.map(r => ({
       nome: r.nome,
-      arvores: Number(r.arvores) || 0,
-      arvores_ativas: Number(r.arvores_ativas) || 0,
+      quantidade_arvores: Number(r.quantidade_arvores) || 0,
     })));
   } catch (e) {
     console.error('ERRO /api/trilhas:', e);
