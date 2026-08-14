@@ -35,19 +35,21 @@ router.get('/summary', async (req, res) => {
     const percent = arvores ? Math.round((active / arvores) * 100) : 0;
 
     // últimas 5 atividades, já “formatadas”
-    const [rows] = await sequelize.query(`
-      SELECT 'arvore' AS tipo, a.trilha_nome, a.arvore_codigo, NULL::int AS pergunta_id,
-             COALESCE(arv.nome,'') AS alvo_nome, a.admin_email, a.data_alteracao, a.acao
-      FROM alteracao_arvore a
-      LEFT JOIN arvore arv ON arv.trilha_nome=a.trilha_nome AND arv.codigo=a.arvore_codigo
-      UNION ALL
-      SELECT 'pergunta' AS tipo, p.trilha_nome, p.arvore_codigo, p.pergunta_id,
-             COALESCE(arv.nome,'') AS alvo_nome, p.admin_email, p.data_alteracao, p.acao
-      FROM alteracao_pergunta p
-      LEFT JOIN arvore arv ON arv.trilha_nome=p.trilha_nome AND arv.codigo=p.arvore_codigo
-      ORDER BY data_alteracao DESC
-      LIMIT 5
-    `);
+        const [rows] = await sequelize.query(`
+          SELECT 'arvore' AS tipo, at.trilha_nome AS trilha_nome, a.arvore_codigo, NULL::int AS pergunta_id,
+            COALESCE(arv.nome,'') AS alvo_nome, a.admin_email, a.data_alteracao, a.acao
+          FROM alteracao_arvore a
+          LEFT JOIN arvore_trilha at ON at.arvore_codigo = a.arvore_codigo
+          LEFT JOIN arvore arv ON arv.codigo = at.arvore_codigo
+          UNION ALL
+          SELECT 'pergunta' AS tipo, at2.trilha_nome AS trilha_nome, p.arvore_codigo, p.pergunta_id,
+            COALESCE(arv2.nome,'') AS alvo_nome, p.admin_email, p.data_alteracao, p.acao
+          FROM alteracao_pergunta p
+          LEFT JOIN arvore_trilha at2 ON at2.arvore_codigo = p.arvore_codigo
+          LEFT JOIN arvore arv2 ON arv2.codigo = at2.arvore_codigo
+          ORDER BY data_alteracao DESC
+          LIMIT 5
+        `);
 
     const activities = rows.map(r => ({
       quando: r.data_alteracao,

@@ -1,8 +1,29 @@
 document.addEventListener("DOMContentLoaded", () => {
   const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
 
-  const qs = new URLSearchParams(location.search);
-  const resetToken = qs.get("token");
+  // Debug: log a URL e params capturados
+  console.log("Página carregada com URL:", window.location.href);
+  console.log("Search string:", window.location.search);
+
+  const qs = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams((window.location.hash || "").replace(/^#/, ""));
+
+  let resetToken = qs.get("token") || qs.get("resetToken") || qs.get("t") || hashParams.get("token") || hashParams.get("resetToken") || hashParams.get("t");
+
+  // Se não houver token na URL, tente recuperar do sessionStorage ou localStorage
+  if (!resetToken) {
+    resetToken = sessionStorage.getItem("resetToken") || localStorage.getItem("resetToken");
+    console.log("Token recuperado do sessionStorage/localStorage:", resetToken ? resetToken.substring(0, 8) + "..." : "nenhum");
+  } else {
+    // Se token vem da URL, armazene no sessionStorage e no localStorage para facilitar a volta
+    sessionStorage.setItem("resetToken", resetToken);
+    localStorage.setItem("resetToken", resetToken);
+    console.log("Token armazenado no sessionStorage/localStorage");
+  }
+
+  const isResetMode = Boolean(resetToken || qs.get("mode") === "reset" || hashParams.get("mode") === "reset");
+  console.log("Token capturado/recuperado:", resetToken ? resetToken.substring(0, 8) + "..." : "nenhum");
+  console.log("Modo de reset identificado:", isResetMode);
 
   // campos possíveis (suporte a 3 modos com o mesmo JS)
   const form = document.querySelector(".formPassword") || document.querySelector(".formEsqueci") || document.querySelector("form");
@@ -18,6 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
   
   const userName = document.querySelector(".passwordNome");
   const userImage = document.getElementById("profileImage");
+
+  console.log("Campos detectados - form:", !!form, "emailInput:", !!emailInput, "atualInput:", !!atualInput, "novaInput:", !!novaInput);
 
   const showErr = (msg) => {
     if (errorBox) {
@@ -65,24 +88,60 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Preencher nome e foto do usuário ---
   async function preencherUsuario(token) {
     try {
-      if (!token) return;
+      if (!token) {
+        console.warn("Token não fornecido para preencherUsuario");
+        showErr("Token de redefinição não encontrado. Por favor, clique no link do e-mail novamente.");
+        return false;
+      }
 
-      // Supondo que o backend tenha rota para pegar usuário pelo resetToken
+      console.log("Buscando dados do usuário com token:", token.substring(0, 8) + "...");
       const resp = await fetch(`${API_BASE}/api/auth/user-from-reset?token=${token}`);
-      if (!resp.ok) throw new Error("Não foi possível obter informações do usuário.");
+      console.log("Resposta do servidor:", resp.status, resp.statusText);
+      
+      if (!resp.ok) {
+        const error = await resp.json().catch(() => ({}));
+        const msg = error.error || "Não foi possível obter informações do usuário.";
+        console.error("Erro:", msg);
+        showErr(msg);
+        return false;
+      }
 
       const user = await resp.json();
-      if (userName) userName.textContent = user.nome || "Usuário";
-      if (userImage && user.fotoUrl) userImage.src = user.fotoUrl || "../img/avatar.png";
+      console.log("Usuário recebido:", user);
+      
+      if (userName) {
+        userName.textContent = user.nome || "Usuário";
+        console.log("Nome atualizado:", user.nome);
+      }
+      if (userImage) {
+        const fallbackAvatar = "../img/avatar.png";
+        const fotoUrl = user.fotoUrl || fallbackAvatar;
+        userImage.src = fotoUrl;
+        userImage.onerror = () => {
+          userImage.src = fallbackAvatar;
+          userImage.onerror = null;
+        };
+        console.log("Foto atualizada");
+      }
+      return true;
     } catch (err) {
-      alert(err.message || "Erro ao carregar dados do usuário.");
-      console.warn("Erro ao preencher usuário:", err.message);
+      console.error("Erro ao preencher usuário:", err.message);
+      showErr(err.message);
       if (userName) userName.textContent = "Usuário";
-      if (userImage) userImage.src = "../img/avatar.png";
+      if (userImage) {
+        userImage.src = "../img/avatar.png";
+        userImage.onerror = null;
+      }
+      return false;
     }
   }
 
-  preencherUsuario(resetToken);
+  // Sempre tenta preencher usuário quando há token
+  if (resetToken) {
+    preencherUsuario(resetToken).catch(() => {});
+  } else {
+    console.warn("Nenhum token de reset encontrado na URL ou sessionStorage");
+  }
 
   if (!form) return;
 
@@ -90,14 +149,19 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     clearErr();
 
+    console.log("Formulário submetido. resetToken:", resetToken, "loggedIn:", !!localStorage.getItem("token"), "emailInput-value:", emailInput?.value);
+
     try {
-      // --- FLUXO 1: reset via link com ?token= ---
-      if (resetToken) {
+      // --- FLUXO 1: reset via link com token ---
+      if (isResetMode && resetToken) {
+        console.log("Entrando em FLUXO 1: reset via token");
         const nova = (novaInput?.value || "").trim();
         const conf = (confirmaInput?.value || "").trim();
 
         // if (!nova || nova.length < 6) return showErr("A nova senha deve ter pelo menos 6 caracteres.");
         if (conf && conf !== nova)    return showErr("As senhas devem ser iguais.");
+
+        if (!nova || nova.length < 6) return showErr("A nova senha deve ter pelo menos 6 caracteres.");
 
         const resp = await fetch(`${API_BASE}/api/auth/reset-password`, {
           method: "POST",
@@ -148,17 +212,13 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ email }),
         });
         const data = await resp.json().catch(() => ({}));
-        // DEBUG ONLY:
         if (!resp.ok) throw new Error(data.error || "Não foi possível iniciar a redefinição.");
 
-        // DEBUG ONLY:
-        // Backend em dev pode devolver um link direto (resetUrl).
-        if (data.resetUrl) {
-          alert(`Link de redefinição (dev): ${data.resetUrl}`);
-          window.location.href = data.resetUrl; // se quiser ir direto
-        }
-
-        alert("popup de teste")
+        // if (data.resetUrl) {
+        //   alert("Solicitação recebida. Em modo de desenvolvimento, você será direcionado para a página de redefinição.");
+        //   window.location.href = data.resetUrl;
+        //   return;
+        // }
 
         alert("Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.");
         window.location.href = "../index.html";
@@ -167,10 +227,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
       // fallback (form simples com um único campo de senha)
-      if (novaInput && !atualInput && !emailInput) {
+      if (novaInput && !resetToken && !localStorage.getItem("token") && !emailInput) {
         if (novaInput.value.length < 6) return showErr("A nova senha deve ter pelo menos 6 caracteres.");
-        alert("Configure os campos necessários na página para suportar os fluxos de troca/reset.");
+        return showErr("Nenhum modo de redefinição identificado. Verifique a URL ou faça login antes.");
       }
+
+      console.warn("Nenhum fluxo foi acionado. resetToken:", resetToken, "loggedIn:", !!localStorage.getItem("token"), "emailInput:", !!emailInput);
+      return showErr("Erro inesperado ao processar a solicitação.");
     } catch (err) {
       showErr(err.message || "Erro inesperado.");
     }

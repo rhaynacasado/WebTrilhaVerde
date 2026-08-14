@@ -3,6 +3,10 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { Administrador } = require('../models');
 const auth = require('../middlewares/auth');
 
@@ -158,12 +162,45 @@ router.post('/me/avatar', auth, upload.single('avatar'), async (req, res) => {
 
 module.exports = router;
 
-
-const crypto = require("crypto");
-const nodemailer = require("nodemailer");
-
 // memória só de exemplo (melhor usar tabela ResetTokens no DB)
 const resetTokens = new Map();
+
+const getFrontendBaseUrl = (req) => {
+  const referer = req?.headers?.referer;
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      const pathname = url.pathname.replace(/\/$/, "");
+      if (pathname.includes("/pages/")) {
+        const basePath = pathname.slice(0, pathname.lastIndexOf("/pages"));
+        return `${url.origin}${basePath}`;
+      }
+      return `${url.origin}${pathname === "/" ? "" : pathname}`;
+    } catch (_err) {
+      // fallback abaixo
+    }
+  }
+
+  const configured = String(process.env.FRONTEND_URL || "http://127.0.0.1:5500/frontend").replace(/\/$/, "");
+  return configured;
+};
+
+const buildResetUrl = (req, token) => {
+  const configured = String(process.env.FRONTEND_URL || "").trim();
+  const baseUrl = configured ? configured.replace(/\/$/, "") : getFrontendBaseUrl(req);
+  return `${baseUrl}/pages/redefinicao.html?token=${encodeURIComponent(token)}&mode=reset`;
+};
+
+const getEmailLogoAttachment = () => {
+  const logoPath = path.resolve(__dirname, '../../../frontend/img/logo.png');
+  if (!fs.existsSync(logoPath)) return null;
+
+  return {
+    filename: 'logo.png',
+    path: logoPath,
+    cid: 'trilha-verde-logo',
+  };
+};
 
 /** ---------- ESQUECI MINHA SENHA ---------- */
 router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
@@ -173,52 +210,96 @@ router.post("/forgot-password", [body("email").isEmail()], async (req, res) => {
   try {
     const admin = await Administrador.findByPk(email);
     if (!admin) {
-      // sempre responde igual para não revelar cadastro
       return res.json({ message: "Se o e-mail estiver cadastrado, enviaremos instruções." });
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = Date.now() + 15 * 60 * 1000; // 15 min
+    const expires = Date.now() + 15 * 60 * 1000; // 15 minutos
     resetTokens.set(token, { email, expires });
 
-    const resetUrl = `${process.env.FRONTEND_URL}/pages/redefinicao.html?token=${token}`;
+    const resetUrl = buildResetUrl(req, token);
+    const smtpUser = String(process.env.SMTP_USER || "").trim();
+    const smtpPass = String(process.env.SMTP_PASS || "").replace(/\s+/g, "");
+    const canSendMail = Boolean(smtpUser && smtpPass);
 
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.error("SMTP_USER ou SMTP_PASS não definidos!");
+    let mailSent = false;
+
+    if (canSendMail) {
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+
+      try {
+        const logoAttachment = getEmailLogoAttachment();
+        const mailOptions = {
+          from: '"Trilha Verde" <no-reply@trilhaverde.com>',
+          to: email,
+          subject: "Trilha Verde: Redefinição de senha",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #ffffff; color: #1f2937;">
+              <div style="background: #f7fafc; padding: 24px 32px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 14px;">
+                <img src="cid:${logoAttachment?.cid || ''}" alt="Logo Trilha Verde" style="width: 56px; height: 56px; border-radius: 12px; object-fit: cover;">
+                <div>
+                  <div style="font-size: 18px; font-weight: 700; color: #0f766e;">Trilha Verde</div>
+                  <div style="font-size: 13px; color: #6b7280;">Redefinição de senha</div>
+                </div>
+              </div>
+              <div style="padding: 28px 32px 24px;">
+                <p style="margin: 0 0 12px; font-size: 16px;">Olá,</p>
+                <p style="margin: 0 0 12px; font-size: 15px; line-height: 1.6;">Recebemos uma solicitação para redefinir a senha da sua conta no Trilha Verde.</p>
+                <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6;">Se você não fez essa solicitação, pode ignorar este e-mail com segurança.</p>
+                <div style="margin: 20px 0;">
+                  <a href="${resetUrl}" style="display: inline-block; background: #0f766e; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 8px; font-weight: 700;">Redefinir minha senha</a>
+                </div>
+                <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Ou copie e cole este link no navegador:</p>
+                <p style="margin: 0 0 16px; font-size: 13px; word-break: break-all; color: #2563eb;">${resetUrl}</p>
+                <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Este link é válido por 15 minutos.</p>
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; align-items: center; gap: 12px;">
+                  <img src="cid:trilha-verde-avatar" alt="Avatar do remetente" style="width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 1px solid #e5e7eb;">
+                  <div>
+                    <div style="font-size: 14px; font-weight: 700; color: #111827;">Equipe Trilha Verde</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `,
+          attachments: [
+            ...(logoAttachment ? [logoAttachment] : []),
+            {
+              filename: 'avatar.png',
+              path: path.resolve(__dirname, '../../../frontend/img/avatar.png'),
+              cid: 'trilha-verde-avatar',
+            },
+          ],
+        };
+
+        await transporter.sendMail(mailOptions);
+        mailSent = true;
+      } catch (mailError) {
+        console.warn("Falha ao enviar e-mail de recuperação.", mailError.message);
+      }
+    } else {
+      console.warn("SMTP_USER ou SMTP_PASS não definidos; usando modo de desenvolvimento para recuperação de senha.");
     }
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: '"Trilha Verde" <no-reply@trilhaverde.com>',
-      to: email,
-      subject: "Trilha Verde: Redefinição de senha",
-      html: `<p>Olá, recebemos uma solicitação para redefinir sua senha para Trilha Verde.</p>
-             <p>Se você não fez essa solicitação, pode ignorar este e-mail com segurança.</p>
-             <hr>
-             <p>Clique no link para redefinir sua senha:</p>
-             <a href="${resetUrl}">${resetUrl}</a>
-             <p>Este link é válido por 15 minutos.</p>
-             <p>Atenciosamente,<br>Equipe Trilha Verde</p>
-            <img src="${process.env.FRONTEND_URL}/img/logo.png" alt="Logo Trilha Verde" style="max-width:120px; margin-top:16px;">`, // TODO: ajustar URL conforme deploy
-    }).catch(err => {
-      console.error("Erro ao enviar e-mail:", err);
-      throw err;
-    });
+    if (mailSent) {
+      if (process.env.NODE_ENV !== "production") {
+        return res.json({ message: "E-mail enviado com sucesso (dev)", resetUrl, devMode: true, mailSent: true });
+      }
+      return res.json({ message: "Se o e-mail estiver cadastrado, enviaremos instruções." });
+    }
 
     if (process.env.NODE_ENV !== "production") {
-      return res.json({ message: "Link enviado (dev)", resetUrl });
+      return res.json({ message: "Link pronto para uso (dev - sem envio)", resetUrl, devMode: true, mailSent: false });
     }
 
-    res.json({ message: "Se o e-mail estiver cadastrado, enviaremos instruções." });
+    return res.status(502).json({ error: "Não foi possível enviar o e-mail. Verifique as credenciais SMTP." });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Erro interno 5" });

@@ -37,16 +37,15 @@ body {
   padding: 10px 20px;
   border-radius: 24px;
   border: 1px solid var(--verde-floresta);
-  background: transparent;
-  color: var(--verde-floresta);
+  background: var(--verde-floresta);
+  color: var(--branco);
   text-decoration: none;
   font-weight: 600;
   transition: background 0.3s;
 }
 
 .btn-link:hover {
-  background: var(--verde-floresta);
-  color: var(--branco);
+  background: #222;
 }
 
 .content {

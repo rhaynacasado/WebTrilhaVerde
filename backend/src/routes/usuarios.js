@@ -3,15 +3,13 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 
-// Importe os modelos necessários
-const { Usuario, Trofeu, Arvore } = require('../models');
+const { Usuario, Trofeu, Arvore, sequelize } = require('../models');
 
-// Configuração do Multer para guardar o arquivo na memória
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 
-// POST /api/usuarios  (criar novo ou 409 se nickname existir)
+// POST /api/usuarios
 router.post('/', async (req, res) => {
   try {
     const { nickname, nome, avatar_foto, idade, ano_escolar } = req.body;
@@ -50,8 +48,7 @@ router.get('/:nickname', async (req, res) => {
   }
 });
 
-
-// ROTA PARA UPLOAD DO AVATAR
+// POST /api/usuarios/:nickname/avatar
 router.post('/:nickname/avatar', upload.single('avatar'), async (req, res) => {
   try {
     const { nickname } = req.params;
@@ -73,14 +70,13 @@ router.post('/:nickname/avatar', upload.single('avatar'), async (req, res) => {
     await usuario.save();
 
     return res.status(200).json({ message: 'Avatar atualizado com sucesso' });
-
   } catch (e) {
     console.error('POST /usuarios/:nickname/avatar', e);
     return res.status(500).json({ error: 'Erro ao processar upload do avatar' });
   }
 });
 
-// ROTA PARA BUSCAR/DOWNLOAD DO AVATAR
+// GET /api/usuarios/:nickname/avatar
 router.get('/:nickname/avatar', async (req, res) => {
   try {
     const { nickname } = req.params;
@@ -89,99 +85,113 @@ router.get('/:nickname/avatar', async (req, res) => {
     if (!usuario || !usuario.avatar_foto || !usuario.foto_mime) {
       return res.status(404).json({ error: 'Avatar não encontrado' });
     }
-    
+
     res.setHeader('Content-Type', usuario.foto_mime);
     return res.send(usuario.avatar_foto);
-
   } catch (e) {
     console.error('GET /usuarios/:nickname/avatar', e);
     return res.status(500).json({ error: 'Erro ao buscar avatar' });
   }
 });
 
-// ROTA PARA BUSCAR OS TROFÉUS DE UM USUÁRIO
+// GET /api/usuarios/:nickname/trofeus
 router.get('/:nickname/trofeus', async (req, res) => {
   try {
     const { nickname } = req.params;
 
-    const trofeus = await Trofeu.findAll({
-      where: { usuario_nickname: nickname },
-      include: [{
-        model: Arvore,
-        as: 'Arvore',
-        attributes: ['nome'], 
-        required: true 
-      }]
-    });
+    const [trofeus] = await sequelize.query(`
+      SELECT
+        t.trilha_nome,
+        t.arvore_codigo,
+        a.nome AS arvore_nome
+      FROM trofeu t
+      INNER JOIN arvore a ON a.codigo = t.arvore_codigo
+      WHERE t.usuario_nickname = :nickname
+    `, { replacements: { nickname } });
 
-    const resultadoFormatado = trofeus.map(t => ({
+    return res.status(200).json(trofeus.map(t => ({
       trilha_nome: t.trilha_nome,
       arvore_codigo: t.arvore_codigo,
-      arvore_nome: t.Arvore.nome 
-    }));
-
-    return res.status(200).json(resultadoFormatado);
-
+      arvore_nome: t.arvore_nome,
+    })));
   } catch (e) {
     console.error('GET /usuarios/:nickname/trofeus', e);
     return res.status(500).json({ error: 'Erro ao buscar troféus' });
   }
 });
 
-// ROTA PARA CRIAR UM TROFÉU
+// POST /api/usuarios/:nickname/trofeus
 router.post('/:nickname/trofeus', async (req, res) => {
   try {
     const { nickname } = req.params;
     const { trilha_nome, arvore_codigo } = req.body;
-    
+
     if (!trilha_nome || !arvore_codigo) {
       return res.status(400).json({ error: 'trilha_nome e arvore_codigo são obrigatórios' });
     }
-    
+
     const [trofeu, created] = await Trofeu.findOrCreate({
       where: {
         usuario_nickname: nickname,
         trilha_nome: trilha_nome,
-        arvore_codigo: arvore_codigo
+        arvore_codigo: arvore_codigo,
       }
     });
 
     if (created) {
-      await Usuario.increment('num_arvores_visitadas', { where: { nickname: nickname } });
+      await Usuario.increment('num_arvores_visitadas', {
+        where: { nickname: nickname }
+      });
       return res.status(201).json(trofeu.toJSON());
     } else {
       return res.status(200).json(trofeu.toJSON());
     }
-
   } catch (error) {
     console.error('ERRO AO TENTAR SALVAR O TROFÉU:', error);
     return res.status(500).json({ message: 'Erro interno ao salvar troféu' });
   }
 });
 
-// [NOVO] ROTA PARA DELETAR TODOS OS TROFÉUS (REINICIAR JOGO)
+// DELETE /api/usuarios/:nickname/trofeus — reinicia só a trilha selecionada
 router.delete('/:nickname/trofeus', async (req, res) => {
   try {
     const { nickname } = req.params;
+    const { trilha_nome } = req.query;
 
-    // Apaga todos os registros da tabela 'trofeu' para este usuário
-    await Trofeu.destroy({
-      where: { usuario_nickname: nickname }
-    });
+    if (trilha_nome) {
+      // Apaga só os troféus da trilha específica
+      const deleted = await Trofeu.destroy({
+        where: {
+          usuario_nickname: nickname,
+          trilha_nome: trilha_nome,
+        }
+      });
 
-    // Zera o contador de árvores visitadas do usuário
-    await Usuario.update({ num_arvores_visitadas: 0 }, {
-      where: { nickname: nickname }
-    });
-    
-    console.log(`Progresso do usuário ${nickname} reiniciado.`);
-    return res.status(204).send(); // 204 No Content indica sucesso
+      // Decrementa o contador pelo número de troféus removidos
+      if (deleted > 0) {
+        await sequelize.query(
+          `UPDATE usuario
+           SET num_arvores_visitadas = GREATEST(0, num_arvores_visitadas - :deleted)
+           WHERE nickname = :nickname`,
+          { replacements: { deleted, nickname } }
+        );
+      }
+    } else {
+      // Apaga todos os troféus do usuário
+      await Trofeu.destroy({
+        where: { usuario_nickname: nickname }
+      });
+      await Usuario.update(
+        { num_arvores_visitadas: 0 },
+        { where: { nickname } }
+      );
+    }
 
+    return res.status(204).send();
   } catch (e) {
     console.error('DELETE /usuarios/:nickname/trofeus', e);
     return res.status(500).json({ error: 'Erro ao reiniciar progresso' });
   }
 });
-
 
 module.exports = router;

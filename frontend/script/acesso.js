@@ -10,14 +10,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!leftSection) return runAllInits();
 
-  // Use caminho ABSOLUTO para funcionar em qualquer página
-  fetch("/partials/acesso.html", { cache: "no-store" })
+  const partialUrl = window.location.pathname.includes("/pages/")
+    ? "../partials/acesso.html"
+    : "partials/acesso.html";
+
+  fetch(partialUrl, { cache: "no-store" })
     .then((resp) => {
       if (!resp.ok) throw new Error("Falha ao carregar acesso.html");
       return resp.text();
     })
     .then((html) => {
       leftSection.innerHTML = html; // injeta o partial no bloco verde
+      // Corrige URLs de imagens/parciais injetados para serem absolutos
+      try {
+        Array.from(leftSection.querySelectorAll('img')).forEach((img) => {
+          const src = img.getAttribute('src') || '';
+          try {
+            img.src = new URL(src, document.baseURI).href;
+          } catch (e) {
+            // ignora se a URL for inválida
+          }
+        });
+      } catch (e) {
+        console.warn('Falha ao normalizar imagens do partial:', e?.message || e);
+      }
       runAllInits();
     })
     .catch((err) => {
