@@ -14,8 +14,8 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(255),
       primaryKey: true,
       references: {
-        model: 'arvore',
-        key: 'trilha_nome'
+        model: 'trilha',
+        key: 'nome'
       }
     },
     arvore_codigo: {
