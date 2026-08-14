@@ -10,14 +10,6 @@ module.exports = (sequelize, DataTypes) => {
         key: 'nickname'
       }
     },
-    trilha_nome: {
-      type: DataTypes.STRING(255),
-      primaryKey: true,
-      references: {
-        model: 'trilha',
-        key: 'nome'
-      }
-    },
     arvore_codigo: {
       type: DataTypes.INTEGER,
       primaryKey: true,

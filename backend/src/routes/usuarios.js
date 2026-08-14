@@ -101,11 +101,12 @@ router.get('/:nickname/trofeus', async (req, res) => {
 
     const [trofeus] = await sequelize.query(`
       SELECT
-        t.trilha_nome,
+        at2.trilha_nome AS trilha_nome,
         t.arvore_codigo,
         a.nome AS arvore_nome
       FROM trofeu t
       INNER JOIN arvore a ON a.codigo = t.arvore_codigo
+      LEFT JOIN arvore_trilha at2 ON at2.arvore_codigo = t.arvore_codigo
       WHERE t.usuario_nickname = :nickname
     `, { replacements: { nickname } });
 
@@ -133,7 +134,6 @@ router.post('/:nickname/trofeus', async (req, res) => {
     const [trofeu, created] = await Trofeu.findOrCreate({
       where: {
         usuario_nickname: nickname,
-        trilha_nome: trilha_nome,
         arvore_codigo: arvore_codigo,
       }
     });
@@ -159,13 +159,17 @@ router.delete('/:nickname/trofeus', async (req, res) => {
     const { trilha_nome } = req.query;
 
     if (trilha_nome) {
-      // Apaga só os troféus da trilha específica
-      const deleted = await Trofeu.destroy({
-        where: {
-          usuario_nickname: nickname,
-          trilha_nome: trilha_nome,
-        }
-      });
+      // Apaga só os troféus da trilha específica (trilha_nome vem via arvore_trilha)
+      const [deletedRows] = await sequelize.query(
+        `DELETE FROM trofeu
+         WHERE usuario_nickname = :nickname
+           AND arvore_codigo IN (
+             SELECT arvore_codigo FROM arvore_trilha WHERE trilha_nome = :trilha_nome
+           )
+         RETURNING arvore_codigo`,
+        { replacements: { nickname, trilha_nome } }
+      );
+      const deleted = deletedRows.length;
 
       // Decrementa o contador pelo número de troféus removidos
       if (deleted > 0) {
