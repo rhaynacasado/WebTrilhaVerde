@@ -180,7 +180,7 @@
         const pos = { lat, lng };
         // ícone em forma de pin — duas cores: ativa (verde) / inativa (cinza)
         const isActive = !!a.ativa;
-        const color = isActive ? '#0F9D58' : '#EA4335'; // #898989
+        const color = isActive ? '#EA4335' : '#898989'; // #0F9D58
         const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z' fill='${color}'/><circle cx='12' cy='9' r='2.5' fill='%23ffffff'/></svg>`;
         const icon = {
           url: 'data:image/svg+xml;utf8,' + encodeURIComponent(svg),

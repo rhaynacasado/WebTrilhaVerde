@@ -68,10 +68,18 @@
         />
       </div>
 
-      <!-- FOTO -->
+      <!-- GALERIA DE FOTOS -->
       <div class="form__row">
-        <label for="arvoreFoto">Foto (URL)</label>
-        <input id="arvoreFoto" type="url" placeholder="https://..." />
+        <label>Galeria de fotos</label>
+        <div id="arvoreImages">
+          <div id="arvoreImagesList"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <input id="addImageUrl" type="url" placeholder="URL da imagem" style="flex:1" />
+            <input id="addImageLegenda" type="text" placeholder="Legenda" />
+            <input id="addImageFonte" type="text" placeholder="Fonte" />
+            <button id="btnAddImage" type="button" class="btn">Adicionar</button>
+          </div>
+        </div>
       </div>
 
       <!-- POSIÇÃO NO MAPA -->

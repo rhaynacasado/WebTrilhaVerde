@@ -15,6 +15,7 @@
 
   // ===== estado =====
   let arvores = [];
+  let newImages = []; // imagens temporárias no modal de criação
 
   // utils
   const getParam = (n) => new URLSearchParams(location.search).get(n);
@@ -267,7 +268,21 @@
 
     const grid1 = document.createElement('div');
     grid1.className='form__grid';
-    grid1.appendChild(row('Foto (URL)', input('arvoreFoto','url',false,{placeholder:'https://...'})));
+    // gallery (dynamic fallback)
+    const galleryRow = document.createElement('div');
+    galleryRow.className='form__row';
+    const galleryLabel = document.createElement('label'); galleryLabel.textContent = 'Galeria de fotos';
+    const galleryWrap = document.createElement('div'); galleryWrap.id='arvoreImages';
+    const galleryList = document.createElement('div'); galleryList.id='arvoreImagesList';
+    const addWrap = document.createElement('div'); addWrap.style.cssText='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap';
+    const iUrl = input('addImageUrl','url',false,{placeholder:'URL da imagem'}); iUrl.style.flex='1';
+    const iLeg = input('addImageLegenda','text',false,{placeholder:'Legenda'});
+    const iFonte = input('addImageFonte','text',false,{placeholder:'Fonte'});
+    const addBtn = document.createElement('button'); addBtn.id='btnAddImage'; addBtn.type='button'; addBtn.className='btn'; addBtn.textContent='Adicionar';
+    addWrap.appendChild(iUrl); addWrap.appendChild(iLeg); addWrap.appendChild(iFonte); addWrap.appendChild(addBtn);
+    galleryWrap.appendChild(galleryList); galleryWrap.appendChild(addWrap);
+    galleryRow.appendChild(galleryLabel); galleryRow.appendChild(galleryWrap);
+    grid1.appendChild(galleryRow);
 
     const foot = document.createElement('footer');
     foot.className='modal__foot';
@@ -323,6 +338,98 @@
     }
   }
 }
+
+  // ===== Gallery helpers =====
+  async function fetchImages(trilha, codigo) {
+    try {
+      const resp = await fetch(`${API_BASE}/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images`);
+      if (!resp.ok) return [];
+      return await resp.json();
+    } catch (e) { return []; }
+  }
+
+  function makeImageRow(img, trilha, codigo, isNew=false) {
+    const wrap = document.createElement('div');
+    wrap.className = 'image-row';
+    wrap.style.display = 'flex'; wrap.style.alignItems = 'center'; wrap.style.gap='8px'; wrap.style.marginBottom='6px';
+
+    const a = document.createElement('a');
+    a.href = img.url || '#';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = img.url || '';
+    a.style.flex = '1';
+    a.style.wordBreak = 'break-all';
+
+    const meta = document.createElement('div');
+    meta.style.fontSize='12px'; meta.style.color='#444';
+    meta.innerHTML = `${img.legenda ? `<div>${escapeHtml(img.legenda)}</div>` : ''}${img.fonte ? `<div style="font-style:italic">${escapeHtml(img.fonte)}</div>` : ''}`;
+
+    const btnEdit = document.createElement('button'); btnEdit.type='button'; btnEdit.className='btn'; btnEdit.textContent='Editar';
+    const btnDel  = document.createElement('button'); btnDel.type='button';  btnDel.className='btn danger'; btnDel.textContent='Apagar';
+
+    wrap.appendChild(a);
+    wrap.appendChild(meta);
+    wrap.appendChild(btnEdit);
+    wrap.appendChild(btnDel);
+
+    btnEdit.addEventListener('click', async () => {
+      try {
+        const newUrl = window.prompt('URL:', img.url || '') || '';
+        if (!newUrl) return;
+        const newLegenda = window.prompt('Legenda:', img.legenda || '') || '';
+        const newFonte = window.prompt('Fonte:', img.fonte || '') || '';
+        if (isNew) {
+          // update local newImages entry
+          img.url = newUrl; img.legenda = newLegenda; img.fonte = newFonte; renderAddImagesList();
+          return;
+        }
+        const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: newUrl, legenda: newLegenda, fonte: newFonte })
+        });
+        if (!resp.ok) throw new Error('Falha ao atualizar');
+        renderEditImages(trilha, codigo);
+      } catch (err) { console.error(err); alert(err.message || 'Erro'); }
+    });
+
+    btnDel.addEventListener('click', async () => {
+      if (!confirm('Confirma exclusão desta imagem?')) return;
+      try {
+        if (isNew) {
+          // remove local
+          newImages = newImages.filter(n => n !== img);
+          renderAddImagesList();
+          return;
+        }
+        const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, { method: 'DELETE' });
+        if (!resp.ok && resp.status !== 204) throw new Error('Falha ao excluir');
+        renderEditImages(trilha, codigo);
+      } catch (err) { console.error(err); alert(err.message || 'Erro'); }
+    });
+
+    return wrap;
+  }
+
+  async function renderEditImages(trilha, codigo) {
+    const list = document.getElementById('arvoreImagesList');
+    if (!list) return;
+    list.innerHTML = '';
+    const imgs = await fetchImages(trilha, codigo);
+    imgs.forEach(img => list.appendChild(makeImageRow(img, trilha, codigo, false)));
+  }
+
+  function renderAddImagesList() {
+    const list = document.getElementById('addImagesList');
+    if (!list) return;
+    list.innerHTML = '';
+    newImages.forEach(img => {
+      list.appendChild(makeImageRow(img, null, null, true));
+    });
+  }
+
+  function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" })[c]); }
+
 
   function setToggle(isActive){
     const btn = document.getElementById('btnToggleStatus'); if (!btn) return;
@@ -461,7 +568,8 @@
       setVal('arvoreCodigo', a.codigo);
       setVal('arvoreNome', a.nome);
       setVal('arvoreEspecie', a.especie || '');
-      setVal('arvoreFoto', a.foto_url || '');
+      // render images gallery for this tree
+      (async () => { await renderEditImages(a.trilha_nome, a.codigo); })();
       setVal('arvoreOrdem', a.ordem ?? '');
       setVal('arvoreFamilia', a.familia || '');
       setVal('arvoreOrigem', a.origem || '');
@@ -477,6 +585,27 @@
         if (!mapObj) return;
         await mapObj.init();
       })();
+      // wire add-image button in edit modal
+      const btnAdd = document.getElementById('btnAddImage');
+      if (btnAdd) {
+        btnAdd.onclick = async () => {
+          const url = (document.getElementById('addImageUrl') || {}).value?.trim() || '';
+          const legenda = (document.getElementById('addImageLegenda') || {}).value?.trim() || '';
+          const fonte = (document.getElementById('addImageFonte') || {}).value?.trim() || '';
+          if (!url) { alert('Informe a URL da imagem'); return; }
+          try {
+            const resp = await authFetch(`/api/arvores/${encodeURIComponent(a.trilha_nome)}/${encodeURIComponent(String(a.codigo))}/images`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url, legenda, fonte })
+            });
+            if (!resp.ok) throw new Error('Falha ao adicionar imagem');
+            (document.getElementById('addImageUrl') || {}).value = '';
+            (document.getElementById('addImageLegenda') || {}).value = '';
+            (document.getElementById('addImageFonte') || {}).value = '';
+            await renderEditImages(a.trilha_nome, a.codigo);
+          } catch (err) { console.error(err); alert(err.message || 'Erro'); }
+        };
+      }
       return;
     }
 
@@ -552,7 +681,7 @@
 
     const nome    = (document.getElementById('arvoreNome') || {}).value?.trim() ?? '';
     const especie = (document.getElementById('arvoreEspecie') || {}).value?.trim() ?? '';
-    const foto    = (document.getElementById('arvoreFoto') || {}).value?.trim() ?? '';
+    // images managed separately via gallery API
     const ordem = parseNum(document.getElementById('arvoreOrdem')?.value);
     const familia = (document.getElementById('arvoreFamilia') || {}).value?.trim() ?? '';
     const origem = (document.getElementById('arvoreOrigem') || {}).value?.trim() ?? '';
@@ -571,7 +700,7 @@
       ordem,
       latitude,
       longitude,
-      foto_url: foto
+      // foto_url left untouched; images are in gallery
     };
     render();
 
@@ -587,8 +716,7 @@
           tipo_origem,
           ordem,
           latitude,
-          longitude,
-          foto_url: foto
+          longitude
         })
       });
       if (!resp.ok) throw new Error(`Falha ao salvar: ${resp.status}`);
@@ -629,13 +757,15 @@
       'addOrigem',
       'addTipoOrigem',
       'addOrdem',
-      'addFoto',
       'addLatitude',
       'addLongitude'
     ].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+    // reset new images
+    newImages = [];
+    renderAddImagesList();
 
     modal.classList.add('open');
     modal.setAttribute('aria-hidden','false');
@@ -646,6 +776,22 @@
       if (!mapObj) return;
       await mapObj.init();
     })();
+
+    // wire add-image button in add modal
+    const btnNew = document.getElementById('btnAddImageNew');
+    if (btnNew) {
+      btnNew.onclick = () => {
+        const url = (document.getElementById('addImageUrl') || {}).value?.trim() || '';
+        const legenda = (document.getElementById('addImageLegenda') || {}).value?.trim() || '';
+        const fonte = (document.getElementById('addImageFonte') || {}).value?.trim() || '';
+        if (!url) { alert('Informe a URL da imagem'); return; }
+        newImages.push({ url, legenda, fonte });
+        (document.getElementById('addImageUrl') || {}).value = '';
+        (document.getElementById('addImageLegenda') || {}).value = '';
+        (document.getElementById('addImageFonte') || {}).value = '';
+        renderAddImagesList();
+      };
+    }
   });
 
   // ===== submit (adicionar árvore) =====
@@ -658,7 +804,7 @@
     const codigo  = Number(document.getElementById('addCodigo')?.value || 0);
     const nome    = document.getElementById('addNome')?.value?.trim() || '';
     const especie = document.getElementById('addEspecie')?.value?.trim() || '';
-    const foto    = document.getElementById('addFoto')?.value?.trim() || '';
+    // images handled via gallery; single foto field removed
     const ordem = parseNum(
   document.getElementById('addOrdem')?.value
 );
@@ -715,6 +861,18 @@ const longitude = parseNum(
 
       if (!resp.ok) {
         throw new Error(payload.error || `Erro ${resp.status}`);
+      }
+
+      // if created successfully and we have newImages, attach them
+      if (resp.ok && newImages && newImages.length) {
+        try {
+          for (const img of newImages) {
+            await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(img)
+            });
+          }
+        } catch (ie) { console.error('Falha ao enviar imagens', ie); }
       }
 
       // recarrega lista do backend

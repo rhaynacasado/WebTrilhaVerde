@@ -95,14 +95,18 @@
         />
       </div>
 
-      <!-- FOTO -->
+      <!-- GALERIA DE FOTOS -->
       <div class="form__row">
-        <label for="addFoto">Foto (URL)</label>
-        <input
-          id="addFoto"
-          type="url"
-          placeholder="https://..."
-        />
+        <label>Galeria de fotos</label>
+        <div id="addImages">
+          <div id="addImagesList"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <input id="addImageUrl" type="url" placeholder="URL da imagem" style="flex:1" />
+            <input id="addImageLegenda" type="text" placeholder="Legenda" />
+            <input id="addImageFonte" type="text" placeholder="Fonte" />
+            <button id="btnAddImageNew" type="button" class="btn">Adicionar</button>
+          </div>
+        </div>
       </div>
 
       <!-- COORDENADAS -->

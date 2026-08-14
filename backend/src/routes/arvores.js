@@ -373,10 +373,93 @@ router.get('/:trilha/:codigo', async (req, res) => {
     out.quantidade_perguntas = qtd;
     out.ordem = a.ordem;
 
+    // carregar imagens da árvore
+    try {
+      const [imgs] = await sequelize.query(
+        `SELECT id, url, legenda, fonte FROM imagens WHERE arvore_codigo = $1 ORDER BY id ASC`,
+        { bind: [Number(codigo)] }
+      );
+      out.imagens = (imgs || []).map(i => ({ id: i.id, url: i.url, legenda: i.legenda, fonte: i.fonte }));
+    } catch (ie) {
+      out.imagens = [];
+    }
+
     return res.json(out);
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao buscar árvore' });
+  }
+});
+
+// ================= IMAGENS (CRUD) =================
+// List imagens
+router.get('/:trilha/:codigo/images', async (req, res) => {
+  try {
+    const codigo = Number(req.params.codigo);
+    const [imgs] = await sequelize.query(
+      `SELECT id, url, legenda, fonte FROM imagens WHERE arvore_codigo = $1 ORDER BY id ASC`,
+      { bind: [codigo] }
+    );
+    return res.json(imgs || []);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Erro ao listar imagens' });
+  }
+});
+
+// Create imagem
+router.post('/:trilha/:codigo/images', auth, async (req, res) => {
+  try {
+    const codigo = Number(req.params.codigo);
+    const { url, legenda, fonte } = req.body;
+    if (!url) return res.status(400).json({ error: 'url é obrigatório' });
+
+    const [result] = await sequelize.query(
+      `INSERT INTO imagens (arvore_codigo, url, legenda, fonte) VALUES ($1,$2,$3,$4) RETURNING id, url, legenda, fonte`,
+      { bind: [codigo, String(url), legenda || null, fonte || null] }
+    );
+    const created = result && result[0] ? result[0] : null;
+    return res.status(201).json(created || {});
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Erro ao criar imagem' });
+  }
+});
+
+// Update imagem
+router.put('/:trilha/:codigo/images/:id', auth, async (req, res) => {
+  try {
+    const codigo = Number(req.params.codigo);
+    const id = Number(req.params.id);
+    const { url, legenda, fonte } = req.body;
+
+    // ensure belongs to this tree
+    const [found] = await sequelize.query(`SELECT id FROM imagens WHERE id = $1 AND arvore_codigo = $2`, { bind: [id, codigo] });
+    if (!found || !found[0]) return res.status(404).json({ error: 'Imagem não encontrada' });
+
+    await sequelize.query(
+      `UPDATE imagens SET url = $1, legenda = $2, fonte = $3 WHERE id = $4`,
+      { bind: [String(url || ''), legenda || null, fonte || null, id] }
+    );
+
+    const [rows] = await sequelize.query(`SELECT id, url, legenda, fonte FROM imagens WHERE id = $1`, { bind: [id] });
+    return res.json(rows && rows[0] ? rows[0] : {});
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Erro ao atualizar imagem' });
+  }
+});
+
+// Delete imagem
+router.delete('/:trilha/:codigo/images/:id', auth, async (req, res) => {
+  try {
+    const codigo = Number(req.params.codigo);
+    const id = Number(req.params.id);
+    await sequelize.query(`DELETE FROM imagens WHERE id = $1 AND arvore_codigo = $2`, { bind: [id, codigo] });
+    return res.status(204).end();
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Erro ao excluir imagem' });
   }
 });
 

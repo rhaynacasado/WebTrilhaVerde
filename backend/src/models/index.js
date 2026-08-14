@@ -4,6 +4,7 @@ const { DataTypes } = require('sequelize');
 
 const Trilha             = require('./Trilha')(sequelize, DataTypes);
 const Arvore             = require('./Arvore')(sequelize, DataTypes);
+const Imagem             = require('./Imagem')(sequelize, DataTypes);
 const Pergunta           = require('./Pergunta')(sequelize, DataTypes);
 const Administrador      = require('./Administrador')(sequelize, DataTypes);
 const AlteracaoArvore    = require('./AlteracaoArvore')(sequelize, DataTypes);
@@ -46,6 +47,20 @@ Arvore.hasMany(Pergunta, {
   constraints: false,
 });
 
+// Imagens por árvore
+Arvore.hasMany(Imagem, {
+  foreignKey: 'arvore_codigo',
+  sourceKey: 'codigo',
+  as: 'imagens',
+  constraints: false,
+});
+Imagem.belongsTo(Arvore, {
+  foreignKey: 'arvore_codigo',
+  targetKey: 'codigo',
+  as: 'arvore',
+  constraints: false,
+});
+
 // Relação Troféu <-> Usuário
 Usuario.hasMany(Trofeu, {
   foreignKey: 'usuario_nickname',
@@ -57,6 +72,7 @@ Trofeu.belongsTo(Usuario, {
   targetKey: 'nickname',
   as: 'usuario'
 });
+
 
 // Relação Troféu <-> Árvore
 // A chave estrangeira é composta, então definimos as duas partes
@@ -84,4 +100,5 @@ module.exports = {
   AlteracaoPergunta,
   Usuario,
   Trofeu
+  ,Imagem
 };
