@@ -36,6 +36,11 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     const { nome, especie, foto_url, ordem } = req.body;
     const pos_x = toNumOrNull(req.body.pos_x);
     const pos_y = toNumOrNull(req.body.pos_y);
+    const latitude = toNumOrNull(req.body.latitude);
+    const longitude = toNumOrNull(req.body.longitude);
+    const familia = req.body.familia === undefined ? undefined : (String(req.body.familia));
+    const origem = req.body.origem === undefined ? undefined : (String(req.body.origem));
+    const tipo_origem = req.body.tipo_origem === undefined ? undefined : (String(req.body.tipo_origem));
     const ativa = req.body.ativa === undefined ? undefined : !!req.body.ativa;
 
     const changed = [];
@@ -45,7 +50,12 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     if (foto_url!== undefined && foto_url!== arv.foto_url) { arv.foto_url= foto_url;changed.push('foto_url'); }
     if (pos_x !== undefined && !sameNum(arv.pos_x, pos_x)) { arv.pos_x = pos_x; changed.push('pos_x'); }
     if (pos_y !== undefined && !sameNum(arv.pos_y, pos_y)) { arv.pos_y = pos_y; changed.push('pos_y'); }
+    if (latitude !== undefined && !sameNum(arv.latitude, latitude)) { arv.latitude = latitude; changed.push('latitude'); }
+    if (longitude !== undefined && !sameNum(arv.longitude, longitude)) { arv.longitude = longitude; changed.push('longitude'); }
     if (ativa !== undefined && !!arv.ativa !== ativa) { arv.ativa = ativa; changed.push('ativa'); }
+    if (familia !== undefined && String(arv.familia || '') !== String(familia)) { arv.familia = familia; changed.push('familia'); }
+    if (origem !== undefined && String(arv.origem || '') !== String(origem)) { arv.origem = origem; changed.push('origem'); }
+    if (tipo_origem !== undefined && String(arv.tipo_origem || '') !== String(tipo_origem)) { arv.tipo_origem = tipo_origem; changed.push('tipo_origem'); }
 
     // ordem lives in arvore_trilha now
     let ordemChanged = false;
@@ -77,6 +87,11 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
 
     const out = arv.toJSON();
     out.ordem = arv.ordem;
+    out.latitude = arv.latitude;
+    out.longitude = arv.longitude;
+    out.familia = arv.familia;
+    out.origem = arv.origem;
+    out.tipo_origem = arv.tipo_origem;
     return res.json(out);
   } catch (e) {
     console.error('PUT /arvores/:trilha/:codigo', e);
@@ -218,6 +233,11 @@ router.post('/', auth, async (req, res) => {
       ativa: body.ativa == null ? true : !!body.ativa,
       pos_x: toNumOrNull(body.pos_x),
       pos_y: toNumOrNull(body.pos_y),
+      latitude: toNumOrNull(body.latitude),
+      longitude: toNumOrNull(body.longitude),
+      familia: body.familia || null,
+      origem: body.origem || null,
+      tipo_origem: body.tipo_origem || null,
     }, { returning: false });
 
     // create association in arvore_trilha
@@ -231,6 +251,11 @@ router.post('/', auth, async (req, res) => {
     const out = created.toJSON();
     out.trilha_nome = body.trilha_nome;
     out.ordem = toNumOrNull(body.ordem);
+    out.latitude = toNumOrNull(body.latitude);
+    out.longitude = toNumOrNull(body.longitude);
+    out.familia = body.familia || null;
+    out.origem = body.origem || null;
+    out.tipo_origem = body.tipo_origem || null;
     return res.status(201).json(out);
   } catch (e) {
     console.error('POST /arvores', e);
