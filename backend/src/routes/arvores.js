@@ -129,6 +129,20 @@ async function loadArvoreOr404(trilha, codigo, res) {
   return found;
 }
 
+// ================= GET ÁRVORE ÚNICA =================
+router.get('/:trilha/:codigo', async (req, res) => {
+  try {
+    const { trilha, codigo } = req.params;
+    const arv = await loadArvoreOr404(trilha, codigo, res);
+    if (!arv) return; // loadArvoreOr404 already sent 404
+
+    return res.json(arv);
+  } catch (e) {
+    console.error('GET /arvores/:trilha/:codigo', e);
+    return res.status(500).json({ error: 'Erro ao buscar árvore' });
+  }
+});
+
 async function isExtremityTree(arvore) {
   if (arvore.ordem == null) return false;
 
