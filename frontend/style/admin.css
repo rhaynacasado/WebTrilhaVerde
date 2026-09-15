@@ -55,6 +55,81 @@
   color: var(--cinza); 
 }
 
+/* Lista de trilhas: mesma composição visual da lista de árvores. */
+#pageTrilhas .item{
+  display:flex;
+  align-items:stretch;
+  padding:0;
+  overflow:hidden;
+}
+#pageTrilhas .item-body{
+  flex:1;
+  min-width:0;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:6px;
+}
+#pageTrilhas .subline{
+  display:flex;
+  align-items:center;
+  color:var(--cinza);
+  font-size:14px;
+}
+#pageTrilhas .item-actions{
+  display:flex;
+  align-items:stretch;
+}
+#pageTrilhas .edit-pill{
+  width:56px;
+  min-width:56px;
+  border:0;
+  border-left:1px solid #e5e7eb;
+  border-radius:0;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  transition:transform .12s ease, filter .18s;
+}
+#pageTrilhas .edit-pill{
+  background:#A7C957;
+  border-radius:0 14px 14px 0;
+}
+#pageTrilhas .edit-pill:hover{
+  filter:brightness(1.02);
+  transform:translateY(-1px);
+}
+#pageTrilhas .edit-pill:active{
+  transform:translateY(0);
+}
+#pageTrilhas .edit-pill svg{
+  width:20px;
+  height:20px;
+}
+
+@media (max-width: 720px){
+  #pageTrilhas .item{
+    flex-direction:column;
+  }
+  #pageTrilhas .item-actions{
+    width:100%;
+    min-height:44px;
+  }
+  #pageTrilhas .edit-pill{
+    flex:1;
+    width:auto;
+    min-width:0;
+    border-left:0;
+    border-top:1px solid #e5e7eb;
+    border-radius:0;
+  }
+  #pageTrilhas .edit-pill{
+    border-radius:0 0 14px 0;
+  }
+}
+
 /* Modal (global, reutilizado por Árvores/Perguntas/Trilhas) */
 .modal{ 
   position: fixed; 

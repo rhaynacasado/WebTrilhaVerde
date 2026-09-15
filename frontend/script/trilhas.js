@@ -4,6 +4,30 @@
 
   function byId(id) { return document.getElementById(id); }
 
+  function makeMapSvg(stroke = '#1f2937') {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('aria-hidden', 'true');
+
+    const map = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    map.setAttribute('d', 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z');
+    map.setAttribute('stroke', stroke);
+    map.setAttribute('stroke-width', '1.6');
+    map.setAttribute('stroke-linecap', 'round');
+    map.setAttribute('stroke-linejoin', 'round');
+
+    const folds = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    folds.setAttribute('d', 'M9 3v15M15 6v15');
+    folds.setAttribute('stroke', stroke);
+    folds.setAttribute('stroke-width', '1.6');
+    folds.setAttribute('stroke-linecap', 'round');
+
+    svg.appendChild(map);
+    svg.appendChild(folds);
+    return svg;
+  }
+
   function makePlusSvg() {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
@@ -104,32 +128,43 @@
         const el = document.createElement('div');
         el.className = 'item';
 
+        const body = document.createElement('div');
+        body.className = 'item-body';
+
         const strong = document.createElement('strong');
         strong.className = 'item-title';
         strong.textContent = r.nome;
-        el.appendChild(strong);
+        body.appendChild(strong);
 
+        const subline = document.createElement('div');
+        subline.className = 'subline';
         const span = document.createElement('span');
         span.className = 'meta';
-        // este campo vem da rota /api/trilhas
         const ativas = Number(r.quantidade_arvores ?? 0);
-        span.textContent = `${ativas} árvores ativas`;
-        el.appendChild(span);
+        const totais = Number(r.quantidade_arvores_total ?? 0);
+        span.textContent = `${ativas} árvores ativas • ${totais} árvores totais`;
+        subline.appendChild(span);
+        body.appendChild(subline);
+        el.appendChild(body);
 
-        // botão de mapa (similar ao lápis em `arvore.js`)
+        const actions = document.createElement('div');
+        actions.className = 'item-actions';
+
         const mapBtn = document.createElement('button');
         mapBtn.type = 'button';
-        mapBtn.className = 'map-pill';
+        mapBtn.className = 'edit-pill';
         mapBtn.title = 'Visualizar mapa';
+        mapBtn.setAttribute('aria-label', `Visualizar mapa da trilha ${r.nome}`);
         mapBtn.dataset.trilha = r.nome;
-        mapBtn.textContent = '🗺️';
+        mapBtn.appendChild(makeMapSvg());
         mapBtn.onclick = (ev) => {
           ev.stopPropagation();
           console.log('mapBtn clicked for trilha:', r.nome);
           openTrilhaMap(r.nome);
         };
+        actions.appendChild(mapBtn);
 
-        el.appendChild(mapBtn);
+        el.appendChild(actions);
 
         el.onclick = () => {
           window.location.href = `arvores?trilha=${encodeURIComponent(r.nome)}`;

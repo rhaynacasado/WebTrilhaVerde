@@ -9,12 +9,13 @@ router.get('/', async (req, res) => {
     const [rows] = await sequelize.query(`
       SELECT
         t.nome AS nome,
-        COALESCE(COUNT(a.codigo), 0) AS quantidade_arvores
+        COALESCE(COUNT(a.codigo) FILTER (WHERE a.ativa = true), 0) AS quantidade_arvores,
+        COALESCE(COUNT(a.codigo), 0) AS quantidade_arvores_total
       FROM trilha t
       LEFT JOIN arvore_trilha at2
         ON at2.trilha_nome = t.nome
       LEFT JOIN arvore a
-        ON a.codigo = at2.arvore_codigo AND a.ativa = true
+        ON a.codigo = at2.arvore_codigo
       GROUP BY t.nome
       ORDER BY t.nome ASC;
     `);
@@ -22,6 +23,7 @@ router.get('/', async (req, res) => {
     res.json(rows.map(r => ({
       nome: r.nome,
       quantidade_arvores: Number(r.quantidade_arvores) || 0,
+      quantidade_arvores_total: Number(r.quantidade_arvores_total) || 0,
     })));
   } catch (e) {
     console.error('ERRO /api/trilhas:', e);
@@ -43,7 +45,11 @@ router.post('/', auth, async (req, res) => {
     }
 
     const trilha = await Trilha.create({ nome });
-    return res.status(201).json({ nome: trilha.nome, quantidade_arvores: 0 });
+    return res.status(201).json({
+      nome: trilha.nome,
+      quantidade_arvores: 0,
+      quantidade_arvores_total: 0
+    });
   } catch (e) {
     if (e.name === 'SequelizeUniqueConstraintError' || e.original?.code === '23505') {
       return res.status(409).json({ error: 'Já existe uma trilha com esse nome' });
