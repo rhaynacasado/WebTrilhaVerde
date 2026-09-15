@@ -4,6 +4,68 @@
 
   function byId(id) { return document.getElementById(id); }
 
+  function makePlusSvg() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('aria-hidden', 'true');
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M12 5v14M5 12h14');
+    path.setAttribute('stroke', '#fff');
+    path.setAttribute('stroke-width', '2.2');
+    path.setAttribute('stroke-linecap', 'round');
+
+    svg.appendChild(path);
+    return svg;
+  }
+
+  async function ensureAddModal() {
+    if (byId('trilhaAddModal')) return true;
+    try {
+      const resp = await fetch('../partials/modal-trilha-add.html', { cache: 'no-store' });
+      if (!resp.ok) return false;
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = await resp.text();
+      while (wrapper.firstChild) document.body.appendChild(wrapper.firstChild);
+      return !!byId('trilhaAddModal');
+    } catch (err) {
+      console.error('Erro ao carregar modal de adicionar trilha', err);
+      return false;
+    }
+  }
+
+  function closeAddModal() {
+    const modal = byId('trilhaAddModal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  async function openAddModal() {
+    if (!await ensureAddModal()) {
+      alert('Modal de adicionar trilha não encontrado');
+      return;
+    }
+    const form = byId('trilhaAddForm');
+    if (form) form.reset();
+    const modal = byId('trilhaAddModal');
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    byId('addTrilhaNome')?.focus();
+  }
+
+  function setupAddTrilhaButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'fab-add';
+    button.title = 'Adicionar trilha';
+    button.setAttribute('aria-label', 'Adicionar trilha');
+    button.appendChild(makePlusSvg());
+    button.addEventListener('click', openAddModal);
+    document.body.appendChild(button);
+  }
+
   async function carregarTrilhas() {
     const box = byId('trilhasList');
     if (!box) {
@@ -80,6 +142,37 @@
       byId('trilhasList').innerHTML = '<p>Erro inesperado ao carregar trilhas.</p>';
     }
   }
+
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('#trilhaAddModal [data-close]')) closeAddModal();
+  });
+
+  document.addEventListener('submit', async (event) => {
+    if (event.target?.id !== 'trilhaAddForm') return;
+    event.preventDefault();
+
+    const nome = byId('addTrilhaNome')?.value.trim() || '';
+    if (!nome) {
+      alert('Informe o nome da trilha.');
+      return;
+    }
+
+    try {
+      const resp = await authFetch(`${API_BASE}/api/trilhas`, {
+        method: 'POST',
+        body: JSON.stringify({ nome })
+      });
+      const payload = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(payload.error || `Erro ${resp.status}`);
+
+      closeAddModal();
+      await carregarTrilhas();
+      alert('Trilha adicionada com sucesso!');
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Erro ao adicionar trilha');
+    }
+  });
   // ===== Map modal helpers =====
   async function ensureMapModalExists() {
     if (document.getElementById('trilhaMapModal')) return;
@@ -223,5 +316,8 @@
   }
 
   // espera o DOM
-  document.addEventListener('DOMContentLoaded', carregarTrilhas);
+  document.addEventListener('DOMContentLoaded', () => {
+    setupAddTrilhaButton();
+    carregarTrilhas();
+  });
 })();
