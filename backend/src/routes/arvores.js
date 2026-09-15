@@ -40,6 +40,10 @@ async function detectImagemIdColumn() {
   return imagemIdColumnCache;
 }
 
+function imageIdExpression(idColumn) {
+  return idColumn ? `${idColumn} AS id` : 'url AS id';
+}
+
 // ================= GET LIST =================
 router.get('/', async (req, res) => {
   try {
@@ -103,7 +107,7 @@ router.get('/total', async (req, res) => {
 async function loadArvoreOr404(trilha, codigo, res) {
   const found = await Arvore.findByPk(Number(codigo), {
     attributes: [
-      'codigo', 'nome', 'especie', 'foto_url', 'ativa',
+      'codigo', 'nome', 'especie', 'ativa',
       'familia', 'origem', 'tipo_origem',
       'latitude', 'longitude', 'quantidade_perguntas'
     ]
@@ -239,7 +243,7 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     const arv = await loadArvoreOr404(trilha, cod, res);
     if (!arv) return; // loadArvoreOr404 already sent 404
 
-    const { nome, especie, foto_url, ordem } = req.body;
+    const { nome, especie, ordem } = req.body;
     const latitude = toNumOrNull(req.body.latitude);
     const longitude = toNumOrNull(req.body.longitude);
     const familia = req.body.familia === undefined ? undefined : (String(req.body.familia));
@@ -251,7 +255,6 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
 
     if (nome    !== undefined && nome    !== arv.nome)     { arv.nome    = nome;    changed.push('nome'); }
     if (especie !== undefined && especie !== arv.especie)  { arv.especie = especie; changed.push('especie'); }
-    if (foto_url!== undefined && foto_url!== arv.foto_url) { arv.foto_url= foto_url;changed.push('foto_url'); }
     if (latitude !== undefined && !sameNum(arv.latitude, latitude)) { arv.latitude = latitude; changed.push('latitude'); }
     if (longitude !== undefined && !sameNum(arv.longitude, longitude)) { arv.longitude = longitude; changed.push('longitude'); }
     if (ativa !== undefined && !!arv.ativa !== ativa) { arv.ativa = ativa; changed.push('ativa'); }
@@ -314,7 +317,6 @@ router.post('/', auth, async (req, res) => {
       codigo: Number(body.codigo),
       nome: body.nome || '',
       especie: body.especie || '',
-      foto_url: body.foto_url || '',
       ativa: body.ativa == null ? true : !!body.ativa,
       latitude: toNumOrNull(body.latitude),
       longitude: toNumOrNull(body.longitude),
@@ -369,9 +371,9 @@ router.delete('/:trilha/:codigo', auth, async (req, res) => {
 router.get('/:trilha/:codigo/images', async (req, res) => {
   try {
     const codigo = Number(req.params.codigo);
-    const idColumn = await detectImagemIdColumn() || 'id';
+    const idColumn = await detectImagemIdColumn();
     const [imgs] = await sequelize.query(
-      `SELECT ${idColumn} AS id, url, legenda, fonte FROM imagens WHERE arvore_codigo = $1 ORDER BY ${idColumn} ASC`,
+      `SELECT ${imageIdExpression(idColumn)}, url, legenda, fonte FROM imagens WHERE arvore_codigo = $1 ORDER BY url ASC`,
       { bind: [codigo] }
     );
     return res.json(imgs || []);
@@ -388,9 +390,9 @@ router.post('/:trilha/:codigo/images', auth, async (req, res) => {
     const { url, legenda, fonte } = req.body;
     if (!url) return res.status(400).json({ error: 'url é obrigatório' });
 
-    const idColumn = await detectImagemIdColumn() || 'id';
+    const idColumn = await detectImagemIdColumn();
     const [result] = await sequelize.query(
-      `INSERT INTO imagens (arvore_codigo, url, legenda, fonte) VALUES ($1,$2,$3,$4) RETURNING ${idColumn} AS id, url, legenda, fonte`,
+      `INSERT INTO imagens (arvore_codigo, url, legenda, fonte) VALUES ($1,$2,$3,$4) RETURNING ${imageIdExpression(idColumn)}, url, legenda, fonte`,
       { bind: [codigo, String(url), legenda || null, fonte || null] }
     );
     const created = result && result[0] ? result[0] : null;
@@ -405,20 +407,26 @@ router.post('/:trilha/:codigo/images', auth, async (req, res) => {
 router.put('/:trilha/:codigo/images/:id', auth, async (req, res) => {
   try {
     const codigo = Number(req.params.codigo);
-    const id = Number(req.params.id);
+    const idColumn = await detectImagemIdColumn();
+    const id = idColumn ? Number(req.params.id) : decodeURIComponent(req.params.id);
     const { url, legenda, fonte } = req.body;
 
-    const idColumn = await detectImagemIdColumn() || 'id';
     // ensure belongs to this tree
-    const [found] = await sequelize.query(`SELECT ${idColumn} AS id FROM imagens WHERE ${idColumn} = $1 AND arvore_codigo = $2`, { bind: [id, codigo] });
+    const [found] = await sequelize.query(
+      `SELECT ${imageIdExpression(idColumn)} FROM imagens WHERE ${idColumn ? `${idColumn} = $1` : 'url = $1'} AND arvore_codigo = $2`,
+      { bind: [id, codigo] }
+    );
     if (!found || !found[0]) return res.status(404).json({ error: 'Imagem não encontrada' });
 
     await sequelize.query(
-      `UPDATE imagens SET url = $1, legenda = $2, fonte = $3 WHERE ${idColumn} = $4`,
-      { bind: [String(url || ''), legenda || null, fonte || null, id] }
+      `UPDATE imagens SET url = $1, legenda = $2, fonte = $3 WHERE ${idColumn ? `${idColumn} = $4` : 'url = $4 AND arvore_codigo = $5'}`,
+      { bind: idColumn ? [String(url || ''), legenda || null, fonte || null, id] : [String(url || ''), legenda || null, fonte || null, id, codigo] }
     );
 
-    const [rows] = await sequelize.query(`SELECT ${idColumn} AS id, url, legenda, fonte FROM imagens WHERE ${idColumn} = $1`, { bind: [id] });
+    const [rows] = await sequelize.query(
+      `SELECT ${imageIdExpression(idColumn)}, url, legenda, fonte FROM imagens WHERE ${idColumn ? `${idColumn} = $1` : 'url = $1 AND arvore_codigo = $2'}`,
+      { bind: idColumn ? [id] : [String(url || ''), codigo] }
+    );
     return res.json(rows && rows[0] ? rows[0] : {});
   } catch (e) {
     console.error(e);
@@ -430,9 +438,12 @@ router.put('/:trilha/:codigo/images/:id', auth, async (req, res) => {
 router.delete('/:trilha/:codigo/images/:id', auth, async (req, res) => {
   try {
     const codigo = Number(req.params.codigo);
-    const id = Number(req.params.id);
-    const idColumn = await detectImagemIdColumn() || 'id';
-    await sequelize.query(`DELETE FROM imagens WHERE ${idColumn} = $1 AND arvore_codigo = $2`, { bind: [id, codigo] });
+    const idColumn = await detectImagemIdColumn();
+    const id = idColumn ? Number(req.params.id) : decodeURIComponent(req.params.id);
+    await sequelize.query(
+      `DELETE FROM imagens WHERE ${idColumn ? `${idColumn} = $1` : 'url = $1 AND arvore_codigo = $2'}`,
+      { bind: idColumn ? [id] : [id, codigo] }
+    );
     return res.status(204).end();
   } catch (e) {
     console.error(e);

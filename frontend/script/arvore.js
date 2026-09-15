@@ -598,7 +598,10 @@
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ url, legenda, fonte })
             });
-            if (!resp.ok) throw new Error('Falha ao adicionar imagem');
+            if (!resp.ok) {
+              const error = await resp.json().catch(() => ({}));
+              throw new Error(error.error || `Falha ao adicionar imagem (${resp.status})`);
+            }
             (document.getElementById('addImageUrl') || {}).value = '';
             (document.getElementById('addImageLegenda') || {}).value = '';
             (document.getElementById('addImageFonte') || {}).value = '';
