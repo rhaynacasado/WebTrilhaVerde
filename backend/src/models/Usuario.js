@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(50), // Ajustado para corresponder ao BD
       allowNull: true,
     },
-    num_arvores_visitadas: {
+    num_pontos_visitados: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,

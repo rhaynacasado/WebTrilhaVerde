@@ -8,23 +8,27 @@ const { logPergunta } = require('../utils/logHelpers');
 
 // ==================== GETs públicos ====================
 
+// ?ponto=<codigo> (app mobile)  ?trilha=<nome>
 router.get('/', async (req, res) => {
   try {
-    const { trilha, arvore } = req.query;
+    const { ponto, trilha } = req.query;
 
     const binds = [];
     let whereSql = '';
-    if (trilha) { binds.push(trilha); whereSql += ` AND at.trilha_nome = $${binds.length}`; }
-    if (arvore) { binds.push(Number(arvore)); whereSql += ` AND p.arvore_codigo = $${binds.length}`; }
+    if (ponto) { binds.push(Number(ponto)); whereSql += ` AND p.ponto_interesse_codigo = $${binds.length}`; }
+    if (trilha) {
+      binds.push(trilha);
+      whereSql += ` AND EXISTS (SELECT 1 FROM ponto_interesse_trilha pit
+                                WHERE pit.ponto_interesse_codigo = p.ponto_interesse_codigo
+                                  AND pit.trilha_nome = $${binds.length})`;
+    }
 
     const sql = `
-      SELECT p.id, p.arvore_codigo, p.enunciado, p.item_a, p.item_b, p.item_c, p.item_d, p.item_e,
-             p.texto, p.audio_url, p.resposta_correta, p.dica, p.audio_dica_url,
-             at.trilha_nome
+      SELECT p.id, p.ponto_interesse_codigo, p.enunciado, p.item_a, p.item_b, p.item_c, p.item_d,
+             p.texto, p.audio_url, p.resposta_correta, p.dica, p.audio_dica_url
       FROM pergunta p
-      JOIN arvore_trilha at ON at.arvore_codigo = p.arvore_codigo
       WHERE 1=1 ${whereSql}
-      ORDER BY at.trilha_nome ASC, p.arvore_codigo ASC, p.id ASC
+      ORDER BY p.ponto_interesse_codigo ASC, p.id ASC
     `;
 
     const [rows] = await sequelize.query(sql, { bind: binds });

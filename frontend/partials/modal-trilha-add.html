@@ -1,0 +1,23 @@
+<!-- Modal: Adicionar Trilha -->
+<div id="trilhaAddModal" class="modal" aria-hidden="true">
+  <div class="modal__backdrop" data-close></div>
+
+  <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="trilhaAddTitle">
+    <header class="modal__head">
+      <h3 id="trilhaAddTitle">Adicionar trilha</h3>
+      <button type="button" class="icon-btn" title="Fechar" data-close>&times;</button>
+    </header>
+
+    <form id="trilhaAddForm" class="form">
+      <div class="form__row">
+        <label for="addTrilhaNome">Nome *</label>
+        <input id="addTrilhaNome" type="text" maxlength="255" placeholder="Nome da trilha" required />
+      </div>
+
+      <footer class="modal__foot">
+        <button type="button" class="btn" data-close>Cancelar</button>
+        <button type="submit" class="btn primary">Adicionar</button>
+      </footer>
+    </form>
+  </div>
+</div>

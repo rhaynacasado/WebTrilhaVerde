@@ -26,7 +26,7 @@ router.post('/', async (req, res) => {
       avatar_foto: avatar_foto ?? null,
       idade: idade ?? null,
       ano_escolar: ano_escolar ?? null,
-      num_arvores_visitadas: 0,
+      num_pontos_visitados: 0,
     });
 
     return res.status(201).json(created.toJSON());
@@ -101,20 +101,15 @@ router.get('/:nickname/trofeus', async (req, res) => {
 
     const [trofeus] = await sequelize.query(`
       SELECT
-        at2.trilha_nome AS trilha_nome,
-        t.arvore_codigo,
-        a.nome AS arvore_nome
+        t.usuario_nickname,
+        t.ponto_interesse_codigo,
+        p.nome AS ponto_interesse_nome
       FROM trofeu t
-      INNER JOIN arvore a ON a.codigo = t.arvore_codigo
-      LEFT JOIN arvore_trilha at2 ON at2.arvore_codigo = t.arvore_codigo
+      INNER JOIN ponto_interesse p ON p.codigo = t.ponto_interesse_codigo
       WHERE t.usuario_nickname = :nickname
     `, { replacements: { nickname } });
 
-    return res.status(200).json(trofeus.map(t => ({
-      trilha_nome: t.trilha_nome,
-      arvore_codigo: t.arvore_codigo,
-      arvore_nome: t.arvore_nome,
-    })));
+    return res.status(200).json(trofeus);
   } catch (e) {
     console.error('GET /usuarios/:nickname/trofeus', e);
     return res.status(500).json({ error: 'Erro ao buscar troféus' });
@@ -125,27 +120,26 @@ router.get('/:nickname/trofeus', async (req, res) => {
 router.post('/:nickname/trofeus', async (req, res) => {
   try {
     const { nickname } = req.params;
-    const { trilha_nome, arvore_codigo } = req.body;
+    const ponto_interesse_codigo = Number(req.body.ponto_interesse_codigo);
 
-    if (!trilha_nome || !arvore_codigo) {
-      return res.status(400).json({ error: 'trilha_nome e arvore_codigo são obrigatórios' });
+    if (!ponto_interesse_codigo) {
+      return res.status(400).json({ error: 'ponto_interesse_codigo é obrigatório' });
     }
 
     const [trofeu, created] = await Trofeu.findOrCreate({
       where: {
         usuario_nickname: nickname,
-        arvore_codigo: arvore_codigo,
+        ponto_interesse_codigo,
       }
     });
 
     if (created) {
-      await Usuario.increment('num_arvores_visitadas', {
+      await Usuario.increment('num_pontos_visitados', {
         where: { nickname: nickname }
       });
-      return res.status(201).json(trofeu.toJSON());
-    } else {
-      return res.status(200).json(trofeu.toJSON());
     }
+    // sempre 201: o app trata qualquer outro status como falha, inclusive troféu já existente
+    return res.status(201).json(trofeu.toJSON());
   } catch (error) {
     console.error('ERRO AO TENTAR SALVAR O TROFÉU:', error);
     return res.status(500).json({ message: 'Erro interno ao salvar troféu' });
@@ -156,17 +150,18 @@ router.post('/:nickname/trofeus', async (req, res) => {
 router.delete('/:nickname/trofeus', async (req, res) => {
   try {
     const { nickname } = req.params;
-    const { trilha_nome } = req.query;
+    // o app envia ?trilha=; ?trilha_nome= continua aceito
+    const trilha_nome = req.query.trilha || req.query.trilha_nome;
 
     if (trilha_nome) {
-      // Apaga só os troféus da trilha específica (trilha_nome vem via arvore_trilha)
+      // Apaga só os troféus dos pontos que pertencem à trilha
       const [deletedRows] = await sequelize.query(
         `DELETE FROM trofeu
          WHERE usuario_nickname = :nickname
-           AND arvore_codigo IN (
-             SELECT arvore_codigo FROM arvore_trilha WHERE trilha_nome = :trilha_nome
+           AND ponto_interesse_codigo IN (
+             SELECT ponto_interesse_codigo FROM ponto_interesse_trilha WHERE trilha_nome = :trilha_nome
            )
-         RETURNING arvore_codigo`,
+         RETURNING ponto_interesse_codigo`,
         { replacements: { nickname, trilha_nome } }
       );
       const deleted = deletedRows.length;
@@ -175,7 +170,7 @@ router.delete('/:nickname/trofeus', async (req, res) => {
       if (deleted > 0) {
         await sequelize.query(
           `UPDATE usuario
-           SET num_arvores_visitadas = GREATEST(0, num_arvores_visitadas - :deleted)
+           SET num_pontos_visitados = GREATEST(0, num_pontos_visitados - :deleted)
            WHERE nickname = :nickname`,
           { replacements: { deleted, nickname } }
         );
@@ -186,7 +181,7 @@ router.delete('/:nickname/trofeus', async (req, res) => {
         where: { usuario_nickname: nickname }
       });
       await Usuario.update(
-        { num_arvores_visitadas: 0 },
+        { num_pontos_visitados: 0 },
         { where: { nickname } }
       );
     }

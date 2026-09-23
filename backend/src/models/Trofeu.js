@@ -10,11 +10,11 @@ module.exports = (sequelize, DataTypes) => {
         key: 'nickname'
       }
     },
-    arvore_codigo: {
+    ponto_interesse_codigo: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       references: {
-        model: 'arvore',
+        model: 'ponto_interesse',
         key: 'codigo'
       }
     }
@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
   Trofeu.associate = function(models) {
     // Relação: Um Troféu pertence a uma Árvore
     Trofeu.belongsTo(models.Arvore, { 
-      foreignKey: 'arvore_codigo', 
+      foreignKey: 'ponto_interesse_codigo', 
       constraints: false 
     });
 
