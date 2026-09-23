@@ -24,6 +24,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 /* ========= Rotas ========= */
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/arvores', require('./routes/arvores'));
+app.use('/api/pontos-interesse', require('./routes/pontosInteresse'));
 app.use('/api/trilhas', require('./routes/trilhas'));
 app.use('/api/perguntas', require('./routes/perguntas'));
 app.use('/api/logs', require('./routes/logs'));
@@ -41,7 +42,8 @@ app.use((err, _req, res, _next) => {
 const start = async () => {
   try {
     await sequelize.authenticate();
-    await sequelize.sync();
+    // sem sequelize.sync(): o schema é mantido direto no banco, e os modelos antigos
+    // (arvore, arvore_trilha, alteracao_arvore) recriariam tabelas que não existem mais
     
     // [ALTERADO] Adiciona '0.0.0.0' para aceitar conexões externas na hospedagem
     app.listen(PORT, '0.0.0.0', () =>

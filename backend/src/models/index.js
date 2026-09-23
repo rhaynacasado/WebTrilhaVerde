@@ -74,16 +74,15 @@ Trofeu.belongsTo(Usuario, {
 });
 
 
-// Relação Troféu <-> Árvore
-// A chave estrangeira é composta, então definimos as duas partes
+// Relação Troféu <-> Ponto de interesse (tabela trofeu usa ponto_interesse_codigo)
 Arvore.hasMany(Trofeu, {
-  foreignKey: 'arvore_codigo',
+  foreignKey: 'ponto_interesse_codigo',
   sourceKey: 'codigo',
   as: 'trofeus',
   constraints: false
 });
 Trofeu.belongsTo(Arvore, {
-  foreignKey: 'arvore_codigo',
+  foreignKey: 'ponto_interesse_codigo',
   targetKey: 'codigo',
   as: 'Arvore', // O 'as' deve bater com o nome do modelo usado no include
   constraints: false
