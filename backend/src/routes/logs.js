@@ -16,9 +16,9 @@ router.get('/', auth, async (req, res) => {
       SELECT
         'arvore'            AS tipo,
         COALESCE(at.trilha_nome, (
-          SELECT trilha_nome FROM arvore_trilha WHERE arvore_codigo = la.arvore_codigo LIMIT 1
+          SELECT trilha_nome FROM ponto_interesse_trilha WHERE ponto_interesse_codigo = la.ponto_interesse_codigo LIMIT 1
         )) AS trilha_nome,
-        la.arvore_codigo,
+        la.ponto_interesse_codigo,
         NULL::int           AS pergunta_id,
         la.admin_email,
         ad.nome             AS admin_nome,
@@ -26,11 +26,11 @@ router.get('/', auth, async (req, res) => {
         la.acao,
         av.nome             AS arvore_nome,
         NULL::text          AS pergunta_enunciado
-      FROM alteracao_arvore la
-      LEFT JOIN arvore_trilha at
-        ON at.arvore_codigo = la.arvore_codigo
-      LEFT JOIN arvore av
-        ON av.codigo = at.arvore_codigo
+      FROM alteracao_ponto_interesse la
+      LEFT JOIN ponto_interesse_trilha at
+        ON at.ponto_interesse_codigo = la.ponto_interesse_codigo
+      LEFT JOIN ponto_interesse av
+        ON av.codigo = at.ponto_interesse_codigo
       LEFT JOIN administrador ad
         ON ad.email = la.admin_email
 
@@ -40,9 +40,9 @@ router.get('/', auth, async (req, res) => {
       SELECT
         'pergunta'          AS tipo,
         COALESCE(at2.trilha_nome, (
-          SELECT trilha_nome FROM arvore_trilha WHERE arvore_codigo = lp.arvore_codigo LIMIT 1
+          SELECT trilha_nome FROM ponto_interesse_trilha WHERE ponto_interesse_codigo = lp.ponto_interesse_codigo LIMIT 1
         )) AS trilha_nome,
-        lp.arvore_codigo,
+        lp.ponto_interesse_codigo,
         lp.pergunta_id,
         lp.admin_email,
         ad.nome             AS admin_nome,
@@ -51,12 +51,12 @@ router.get('/', auth, async (req, res) => {
         av.nome             AS arvore_nome,
         pe.enunciado        AS pergunta_enunciado
       FROM alteracao_pergunta lp
-      LEFT JOIN arvore_trilha at2
-        ON at2.arvore_codigo = lp.arvore_codigo
-      LEFT JOIN arvore av
-        ON av.codigo = at2.arvore_codigo
+      LEFT JOIN ponto_interesse_trilha at2
+        ON at2.ponto_interesse_codigo = lp.ponto_interesse_codigo
+      LEFT JOIN ponto_interesse av
+        ON av.codigo = at2.ponto_interesse_codigo
       LEFT JOIN pergunta pe
-        ON pe.arvore_codigo = lp.arvore_codigo
+        ON pe.ponto_interesse_codigo = lp.ponto_interesse_codigo
        AND pe.id = lp.pergunta_id
       LEFT JOIN administrador ad
         ON ad.email = lp.admin_email
@@ -81,9 +81,9 @@ module.exports = router;
 // DEBUG: contar registros de logs
 router.get('/debug-counts', auth, async (req, res) => {
   try {
-    const [[{ cnt: arvCnt }]] = await sequelize.query(`SELECT COUNT(*)::int AS cnt FROM alteracao_arvore`);
+    const [[{ cnt: arvCnt }]] = await sequelize.query(`SELECT COUNT(*)::int AS cnt FROM alteracao_ponto_interesse`);
     const [[{ cnt: perCnt }]] = await sequelize.query(`SELECT COUNT(*)::int AS cnt FROM alteracao_pergunta`);
-    return res.json({ alteracao_arvore: arvCnt || 0, alteracao_pergunta: perCnt || 0 });
+    return res.json({ alteracao_ponto_interesse: arvCnt || 0, alteracao_pergunta: perCnt || 0 });
   } catch (e) {
     console.error('GET /api/logs/debug-counts', e);
     return res.status(500).json({ error: 'Erro ao contar logs' });

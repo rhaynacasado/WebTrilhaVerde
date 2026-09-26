@@ -53,7 +53,7 @@
   function formatActivity(r) {
     const acao = (r.acao || '').toLowerCase();
     const trilha = r.trilha_nome;
-    const arvNome = r.arvore_nome || `árvore ${r.arvore_codigo}`;
+    const arvNome = r.arvore_nome || `árvore ${r.ponto_interesse_codigo}`;
     const pergId  = r.pergunta_id;
 
     // helpers
@@ -81,17 +81,17 @@
     if (r.tipo === 'pergunta') {
       if (acao.startsWith('create:')) {
         const enunc = quoted(acao) || r.pergunta_enunciado || '';
-        return `Criou a pergunta #${pergId}${enunc ? `: “${enunc}”` : ''} (árvore ${r.arvore_codigo}) da trilha “${trilha}”.`;
+        return `Criou a pergunta #${pergId}${enunc ? `: “${enunc}”` : ''} (ponto ${r.ponto_interesse_codigo}) da trilha “${trilha}”.`;
       }
       if (acao.startsWith('delete:')) {
         const enunc = quoted(acao); // snapshot salvo no log
-        return `Excluiu a pergunta #${pergId}${enunc ? `: “${enunc}”` : ''} (árvore ${r.arvore_codigo}) da trilha “${trilha}”.`;
+        return `Excluiu a pergunta #${pergId}${enunc ? `: “${enunc}”` : ''} (ponto ${r.ponto_interesse_codigo}) da trilha “${trilha}”.`;
       }
       if (acao.startsWith('update:')) {
         const campos = acao.slice(7);
-        return `Alterou ${campos.replaceAll('_',' ')} da pergunta #${pergId} (árvore ${r.arvore_codigo}) da trilha “${trilha}”.`;
+        return `Alterou ${campos.replaceAll('_',' ')} da pergunta #${pergId} (ponto ${r.ponto_interesse_codigo}) da trilha “${trilha}”.`;
       }
-      return `Alterou a pergunta #${pergId} (árvore ${r.arvore_codigo}) da trilha “${trilha}”.`;
+      return `Alterou a pergunta #${pergId} (ponto ${r.ponto_interesse_codigo}) da trilha “${trilha}”.`;
     }
 
     return 'Atividade';

@@ -108,23 +108,23 @@
     if (!resp.ok) throw new Error('Falha ao carregar perguntas');
     const rows = await resp.json();
 
-    perguntas = rows.map(r => {
-      const a = arvores.find(x => x.trilha_nome === r.trilha_nome && x.codigo === Number(r.arvore_codigo));
-      const arvoreId = a ? a.id : null;
-      return {
+    perguntas = rows.flatMap(r => {
+      const pontos = arvores.filter(x => x.codigo === Number(r.ponto_interesse_codigo));
+      return pontos.map(a => ({
         id: Number(r.id),
-        arvoreId,
+        arvoreId: a.id,
+        ponto_interesse_codigo: Number(r.ponto_interesse_codigo),
         enunciado: r.enunciado || '',
         textoInfo: r.texto || '',
         audioInfo: r.audio_url || '',
         audioDica: r.audio_dica_url || '',
         itens: {
           A: r.item_a || '', B: r.item_b || '', C: r.item_c || '',
-          D: r.item_d || '', E: r.item_e || ''
+          D: r.item_d || '', E: ''
         },
         correta: r.resposta_correta || 'A',
         textoDica: r.dica || ''
-      };
+      }));
     });
 
     nextPerguntaId = (perguntas.length ? Math.max(...perguntas.map(p => p.id)) : 0) + 1;
@@ -425,7 +425,6 @@
       document.getElementById('perguntaItemB').value = q.itens?.B || '';
       document.getElementById('perguntaItemC').value = q.itens?.C || '';
       document.getElementById('perguntaItemD').value = q.itens?.D || '';
-      document.getElementById('perguntaItemE').value = q.itens?.E || '';
 
       document.getElementById('perguntaResposta').value =
         q.correta || 'A';
@@ -457,7 +456,6 @@
           item_b    : document.getElementById('perguntaItemB').value.trim(),
           item_c    : document.getElementById('perguntaItemC').value.trim(),
           item_d    : document.getElementById('perguntaItemD').value.trim(),
-          item_e    : document.getElementById('perguntaItemE').value.trim(),
           resposta_correta: document.getElementById('perguntaResposta').value,
           dica      : document.getElementById('perguntaTextoDica').value.trim(),
         };
@@ -471,7 +469,7 @@
             textoInfo: payload.texto,
             audioInfo: payload.audio_url,
             audioDica: payload.audio_dica_url,
-            itens: { A:payload.item_a, B:payload.item_b, C:payload.item_c, D:payload.item_d, E:payload.item_e },
+            itens: { A:payload.item_a, B:payload.item_b, C:payload.item_c, D:payload.item_d, E:'' },
             correta: payload.resposta_correta,
             textoDica: payload.dica
           };
@@ -586,7 +584,7 @@
       }
       const fields = [
         'addEnunciado','addTextoInfo','addAudioInfo','addAudioDica',
-        'addItemA','addItemB','addItemC','addItemD','addItemE','addTextoDica'
+        'addItemA','addItemB','addItemC','addItemD','addTextoDica'
       ];
       fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
       const resp = document.getElementById('addResposta'); if (resp) resp.value = 'A';
@@ -622,7 +620,7 @@
 
         const payload = {
           trilha_nome: arvoreRef.trilha_nome,
-          arvore_codigo: arvoreRef.codigo,
+          ponto_interesse_codigo: arvoreRef.codigo,
           enunciado: document.getElementById('addEnunciado').value.trim(),
           texto: document.getElementById('addTextoInfo').value.trim(),
           audio_url: document.getElementById('addAudioInfo').value.trim(),
@@ -631,7 +629,6 @@
           item_b: document.getElementById('addItemB').value.trim(),
           item_c: document.getElementById('addItemC').value.trim(),
           item_d: document.getElementById('addItemD').value.trim(),
-          item_e: document.getElementById('addItemE').value.trim(),
           resposta_correta: document.getElementById('addResposta').value,
           dica: document.getElementById('addTextoDica').value.trim(),
         };
@@ -661,7 +658,7 @@
             audioDica: novaPergunta.audio_dica_url || '',
             itens: {
               A: novaPergunta.item_a || '', B: novaPergunta.item_b || '', C: novaPergunta.item_c || '',
-              D: novaPergunta.item_d || '', E: novaPergunta.item_e || ''
+              D: novaPergunta.item_d || '', E: ''
             },
             correta: novaPergunta.resposta_correta || 'A',
             textoDica: novaPergunta.dica || ''

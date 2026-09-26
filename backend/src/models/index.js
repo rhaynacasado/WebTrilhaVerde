@@ -14,34 +14,34 @@ const Trofeu            = require('./Trofeu')(sequelize, DataTypes);
 const ArvoreTrilha       = require('./ArvoreTrilha')(sequelize, DataTypes);
 
 /* ========= Associações =========
- * Trilha(nome PK) N—N Arvore(código) via arvore_trilha
+ * Trilha(nome PK) N—N ponto_interesse(código) via ponto_interesse_trilha
  */
 Trilha.belongsToMany(Arvore, {
   through: ArvoreTrilha,
   foreignKey: 'trilha_nome',
-  otherKey: 'arvore_codigo',
+  otherKey: 'ponto_interesse_codigo',
   as: 'arvores',
   timestamps: false,
 });
 Arvore.belongsToMany(Trilha, {
   through: ArvoreTrilha,
-  foreignKey: 'arvore_codigo',
+  foreignKey: 'ponto_interesse_codigo',
   otherKey: 'trilha_nome',
   as: 'trilhas',
   timestamps: false,
 });
 
 /* ========= Associações convenientes Arvore <-> Pergunta =========
- * FK composta (trilha_nome + arvore_codigo) → duas refs sem constraint
+ * FK composta (trilha_nome + ponto_interesse_codigo) → duas refs sem constraint
  */
 Pergunta.belongsTo(Arvore, {
-  foreignKey: 'arvore_codigo',
+  foreignKey: 'ponto_interesse_codigo',
   targetKey:  'codigo',
   as: 'arvorePorCodigo',
   constraints: false,
 });
 Arvore.hasMany(Pergunta, {
-  foreignKey: 'arvore_codigo',
+  foreignKey: 'ponto_interesse_codigo',
   sourceKey:  'codigo',
   as: 'perguntas',
   constraints: false,
@@ -49,13 +49,13 @@ Arvore.hasMany(Pergunta, {
 
 // Imagens por árvore
 Arvore.hasMany(Imagem, {
-  foreignKey: 'arvore_codigo',
+  foreignKey: 'ponto_interesse_codigo',
   sourceKey: 'codigo',
   as: 'imagens',
   constraints: false,
 });
 Imagem.belongsTo(Arvore, {
-  foreignKey: 'arvore_codigo',
+  foreignKey: 'ponto_interesse_codigo',
   targetKey: 'codigo',
   as: 'arvore',
   constraints: false,

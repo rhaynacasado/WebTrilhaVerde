@@ -1,5 +1,9 @@
 /* ===== Página Árvores ===== */
 
+body[data-tipo="predio_historico"] [data-arvore-only]{
+  display:none;
+}
+
 /* Card-base herdado do admin.css. Aqui ajustamos layout e botão. */
 #pageArvores .item{
   display:flex;

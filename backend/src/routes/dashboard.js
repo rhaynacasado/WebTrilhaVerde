@@ -10,14 +10,14 @@ function formatActivity(r) {
     if (r.acao === 'toggle_on')  return `Ativou a árvore "${r.alvo_nome}" (Trilha "${r.trilha_nome}").`;
     if (r.acao === 'toggle_off') return `Desativou a árvore "${r.alvo_nome}" (Trilha "${r.trilha_nome}").`;
     if (r.acao === 'create')     return `Criou a árvore "${r.alvo_nome}" (Trilha "${r.trilha_nome}").`;
-    if (r.acao === 'delete')     return `Excluiu a árvore código ${r.arvore_codigo} (Trilha "${r.trilha_nome}").`;
+    if (r.acao === 'delete')     return `Excluiu a árvore código ${r.ponto_interesse_codigo} (Trilha "${r.trilha_nome}").`;
     // update:* (campos)
     return `Alterou a árvore "${r.alvo_nome}" (Trilha "${r.trilha_nome}").`;
   } else {
     if (r.acao === 'create')     return `Criou a pergunta #${r.pergunta_id} em "${r.alvo_nome}" (Trilha "${r.trilha_nome}").`;
     if (r.acao?.startsWith('update'))
-      return `Alterou a pergunta #${r.pergunta_id} (árvore ${r.arvore_codigo}) da trilha "${r.trilha_nome}".`;
-    return `Alterou a pergunta #${r.pergunta_id} (árvore ${r.arvore_codigo}) da trilha "${r.trilha_nome}".`;
+      return `Alterou a pergunta #${r.pergunta_id} (ponto ${r.ponto_interesse_codigo}) da trilha "${r.trilha_nome}".`;
+    return `Alterou a pergunta #${r.pergunta_id} (ponto ${r.ponto_interesse_codigo}) da trilha "${r.trilha_nome}".`;
   }
 }
 
@@ -36,17 +36,17 @@ router.get('/summary', async (req, res) => {
 
     // últimas 5 atividades, já “formatadas”
         const [rows] = await sequelize.query(`
-          SELECT 'arvore' AS tipo, at.trilha_nome AS trilha_nome, a.arvore_codigo, NULL::int AS pergunta_id,
+          SELECT 'arvore' AS tipo, at.trilha_nome AS trilha_nome, a.ponto_interesse_codigo, NULL::int AS pergunta_id,
             COALESCE(arv.nome,'') AS alvo_nome, a.admin_email, a.data_alteracao, a.acao
-          FROM alteracao_arvore a
-          LEFT JOIN arvore_trilha at ON at.arvore_codigo = a.arvore_codigo
-          LEFT JOIN arvore arv ON arv.codigo = at.arvore_codigo
+          FROM alteracao_ponto_interesse a
+          LEFT JOIN ponto_interesse_trilha at ON at.ponto_interesse_codigo = a.ponto_interesse_codigo
+          LEFT JOIN ponto_interesse arv ON arv.codigo = at.ponto_interesse_codigo
           UNION ALL
-          SELECT 'pergunta' AS tipo, at2.trilha_nome AS trilha_nome, p.arvore_codigo, p.pergunta_id,
+          SELECT 'pergunta' AS tipo, at2.trilha_nome AS trilha_nome, p.ponto_interesse_codigo, p.pergunta_id,
             COALESCE(arv2.nome,'') AS alvo_nome, p.admin_email, p.data_alteracao, p.acao
           FROM alteracao_pergunta p
-          LEFT JOIN arvore_trilha at2 ON at2.arvore_codigo = p.arvore_codigo
-          LEFT JOIN arvore arv2 ON arv2.codigo = at2.arvore_codigo
+          LEFT JOIN ponto_interesse_trilha at2 ON at2.ponto_interesse_codigo = p.ponto_interesse_codigo
+          LEFT JOIN ponto_interesse arv2 ON arv2.codigo = at2.ponto_interesse_codigo
           ORDER BY data_alteracao DESC
           LIMIT 5
         `);

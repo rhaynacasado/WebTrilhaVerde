@@ -4,6 +4,9 @@
   const TOKEN_KEY = 'token';
   const listRoot  = document.getElementById('arvoresList');
   if (!listRoot) return;
+  const isPredio = document.body.dataset.tipo === 'predio_historico';
+  const resourcePath = isPredio ? 'predios' : 'arvores';
+  const resourceLabel = isPredio ? 'prédio' : 'árvore';
 
   // fetch com Authorization automático
   async function authFetch(path, opts = {}) {
@@ -261,10 +264,10 @@
     const gridIds = document.createElement('div');
     gridIds.className='form__grid';
     gridIds.appendChild(row('Trilha', input('arvoreTrilha','text',true)));
-    gridIds.appendChild(row('Código', input('arvoreCodigo','text',true)));
 
     const rowNome = row('Nome', input('arvoreNome','text',false,{required:true}));
     const rowEsp  = row('Espécie', input('arvoreEspecie','text',false,{required:true}));
+    rowEsp.setAttribute('data-arvore-only', '');
 
     const grid1 = document.createElement('div');
     grid1.className='form__grid';
@@ -337,12 +340,25 @@
       return el;
     }
   }
+
+  if (isPredio) {
+    document.querySelectorAll('#arvoreModal h3, #arvoreAddModal h3').forEach((title) => {
+      title.textContent = title.textContent.replace(/árvore/gi, 'prédio');
+    });
+    document.querySelectorAll('#arvoreModal label, #arvoreAddModal label').forEach((label) => {
+      label.textContent = label.textContent.replace(/árvore/gi, 'prédio');
+    });
+    ['arvoreEspecie', 'arvoreFamilia', 'arvoreOrigem', 'arvoreTipoOrigem',
+      'addEspecie', 'addFamilia', 'addOrigem', 'addTipoOrigem'].forEach((id) => {
+      document.getElementById(id)?.closest('.form__row')?.setAttribute('hidden', '');
+    });
+  }
 }
 
   // ===== Gallery helpers =====
   async function fetchImages(trilha, codigo) {
     try {
-      const resp = await fetch(`${API_BASE}/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images`);
+      const resp = await fetch(`${API_BASE}/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images`);
       if (!resp.ok) return [];
       return await resp.json();
     } catch (e) { return []; }
@@ -384,7 +400,7 @@
           img.url = newUrl; img.legenda = newLegenda; img.fonte = newFonte; renderAddImagesList();
           return;
         }
-        const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, {
+        const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: newUrl, legenda: newLegenda, fonte: newFonte })
         });
@@ -402,7 +418,7 @@
           renderAddImagesList();
           return;
         }
-        const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, { method: 'DELETE' });
+        const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, { method: 'DELETE' });
         if (!resp.ok && resp.status !== 204) throw new Error('Falha ao excluir');
         renderEditImages(trilha, codigo);
       } catch (err) { console.error(err); alert(err.message || 'Erro'); }
@@ -565,7 +581,7 @@
 
       await ensureModal();
       setVal('arvoreTrilha', a.trilha_nome);
-      setVal('arvoreCodigo', a.codigo);
+      document.getElementById('arvoreModal').dataset.codigo = String(a.codigo);
       setVal('arvoreNome', a.nome);
       setVal('arvoreEspecie', a.especie || '');
       // render images gallery for this tree
@@ -594,7 +610,7 @@
           const fonte = (document.getElementById('addImageFonte') || {}).value?.trim() || '';
           if (!url) { alert('Informe a URL da imagem'); return; }
           try {
-            const resp = await authFetch(`/api/arvores/${encodeURIComponent(a.trilha_nome)}/${encodeURIComponent(String(a.codigo))}/images`, {
+            const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(a.trilha_nome)}/${encodeURIComponent(String(a.codigo))}/images`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ url, legenda, fonte })
             });
@@ -628,7 +644,7 @@
     // toggle ativa
     if (e.target && e.target.id === 'btnToggleStatus') {
       const trilha = (document.getElementById('arvoreTrilha') || {}).value || '';
-      const codigo = Number((document.getElementById('arvoreCodigo') || {}).value || 0);
+      const codigo = Number(document.getElementById('arvoreModal')?.dataset.codigo || 0);
       const idx = arvores.findIndex(x => x.trilha_nome === trilha && Number(x.codigo) === codigo);
       if (idx === -1) return;
 
@@ -652,7 +668,7 @@
       }
 
       try {
-        const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/ativa`, {
+        const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/ativa`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ativa: novaAtiva })
@@ -678,7 +694,7 @@
     e.preventDefault();
 
     const trilha  = (document.getElementById('arvoreTrilha') || {}).value || '';
-    const codigo  = Number((document.getElementById('arvoreCodigo') || {}).value || 0);
+    const codigo  = Number(document.getElementById('arvoreModal')?.dataset.codigo || 0);
     const idx = arvores.findIndex(x => x.trilha_nome === trilha && Number(x.codigo) === codigo);
     if (idx === -1) return;
 
@@ -708,7 +724,7 @@
     render();
 
     try {
-      const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}`, {
+      const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -753,7 +769,6 @@
 
     [
       'addTrilha',
-      'addCodigo',
       'addNome',
       'addEspecie',
       'addFamilia',
@@ -804,7 +819,6 @@
     e.preventDefault();
 
     const trilha  = document.getElementById('addTrilha')?.value || '';
-    const codigo  = Number(document.getElementById('addCodigo')?.value || 0);
     const nome    = document.getElementById('addNome')?.value?.trim() || '';
     const especie = document.getElementById('addEspecie')?.value?.trim() || '';
     // images handled via gallery; single foto field removed
@@ -834,20 +848,19 @@ const longitude = parseNum(
 
     // pos_x/pos_y removed
 
-    if (!trilha || !codigo || !nome) {
+    if (!trilha || !nome) {
       alert('Preencha os campos obrigatórios.');
       return;
     }
 
     try {
-      const resp = await authFetch('/api/arvores', {
+      const resp = await authFetch(`/api/${resourcePath}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           trilha_nome: trilha,
-          codigo,
           nome,
           especie,
           familia,
@@ -856,7 +869,7 @@ const longitude = parseNum(
           ordem,
           latitude,
           longitude,
-          foto_url: foto
+          tipo: isPredio ? 'predio_historico' : 'arvore'
         })
       });
 
@@ -870,7 +883,7 @@ const longitude = parseNum(
       if (resp.ok && newImages && newImages.length) {
         try {
           for (const img of newImages) {
-            await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images`, {
+            await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(img)
             });
@@ -901,7 +914,7 @@ const longitude = parseNum(
     const trilhaParam = getParam('trilha');
     const qs = trilhaParam ? `?trilha=${encodeURIComponent(trilhaParam)}` : '';
     try {
-      const resp = await fetch(`${API_BASE}/api/arvores${qs}`);
+      const resp = await fetch(`${API_BASE}/api/${resourcePath}${qs}`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       const raw = (Array.isArray(data) ? data : []);
