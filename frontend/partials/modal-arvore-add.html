@@ -11,30 +11,7 @@
 
     <form id="arvoreAddForm" class="form">
 
-      <!-- IDENTIFICAÇÃO -->
-      <div class="form__grid">
-
-        <div class="form__row">
-          <label for="addTrilha">Trilha *</label>
-          <select id="addTrilha" required>
-            <!-- opções vêm do backend -->
-          </select>
-        </div>
-
-      </div>
-
-      <!-- ORDEM -->
-      <div class="form__row">
-        <label for="addOrdem">Ordem na trilha</label>
-        <input
-          id="addOrdem"
-          type="number"
-          min="1"
-          placeholder="Sequência da árvore na trilha"
-        />
-      </div>
-
-      <!-- DADOS DA ÁRVORE -->
+      <!-- DADOS DO PONTO -->
       <div class="form__grid">
 
         <div class="form__row">
@@ -47,19 +24,22 @@
           />
         </div>
 
-        <div class="form__row" data-arvore-only>
-          <label for="addEspecie">Espécie *</label>
-          <input
-            id="addEspecie"
-            type="text"
-            placeholder="Ex: Caesalpinia pluviosa"
-            required
-          />
+        <div class="form__row">
+          <label for="addQrcodeUrl">Link QRCode *</label>
+          <input id="addQrcodeUrl" type="url" placeholder="https://..." required />
         </div>
 
       </div>
 
       <div class="form__grid">
+        <div class="form__row" data-arvore-only>
+          <label for="addEspecie">Espécie</label>
+          <input
+            id="addEspecie"
+            type="text"
+            placeholder="Ex: Caesalpinia pluviosa"
+          />
+        </div>
 
         <div class="form__row" data-arvore-only>
           <label for="addFamilia">Família</label>
@@ -69,7 +49,9 @@
             placeholder="Ex: Fabaceae"
           />
         </div>
+      </div>
 
+      <div class="form__grid">
         <div class="form__row" data-arvore-only>
           <label for="addOrigem">Origem</label>
           <input
@@ -79,15 +61,22 @@
           />
         </div>
 
+        <div class="form__row" data-arvore-only>
+          <label for="addTipoOrigem">Tipo de origem</label>
+          <input
+            id="addTipoOrigem"
+            type="text"
+            placeholder="Ex: Nativa, Exótica..."
+          />
+        </div>
       </div>
 
-      <div class="form__row" data-arvore-only>
-        <label for="addTipoOrigem">Tipo de origem</label>
-        <input
-          id="addTipoOrigem"
-          type="text"
-          placeholder="Ex: Nativa, Exótica..."
-        />
+      <!-- TRILHAS -->
+      <div class="form__row">
+        <label for="addTrilhas">Trilhas *</label>
+        <div id="addTrilhas" class="trilhas-selecao" role="group" aria-label="Trilhas">
+          <!-- opções vêm do backend -->
+        </div>
       </div>
 
       <!-- GALERIA DE FOTOS -->
@@ -108,22 +97,24 @@
       <div class="form__grid">
 
         <div class="form__row">
-          <label for="addLatitude">Latitude</label>
+          <label for="addLatitude">Latitude *</label>
           <input
             id="addLatitude"
             type="number"
             step="any"
             placeholder="-22.123456"
+            required
           />
         </div>
 
         <div class="form__row">
-          <label for="addLongitude">Longitude</label>
+          <label for="addLongitude">Longitude *</label>
           <input
             id="addLongitude"
             type="number"
             step="any"
             placeholder="-47.123456"
+            required
           />
         </div>
 

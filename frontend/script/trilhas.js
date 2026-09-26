@@ -140,9 +140,18 @@
         subline.className = 'subline';
         const span = document.createElement('span');
         span.className = 'meta';
-        const ativas = Number(r.quantidade_arvores ?? 0);
-        const totais = Number(r.quantidade_arvores_total ?? 0);
-        span.textContent = `${ativas} árvores ativas • ${totais} árvores totais`;
+        const pontosAtivos = Number(r.quantidade_pontos_interesse ?? 0);
+        const pontosTotais = Number(r.quantidade_pontos_interesse_total ?? 0);
+        const arvores = Number(r.quantidade_arvores_tipo ?? 0);
+        const predios = Number(r.quantidade_predios ?? 0);
+        const composicao = arvores && predios
+          ? 'Árvores e prédios'
+          : arvores
+            ? 'Árvores'
+            : predios
+              ? 'Prédios'
+              : 'Sem pontos';
+        span.textContent = `${pontosAtivos} pontos ativos • ${pontosTotais} pontos totais • ${composicao}`;
         subline.appendChild(span);
         body.appendChild(subline);
         el.appendChild(body);
@@ -255,14 +264,14 @@
 
     // load trees and initialize map
     try {
-      console.log('Buscando árvores para trilha (API):', trilhaNome);
-      const resp = await fetch(`${API_BASE}/api/arvores?trilha=${encodeURIComponent(trilhaNome)}`);
-      if (!resp.ok) throw new Error('Falha ao buscar árvores');
-      const arvores = await resp.json();
-      console.log('Árvores recebidas para mapa:', arvores);
-      await initTrilhaMap(arvores || []);
+      console.log('Buscando pontos de interesse para trilha (API):', trilhaNome);
+      const resp = await fetch(`${API_BASE}/api/arvores?tipo=all&trilha=${encodeURIComponent(trilhaNome)}`);
+      if (!resp.ok) throw new Error('Falha ao buscar pontos de interesse');
+      const pontos = await resp.json();
+      console.log('Pontos recebidos para mapa:', pontos);
+      await initTrilhaMap(pontos || []);
     } catch (e) {
-      console.error('Erro ao carregar árvores para o mapa', e);
+      console.error('Erro ao carregar pontos para o mapa', e);
       const canvas = document.getElementById('trilhaMapCanvas');
       if (canvas) canvas.innerHTML = '<p style="padding:16px">Erro ao carregar mapa ou árvores.</p>';
     }
@@ -296,12 +305,12 @@
 
       let any = false;
       let markersCount = 0;
-      console.log('Inicializando marcadores no mapa para', arvores.length, 'árvores');
+      console.log('Inicializando marcadores no mapa para', arvores.length, 'pontos');
       const infoWindow = new maps.InfoWindow();
       arvores.forEach(a => {
         const lat = a.latitude == null ? null : Number(a.latitude);
         const lng = a.longitude == null ? null : Number(a.longitude);
-        console.log('Árvore', a.codigo, 'lat=', a.latitude, 'lng=', a.longitude);
+        console.log('Ponto', a.codigo, 'lat=', a.latitude, 'lng=', a.longitude);
         if (lat == null || lng == null || Number.isNaN(lat) || Number.isNaN(lng)) return;
         any = true;
         const pos = { lat, lng };
@@ -314,16 +323,18 @@
           scaledSize: new maps.Size(30, 30),
           anchor: new maps.Point(15, 30)
         };
-        const marker = new maps.Marker({ position: pos, map, title: a.nome || `Árvore ${a.codigo}`, icon });
+        const tipoLabel = a.tipo === 'predio_historico' ? 'Prédio' : 'Árvore';
+        const marker = new maps.Marker({ position: pos, map, title: a.nome || `${tipoLabel} ${a.codigo}`, icon });
         // ao clicar no pin mostra nome e ordem na trilha
         marker.addListener('click', () => {
           const ordemText = (a.ordem == null) ? '—' : String(a.ordem);
-          const safeName = (a.nome || `Árvore ${a.codigo}`).replace(/</g, '&lt;');
+          const safeName = (a.nome || `${tipoLabel} ${a.codigo}`).replace(/</g, '&lt;');
           const latText = (a.latitude == null) ? '—' : String(a.latitude);
           const lngText = (a.longitude == null) ? '—' : String(a.longitude);
           const trilhaForLink = a.trilha_nome || '';
           // use absolute path to ensure query param reaches the arvores page
-          const link = `${location.origin}/pages/arvores.html?trilha=${encodeURIComponent(trilhaForLink)}`;
+          const page = a.tipo === 'predio_historico' ? 'predios.html' : 'arvores.html';
+          const link = `${location.origin}/pages/${page}?trilha=${encodeURIComponent(trilhaForLink)}`;
           const html = `
             <div style="min-width:180px">
               <strong>${safeName}</strong>
@@ -342,7 +353,7 @@
       if (any) {
         map.fitBounds(bounds);
       } else {
-        canvas.innerHTML = '<p style="padding:16px">Nenhuma árvore com latitude/longitude nesta trilha.</p>';
+        canvas.innerHTML = '<p style="padding:16px">Nenhum ponto com latitude/longitude nesta trilha.</p>';
       }
     } catch (e) {
       console.error(e);

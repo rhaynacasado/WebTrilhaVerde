@@ -54,13 +54,14 @@ router.get('/', async (req, res) => {
     const { trilha, ativas } = req.query;
     const tipo = req.query.tipo || resourceType(req);
     const replacements = [];
-    let whereSql = ` AND p.tipo = $${replacements.push(tipo)}`;
+    let whereSql = '';
+    if (tipo !== 'all') whereSql += ` AND p.tipo = $${replacements.push(tipo)}`;
     if (trilha) { whereSql += ' AND at.trilha_nome = $' + (replacements.push(trilha) ); }
     if (ativas === 'true') { whereSql += ' AND p.ativa = true'; }
 
     const orderSql = trilha
       ? 'ORDER BY at.ordem ASC NULLS LAST, p.nome ASC'
-      : 'ORDER BY p.nome ASC';
+      : 'ORDER BY p.nome ASC, at.trilha_nome ASC';
 
     const sql = `
             SELECT at.trilha_nome, at.ordem, p.codigo, p.nome, p.tipo, p.qrcode_url,
@@ -71,7 +72,7 @@ router.get('/', async (req, res) => {
               CASE WHEN p.tipo = 'arvore' THEN p.a_tipo_origem END AS tipo_origem,
               p.latitude, p.longitude
             FROM ponto_interesse p
-            JOIN ponto_interesse_trilha at ON at.ponto_interesse_codigo = p.codigo
+            LEFT JOIN ponto_interesse_trilha at ON at.ponto_interesse_codigo = p.codigo
       WHERE 1=1 ${whereSql}
       ${orderSql}`;
 
@@ -94,7 +95,7 @@ router.get('/', async (req, res) => {
     const out = trees.map(t => ({
       ...t,
       quantidade_perguntas: map.get(`${t.trilha_nome}:${t.codigo}`) || 0,
-      tipo
+      tipo: t.tipo
     }));
 
     return res.json(out);
@@ -116,6 +117,50 @@ router.get('/total', async (req, res) => {
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'Erro ao calcular total' });
+  }
+});
+
+// ================= TRILHAS DO PONTO =================
+router.get('/:codigo(\\d+)/trilhas', async (req, res) => {
+  try {
+    const [rows] = await sequelize.query(
+      `SELECT pit.trilha_nome, pit.ordem
+       FROM ponto_interesse_trilha pit
+       JOIN ponto_interesse p ON p.codigo = pit.ponto_interesse_codigo
+       WHERE pit.ponto_interesse_codigo = $1 AND p.tipo = $2
+       ORDER BY pit.ordem ASC NULLS LAST, pit.trilha_nome ASC`,
+      { bind: [Number(req.params.codigo), resourceType(req)] }
+    );
+    return res.json(rows);
+  } catch (e) {
+    console.error('GET /api/pontos/trilhas', e);
+    return res.status(500).json({ error: 'Erro ao listar trilhas do ponto' });
+  }
+});
+
+router.post('/:codigo(\\d+)/trilhas', auth, async (req, res) => {
+  try {
+    const codigo = Number(req.params.codigo);
+    const trilha = String(req.body.trilha_nome || '').trim();
+    if (!trilha) return res.status(400).json({ error: 'trilha_nome é obrigatório' });
+
+    const [[last]] = await sequelize.query(
+      `SELECT COALESCE(MAX(ordem), 0) AS ultima_ordem
+       FROM ponto_interesse_trilha WHERE trilha_nome = $1`,
+      { bind: [trilha] }
+    );
+    const ordem = Number(last.ultima_ordem) + 1;
+
+    await sequelize.query(
+      `INSERT INTO ponto_interesse_trilha (trilha_nome, ponto_interesse_codigo, ordem)
+       VALUES ($1, $2, $3)`,
+      { bind: [trilha, codigo, ordem] }
+    );
+    return res.status(201).json({ trilha_nome: trilha, ordem });
+  } catch (e) {
+    if (e.original?.code === '23505') return res.status(409).json({ error: 'O ponto já pertence a esta trilha' });
+    console.error('POST /api/pontos/trilhas', e);
+    return res.status(400).json({ error: 'Erro ao adicionar ponto à trilha' });
   }
 });
 
@@ -264,9 +309,26 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     if (!arv) return; // loadArvoreOr404 already sent 404
 
     const { nome, especie, ordem } = req.body;
+    const qrcode_url = req.body.qrcode_url === undefined ? undefined : String(req.body.qrcode_url || '').trim() || null;
+    if (!qrcode_url) {
+      return res.status(400).json({ error: 'qrcode_url é obrigatório' });
+    }
+    const [[existingQrcode]] = await sequelize.query(
+      `SELECT codigo, nome FROM ponto_interesse
+       WHERE qrcode_url = $1 AND codigo <> $2 LIMIT 1`,
+      { bind: [qrcode_url, cod] }
+    );
+    if (existingQrcode) {
+      return res.status(409).json({
+        error: `Este link QRCode já está cadastrado no ponto "${existingQrcode.nome}".`
+      });
+    }
     const isTree = resourceType(req) === 'arvore';
     const latitude = toNumOrNull(req.body.latitude);
     const longitude = toNumOrNull(req.body.longitude);
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({ error: 'latitude e longitude são obrigatórias' });
+    }
     const familia = req.body.familia === undefined ? undefined : (String(req.body.familia));
     const origem = req.body.origem === undefined ? undefined : (String(req.body.origem));
     const tipo_origem = req.body.tipo_origem === undefined ? undefined : (String(req.body.tipo_origem));
@@ -275,6 +337,7 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     const changed = [];
 
     if (nome    !== undefined && nome    !== arv.nome)     { arv.nome    = nome;    changed.push('nome'); }
+    if (qrcode_url !== undefined && String(arv.qrcode_url || '') !== String(qrcode_url || '')) { arv.qrcode_url = qrcode_url; changed.push('qrcode_url'); }
     if (isTree && especie !== undefined && especie !== arv.especie)  { arv.especie = especie; changed.push('a_especie'); }
     if (latitude !== undefined && !sameNum(arv.latitude, latitude)) { arv.latitude = latitude; changed.push('latitude'); }
     if (longitude !== undefined && !sameNum(arv.longitude, longitude)) { arv.longitude = longitude; changed.push('longitude'); }
@@ -320,6 +383,9 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     out.tipo_origem = arv.tipo_origem;
     return res.json(out);
   } catch (e) {
+    if (e.original?.code === '23505' && e.original?.constraint === 'uq_ponto_interesse_qrcode') {
+      return res.status(409).json({ error: 'Este link QRCode já está cadastrado em outro ponto.' });
+    }
     console.error('PUT /arvores/:trilha/:codigo', e);
     return res.status(400).json({ error: 'Erro ao atualizar árvore' });
   }
@@ -330,8 +396,30 @@ router.post('/', auth, async (req, res) => {
   try {
     const body = { ...req.body };
 
-    if (!body.trilha_nome) {
-      return res.status(400).json({ error: 'trilha_nome é obrigatório' });
+    const qrcode_url = String(body.qrcode_url || '').trim();
+    if (!qrcode_url) {
+      return res.status(400).json({ error: 'qrcode_url é obrigatório' });
+    }
+    const [[existingQrcode]] = await sequelize.query(
+      `SELECT codigo, nome FROM ponto_interesse WHERE qrcode_url = $1 LIMIT 1`,
+      { bind: [qrcode_url] }
+    );
+    if (existingQrcode) {
+      return res.status(409).json({
+        error: `Este link QRCode já está cadastrado no ponto "${existingQrcode.nome}".`
+      });
+    }
+    const latitude = toNumOrNull(body.latitude);
+    const longitude = toNumOrNull(body.longitude);
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({ error: 'latitude e longitude são obrigatórias' });
+    }
+
+    const trilhas = Array.isArray(body.trilhas)
+      ? body.trilhas.map(t => String(t).trim()).filter(Boolean)
+      : [String(body.trilha_nome || '').trim()].filter(Boolean);
+    if (!trilhas.length) {
+      return res.status(400).json({ error: 'Ao menos uma trilha é obrigatória' });
     }
 
     const isTree = resourceType(req) === 'arvore';
@@ -345,9 +433,10 @@ router.post('/', auth, async (req, res) => {
     const created = await Arvore.create({
       codigo,
       nome: body.nome || '',
+      qrcode_url,
       ativa: body.ativa == null ? true : !!body.ativa,
-      latitude: toNumOrNull(body.latitude),
-      longitude: toNumOrNull(body.longitude),
+      latitude,
+      longitude,
       ...(isTree ? {
         especie: body.especie || '',
         familia: body.familia || null,
@@ -357,25 +446,39 @@ router.post('/', auth, async (req, res) => {
       tipo: body.tipo || resourceType(req),
     }, { returning: false });
 
-    // create association in ponto_interesse_trilha
-    await sequelize.query(
-      `INSERT INTO ponto_interesse_trilha (trilha_nome, ponto_interesse_codigo, ordem) VALUES ($1,$2,$3)` ,
-      { bind: [body.trilha_nome, codigo, toNumOrNull(body.ordem)] }
-    );
+    const associacoes = [];
+    for (const trilha of trilhas) {
+      const [[last]] = await sequelize.query(
+        `SELECT COALESCE(MAX(ordem), 0) AS ultima_ordem
+         FROM ponto_interesse_trilha WHERE trilha_nome = $1`,
+        { bind: [trilha] }
+      );
+      const ordem = Number(last.ultima_ordem) + 1;
+      await sequelize.query(
+        `INSERT INTO ponto_interesse_trilha (trilha_nome, ponto_interesse_codigo, ordem)
+         VALUES ($1,$2,$3)`,
+        { bind: [trilha, codigo, ordem] }
+      );
+      associacoes.push({ trilha_nome: trilha, ordem });
+    }
 
-    await logArvore(req, body.trilha_nome, codigo, `create:"${(created.nome || '').slice(0,80)}"`);
+    await logArvore(req, trilhas[0], codigo, `create:"${(created.nome || '').slice(0,80)}"`);
 
     const out = created.toJSON();
-    out.trilha_nome = body.trilha_nome;
+    out.trilha_nome = trilhas[0];
     out.codigo = codigo;
-    out.ordem = toNumOrNull(body.ordem);
-    out.latitude = toNumOrNull(body.latitude);
-    out.longitude = toNumOrNull(body.longitude);
+    out.ordem = associacoes[0].ordem;
+    out.trilhas = associacoes;
+    out.latitude = latitude;
+    out.longitude = longitude;
     out.familia = body.familia || null;
     out.origem = body.origem || null;
     out.tipo_origem = body.tipo_origem || null;
     return res.status(201).json(out);
   } catch (e) {
+    if (e.original?.code === '23505' && e.original?.constraint === 'uq_ponto_interesse_qrcode') {
+      return res.status(409).json({ error: 'Este link QRCode já está cadastrado em outro ponto.' });
+    }
     console.error('POST /arvores', e);
     return res.status(400).json({ error: 'Erro ao criar árvore' });
   }
@@ -390,6 +493,23 @@ router.delete('/:trilha/:codigo', auth, async (req, res) => {
       `DELETE FROM ponto_interesse_trilha
        WHERE trilha_nome = :trilha AND ponto_interesse_codigo = :codigo`,
       { replacements: { trilha, codigo: Number(codigo) } }
+    );
+
+    await sequelize.query(
+      `WITH ordenadas AS (
+         SELECT ponto_interesse_codigo,
+                ROW_NUMBER() OVER (
+                  ORDER BY ordem ASC NULLS LAST, ponto_interesse_codigo ASC
+                ) AS nova_ordem
+         FROM ponto_interesse_trilha
+         WHERE trilha_nome = :trilha
+       )
+       UPDATE ponto_interesse_trilha pit
+       SET ordem = ordenadas.nova_ordem
+       FROM ordenadas
+       WHERE pit.trilha_nome = :trilha
+         AND pit.ponto_interesse_codigo = ordenadas.ponto_interesse_codigo`,
+      { replacements: { trilha } }
     );
 
     return res.status(204).end();

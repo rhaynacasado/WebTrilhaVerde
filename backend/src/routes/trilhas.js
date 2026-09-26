@@ -10,7 +10,9 @@ router.get('/', async (req, res) => {
       SELECT
         t.nome AS nome,
         COALESCE(COUNT(p.codigo) FILTER (WHERE p.ativa = true), 0) AS ativos,
-        COALESCE(COUNT(p.codigo), 0) AS total
+        COALESCE(COUNT(p.codigo), 0) AS total,
+        COALESCE(COUNT(p.codigo) FILTER (WHERE p.tipo = 'arvore'), 0) AS arvores,
+        COALESCE(COUNT(p.codigo) FILTER (WHERE p.tipo = 'predio_historico'), 0) AS predios
       FROM trilha t
       LEFT JOIN ponto_interesse_trilha pit
         ON pit.trilha_nome = t.nome
@@ -23,6 +25,9 @@ router.get('/', async (req, res) => {
     res.json(rows.map(r => ({
       nome: r.nome,
       quantidade_pontos_interesse: Number(r.ativos) || 0, // lido pelo app mobile
+      quantidade_pontos_interesse_total: Number(r.total) || 0,
+      quantidade_arvores_tipo: Number(r.arvores) || 0,
+      quantidade_predios: Number(r.predios) || 0,
       quantidade_arvores: Number(r.ativos) || 0,
       quantidade_arvores_total: Number(r.total) || 0,
     })));

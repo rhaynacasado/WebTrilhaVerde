@@ -52,6 +52,7 @@
   let nextPerguntaId = 1;
   let filtroTrilha = '';
   let filtroArvore = '';
+  const SEM_TRILHA = '__sem_trilha__';
 
   const getParam = (n) =>
     new URLSearchParams(window.location.search).get(n);
@@ -93,7 +94,7 @@
     if (codigoParam) {
 
       const found = arvores.find(a =>
-        a.trilha_nome === trilhaParam &&
+        (trilhaParam === SEM_TRILHA ? !a.trilha_nome : a.trilha_nome === trilhaParam) &&
         String(a.codigo) === String(codigoParam)
       );
 
@@ -173,7 +174,7 @@
       if (!trilhaSelect || !arvoreSelect) return;
 
       // ===== trilhas únicas =====
-      const trilhas = [...new Set(arvores.map(a => a.trilha_nome))]
+      const trilhas = [...new Set(arvores.map(a => a.trilha_nome).filter(Boolean))]
         .sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
       trilhaSelect.innerHTML = '<option value="">Todas</option>';
@@ -184,6 +185,11 @@
         opt.textContent = nome;
         trilhaSelect.appendChild(opt);
       });
+
+      const semTrilha = document.createElement('option');
+      semTrilha.value = SEM_TRILHA;
+      semTrilha.textContent = 'Sem trilha';
+      trilhaSelect.appendChild(semTrilha);
 
       trilhaSelect.value = filtroTrilha;
 
@@ -198,7 +204,9 @@
 
       let lista = [...arvores];
 
-      if (filtroTrilha) {
+      if (filtroTrilha === SEM_TRILHA) {
+        lista = lista.filter(a => !a.trilha_nome);
+      } else if (filtroTrilha) {
         lista = lista.filter(a => a.trilha_nome === filtroTrilha);
       }
 
@@ -228,7 +236,9 @@
 
       let arvoresFiltradas = [...arvores];
 
-      if (filtroTrilha) {
+      if (filtroTrilha === SEM_TRILHA) {
+        arvoresFiltradas = arvoresFiltradas.filter(a => !a.trilha_nome);
+      } else if (filtroTrilha) {
         arvoresFiltradas = arvoresFiltradas.filter(
           a => a.trilha_nome === filtroTrilha
         );
