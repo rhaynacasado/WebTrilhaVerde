@@ -17,7 +17,7 @@
       <section class="page visible" id="pagePerguntas">
         <div class="page-header">
           <h2>Perguntas</h2>
-          <p>Perguntas sobre as árvores.</p>
+          <p>Perguntas sobre árvores e prédios.</p>
         </div>
         
         <div class="filtros-perguntas">
@@ -29,9 +29,18 @@
           </div>
 
           <div class="filtro-trilha">
-            <label for="filtroArvore">Árvore:</label>
+            <label for="filtroTipo">Tipo:</label>
+            <select id="filtroTipo">
+              <option value="">Todos</option>
+              <option value="arvore">Árvores</option>
+              <option value="predio_historico">Prédios</option>
+            </select>
+          </div>
+
+          <div class="filtro-trilha">
+            <label for="filtroArvore">Ponto:</label>
             <select id="filtroArvore">
-              <option value="">Todas</option>
+              <option value="">Todos</option>
             </select>
           </div>
         </div>

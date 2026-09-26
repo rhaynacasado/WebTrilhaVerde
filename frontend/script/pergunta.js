@@ -51,13 +51,15 @@
   let arvoreById = new Map();       // id(ui) -> { trilha_nome, codigo, nome }
   let nextPerguntaId = 1;
   let filtroTrilha = '';
+  let filtroTipo = '';
   let filtroArvore = '';
+  const SEM_TRILHA = '__sem_trilha__';
 
   const getParam = (n) =>
     new URLSearchParams(window.location.search).get(n);
 
   async function loadArvores() {
-    const resp = await fetch(`${API_BASE}/api/arvores`);
+    const resp = await fetch(`${API_BASE}/api/arvores?tipo=all`);
 
     if (!resp.ok) {
       throw new Error('Falha ao carregar árvores');
@@ -75,7 +77,8 @@
       id: idx + 1,
       trilha_nome: a.trilha_nome,
       codigo: Number(a.codigo),
-      nome: a.nome
+      nome: a.nome,
+      tipo: a.tipo || 'arvore'
     }));
 
     arvoreById = new Map(
@@ -84,16 +87,21 @@
 
     // filtros vindos da URL
     const trilhaParam = getParam('trilha');
+    const tipoParam = getParam('tipo');
     const codigoParam = getParam('codigo');
 
     if (trilhaParam) {
       filtroTrilha = trilhaParam;
     }
 
+    if (tipoParam === 'arvore' || tipoParam === 'predio_historico') {
+      filtroTipo = tipoParam;
+    }
+
     if (codigoParam) {
 
       const found = arvores.find(a =>
-        a.trilha_nome === trilhaParam &&
+        (trilhaParam === SEM_TRILHA ? !a.trilha_nome : a.trilha_nome === trilhaParam) &&
         String(a.codigo) === String(codigoParam)
       );
 
@@ -108,23 +116,23 @@
     if (!resp.ok) throw new Error('Falha ao carregar perguntas');
     const rows = await resp.json();
 
-    perguntas = rows.map(r => {
-      const a = arvores.find(x => x.trilha_nome === r.trilha_nome && x.codigo === Number(r.arvore_codigo));
-      const arvoreId = a ? a.id : null;
-      return {
+    perguntas = rows.flatMap(r => {
+      const pontos = arvores.filter(x => x.codigo === Number(r.ponto_interesse_codigo));
+      return pontos.map(a => ({
         id: Number(r.id),
-        arvoreId,
+        arvoreId: a.id,
+        ponto_interesse_codigo: Number(r.ponto_interesse_codigo),
         enunciado: r.enunciado || '',
         textoInfo: r.texto || '',
         audioInfo: r.audio_url || '',
         audioDica: r.audio_dica_url || '',
         itens: {
           A: r.item_a || '', B: r.item_b || '', C: r.item_c || '',
-          D: r.item_d || '', E: r.item_e || ''
+          D: r.item_d || '', E: ''
         },
         correta: r.resposta_correta || 'A',
         textoDica: r.dica || ''
-      };
+      }));
     });
 
     nextPerguntaId = (perguntas.length ? Math.max(...perguntas.map(p => p.id)) : 0) + 1;
@@ -168,12 +176,13 @@
 
     function loadFiltros() {
       const trilhaSelect = document.getElementById('filtroTrilha');
+      const tipoSelect = document.getElementById('filtroTipo');
       const arvoreSelect = document.getElementById('filtroArvore');
 
-      if (!trilhaSelect || !arvoreSelect) return;
+      if (!trilhaSelect || !tipoSelect || !arvoreSelect) return;
 
       // ===== trilhas únicas =====
-      const trilhas = [...new Set(arvores.map(a => a.trilha_nome))]
+      const trilhas = [...new Set(arvores.map(a => a.trilha_nome).filter(Boolean))]
         .sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
       trilhaSelect.innerHTML = '<option value="">Todas</option>';
@@ -185,7 +194,13 @@
         trilhaSelect.appendChild(opt);
       });
 
+      const semTrilha = document.createElement('option');
+      semTrilha.value = SEM_TRILHA;
+      semTrilha.textContent = 'Sem trilha';
+      trilhaSelect.appendChild(semTrilha);
+
       trilhaSelect.value = filtroTrilha;
+      tipoSelect.value = filtroTipo;
 
       updateFiltroArvores();
     }
@@ -198,8 +213,17 @@
 
       let lista = [...arvores];
 
-      if (filtroTrilha) {
+      if (filtroTrilha === SEM_TRILHA) {
+        lista = lista.filter(a => !a.trilha_nome);
+      } else if (filtroTrilha) {
         lista = lista.filter(a => a.trilha_nome === filtroTrilha);
+      }
+      if (filtroTipo) {
+        lista = lista.filter(a => a.tipo === filtroTipo);
+      }
+
+      if (filtroArvore && !lista.some(a => String(a.id) === filtroArvore)) {
+        filtroArvore = '';
       }
 
       lista
@@ -207,7 +231,7 @@
         .forEach(a => {
           const opt = document.createElement('option');
           opt.value = String(a.id);
-          opt.textContent = a.nome;
+          opt.textContent = `${a.tipo === 'predio_historico' ? 'Prédio' : 'Árvore'} · ${a.nome}`;
           arvoreSelect.appendChild(opt);
         });
 
@@ -228,10 +252,16 @@
 
       let arvoresFiltradas = [...arvores];
 
-      if (filtroTrilha) {
+      if (filtroTrilha === SEM_TRILHA) {
+        arvoresFiltradas = arvoresFiltradas.filter(a => !a.trilha_nome);
+      } else if (filtroTrilha) {
         arvoresFiltradas = arvoresFiltradas.filter(
           a => a.trilha_nome === filtroTrilha
         );
+      }
+
+      if (filtroTipo) {
+        arvoresFiltradas = arvoresFiltradas.filter(a => a.tipo === filtroTipo);
       }
 
       if (filtroArvore) {
@@ -245,7 +275,7 @@
 
         const h = document.createElement('h3');
         h.className = 'group-title';
-        h.textContent = arv.nome;
+        h.textContent = `${arv.tipo === 'predio_historico' ? 'Prédio' : 'Árvore'} · ${arv.nome}`;
         container.appendChild(h);
 
         const group = document.createElement('div');
@@ -413,8 +443,13 @@
 
       document.getElementById('perguntaHiddenId').value = q.id;
       document.getElementById('perguntaArvoreId').value = String(q.arvoreId);
-      document.getElementById('perguntaArvoreNome').value =
-        arvoreById.get(q.arvoreId)?.nome || '';
+      const ponto = arvoreById.get(q.arvoreId);
+      document.getElementById('perguntaArvoreNome').value = ponto?.nome || '';
+      const tipoPonto = document.getElementById('perguntaTipoPonto');
+      if (tipoPonto) {
+        const isBuilding = ponto?.tipo === 'predio_historico';
+        tipoPonto.value = isBuilding ? 'Prédio' : 'Árvore';
+      }
 
       document.getElementById('perguntaEnunciado').value = q.enunciado || '';
       document.getElementById('perguntaTextoInfo').value = q.textoInfo || '';
@@ -425,7 +460,6 @@
       document.getElementById('perguntaItemB').value = q.itens?.B || '';
       document.getElementById('perguntaItemC').value = q.itens?.C || '';
       document.getElementById('perguntaItemD').value = q.itens?.D || '';
-      document.getElementById('perguntaItemE').value = q.itens?.E || '';
 
       document.getElementById('perguntaResposta').value =
         q.correta || 'A';
@@ -457,7 +491,6 @@
           item_b    : document.getElementById('perguntaItemB').value.trim(),
           item_c    : document.getElementById('perguntaItemC').value.trim(),
           item_d    : document.getElementById('perguntaItemD').value.trim(),
-          item_e    : document.getElementById('perguntaItemE').value.trim(),
           resposta_correta: document.getElementById('perguntaResposta').value,
           dica      : document.getElementById('perguntaTextoDica').value.trim(),
         };
@@ -471,7 +504,7 @@
             textoInfo: payload.texto,
             audioInfo: payload.audio_url,
             audioDica: payload.audio_dica_url,
-            itens: { A:payload.item_a, B:payload.item_b, C:payload.item_c, D:payload.item_d, E:payload.item_e },
+            itens: { A:payload.item_a, B:payload.item_b, C:payload.item_c, D:payload.item_d, E:'' },
             correta: payload.resposta_correta,
             textoDica: payload.dica
           };
@@ -534,19 +567,29 @@
           const aRef = arvoreById.get(arvoreId);
           if (!aRef) return;
 
-          // remove otimista
-          perguntas = perguntas.filter(q => !(q.id === id && q.arvoreId === arvoreId));
-          render();
-
+          let deleted = false;
           try {
-            const url  = `/api/perguntas/${encodeURIComponent(aRef.trilha_nome)}/${encodeURIComponent(String(aRef.codigo))}/${encodeURIComponent(String(id))}`;
+            const trilhaPath = aRef.trilha_nome
+              ? encodeURIComponent(aRef.trilha_nome)
+              : '__sem_trilha__';
+            const url  = `/api/perguntas/${trilhaPath}/${encodeURIComponent(String(aRef.codigo))}/${encodeURIComponent(String(id))}`;
             const resp = await authFetch(url, { method: 'DELETE' });
-            if (!resp.ok && resp.status !== 204) throw new Error(`DELETE ${resp.status}`);
+            if (!resp.ok && resp.status !== 204) {
+              const payload = await resp.json().catch(() => ({}));
+              throw new Error(payload.error || `DELETE ${resp.status}`);
+            }
+            perguntas = perguntas.filter(q => !(q.id === id && q.arvoreId === arvoreId));
+            render();
+            deleted = true;
           } catch (err) {
             console.error(err);
-            alert('Erro ao excluir pergunta (verifique se está logado).');
+            alert(`Erro ao excluir pergunta: ${err.message}`);
           } finally {
-            closeConfirm(); closeModal(); showFab();
+            closeConfirm();
+            if (deleted) {
+              closeModal();
+              showFab();
+            }
           }
         };
       }
@@ -571,22 +614,22 @@
         // opção padrão
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = 'Selecione uma árvore';
+        placeholder.textContent = 'Selecione um ponto de interesse';
         placeholder.disabled = true;
         placeholder.selected = true;
         sel.appendChild(placeholder);
 
-        // árvores
+        // pontos de interesse
         arvores.forEach(a => {
           const opt = document.createElement('option');
           opt.value = String(a.id);
-          opt.textContent = a.nome;
+          opt.textContent = `${a.tipo === 'predio_historico' ? 'Prédio' : 'Árvore'} · ${a.nome}`;
           sel.appendChild(opt);
         });
       }
       const fields = [
         'addEnunciado','addTextoInfo','addAudioInfo','addAudioDica',
-        'addItemA','addItemB','addItemC','addItemD','addItemE','addTextoDica'
+        'addItemA','addItemB','addItemC','addItemD','addTextoDica'
       ];
       fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
       const resp = document.getElementById('addResposta'); if (resp) resp.value = 'A';
@@ -616,13 +659,13 @@
         const arvoreRef = arvoreById.get(arvoreUIId);
 
         if (!arvoreRef) {
-          alert('Árvore selecionada é inválida!');
+          alert('O ponto de interesse selecionado é inválido!');
           return;
         }
 
         const payload = {
           trilha_nome: arvoreRef.trilha_nome,
-          arvore_codigo: arvoreRef.codigo,
+          ponto_interesse_codigo: arvoreRef.codigo,
           enunciado: document.getElementById('addEnunciado').value.trim(),
           texto: document.getElementById('addTextoInfo').value.trim(),
           audio_url: document.getElementById('addAudioInfo').value.trim(),
@@ -631,7 +674,6 @@
           item_b: document.getElementById('addItemB').value.trim(),
           item_c: document.getElementById('addItemC').value.trim(),
           item_d: document.getElementById('addItemD').value.trim(),
-          item_e: document.getElementById('addItemE').value.trim(),
           resposta_correta: document.getElementById('addResposta').value,
           dica: document.getElementById('addTextoDica').value.trim(),
         };
@@ -661,7 +703,7 @@
             audioDica: novaPergunta.audio_dica_url || '',
             itens: {
               A: novaPergunta.item_a || '', B: novaPergunta.item_b || '', C: novaPergunta.item_c || '',
-              D: novaPergunta.item_d || '', E: novaPergunta.item_e || ''
+              D: novaPergunta.item_d || '', E: ''
             },
             correta: novaPergunta.resposta_correta || 'A',
             textoDica: novaPergunta.dica || ''
@@ -703,7 +745,25 @@
       render();
     }
 
-    // ================= filtro árvore =================
+    // ================= filtro tipo =================
+    if (e.target && e.target.id === 'filtroTipo') {
+      filtroTipo = e.target.value;
+      filtroArvore = '';
+
+      const url = new URL(window.location);
+      if (filtroTipo) {
+        url.searchParams.set('tipo', filtroTipo);
+      } else {
+        url.searchParams.delete('tipo');
+      }
+      url.searchParams.delete('codigo');
+      window.history.replaceState({}, '', url);
+
+      updateFiltroArvores();
+      render();
+    }
+
+    // ================= filtro ponto =================
     if (e.target && e.target.id === 'filtroArvore') {
 
       filtroArvore = e.target.value;

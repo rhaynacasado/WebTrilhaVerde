@@ -1,10 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
-  const ArvoreTrilha = sequelize.define('ArvoreTrilha', {
+  const ArvoreTrilha = sequelize.define('PontoInteresseTrilha', {
     trilha_nome: {
       type: DataTypes.STRING,
       primaryKey: true
     },
-    arvore_codigo: {
+    ponto_interesse_codigo: {
       type: DataTypes.INTEGER,
       primaryKey: true
     },
@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     }
   }, {
-    tableName: 'arvore_trilha',
+    tableName: 'ponto_interesse_trilha',
     schema: 'public',
     timestamps: false,
   });

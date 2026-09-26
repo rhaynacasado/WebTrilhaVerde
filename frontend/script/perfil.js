@@ -198,7 +198,9 @@
 
         const body = {};
         if (inputNome) body.nome = inputNome.value.trim();
+        if (inputEmail) body.email = inputEmail.value.trim();
         if (inputVinc) body.vinculo = inputVinc.value;
+        if (!body.email) throw new Error('Informe um e-mail válido.');
 
         const up = await fetch(`${API_BASE}/api/auth/me`, {
           method: 'PUT',
@@ -210,6 +212,13 @@
         });
         const upData = await up.json().catch(() => ({}));
         if (!up.ok) throw new Error(upData.error || 'Falha ao atualizar perfil');
+
+        if (upData.token) localStorage.setItem('token', upData.token);
+        const admin = JSON.parse(localStorage.getItem('admin') || '{}');
+        admin.name = upData.nome || body.nome;
+        admin.email = upData.email || body.email;
+        admin.vinculo = upData.vinculo || body.vinculo;
+        localStorage.setItem('admin', JSON.stringify(admin));
 
         await ensureFreshProfile();
         await refreshAvatar();

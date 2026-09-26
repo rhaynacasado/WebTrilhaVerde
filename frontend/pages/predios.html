@@ -3,34 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Árvores — Trilha Verde</title>
+  <title>Prédios históricos — Trilha Verde</title>
   <link rel="stylesheet" href="../style/admin.css" />
   <link rel="stylesheet" href="../style/arvore.css" />
 </head>
-<body data-tipo="arvore">
+<body data-tipo="predio_historico">
   <div class="app-shell">
     <div id="sidebar"></div>
     <div id="topbar"></div>
-
     <main class="content">
       <section class="page visible" id="pageArvores">
         <div class="page-header">
-          <h2>Árvores</h2>
-          <p>Gerencie árvores.</p>
+          <h2>Prédios</h2>
+          <p>Gerencie prédios históricos.</p>
         </div>
         <div class="filtro-trilha">
           <label for="filtroTrilha">Trilha:</label>
-          <select id="filtroTrilha">
-            <option value="">Todas</option>
-          </select>
+          <select id="filtroTrilha"><option value="">Todas</option></select>
         </div>
         <div class="list" id="arvoresList"></div>
       </section>
     </main>
   </div>
-
-  <!-- <div id="modals"></div> -->
-
   <script src="../script/env.js"></script>
   <script src="../script/admin.js" defer></script>
   <script src="../script/arvore.js" defer></script>

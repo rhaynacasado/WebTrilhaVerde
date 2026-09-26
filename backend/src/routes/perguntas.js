@@ -6,6 +6,17 @@ const { Pergunta, sequelize } = require('../models'); // <- precisa do sequelize
 const auth = require('../middlewares/auth');
 const { logPergunta } = require('../utils/logHelpers');
 
+async function atualizarQuantidadePerguntas(pontoCodigo, transaction) {
+  await sequelize.query(
+    `UPDATE ponto_interesse
+     SET quantidade_perguntas = (
+       SELECT COUNT(*)::int FROM pergunta WHERE ponto_interesse_codigo = $1
+     )
+     WHERE codigo = $1`,
+    { bind: [Number(pontoCodigo)], transaction }
+  );
+}
+
 // ==================== GETs públicos ====================
 
 // ?ponto=<codigo> (app mobile)  ?trilha=<nome>
@@ -24,7 +35,8 @@ router.get('/', async (req, res) => {
     }
 
     const sql = `
-      SELECT p.id, p.ponto_interesse_codigo, p.enunciado, p.item_a, p.item_b, p.item_c, p.item_d,
+            SELECT p.id, p.ponto_interesse_codigo,
+              p.enunciado, p.item_a, p.item_b, p.item_c, p.item_d,
              p.texto, p.audio_url, p.resposta_correta, p.dica, p.audio_dica_url
       FROM pergunta p
       WHERE 1=1 ${whereSql}
@@ -45,17 +57,17 @@ router.get('/:trilha/:arvore/:id', async (req, res) => {
 
     // ensure the association exists
     const [assoc] = await sequelize.query(
-      `SELECT 1 FROM arvore_trilha WHERE trilha_nome = $1 AND arvore_codigo = $2 LIMIT 1`,
+      `SELECT 1 FROM ponto_interesse_trilha WHERE trilha_nome = $1 AND ponto_interesse_codigo = $2 LIMIT 1`,
       { bind: [trilha, Number(arvore)] }
     );
     if (!assoc || assoc.length === 0) return res.status(404).json({ error: 'Pergunta não encontrada' });
 
     const qSql = `
-      SELECT p.id, p.arvore_codigo, p.enunciado, p.item_a, p.item_b, p.item_c, p.item_d, p.item_e,
+      SELECT p.id, p.ponto_interesse_codigo, p.enunciado, p.item_a, p.item_b, p.item_c, p.item_d,
              p.texto, p.audio_url, p.resposta_correta, p.dica, p.audio_dica_url,
              $1::text AS trilha_nome
       FROM pergunta p
-      WHERE p.arvore_codigo = $2 AND p.id = $3
+      WHERE p.ponto_interesse_codigo = $2 AND p.id = $3
       LIMIT 1
     `;
     const [rows] = await sequelize.query(qSql, { bind: [trilha, Number(arvore), Number(id)] });
@@ -74,54 +86,53 @@ router.post('/', auth, async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const {
-      trilha_nome, arvore_codigo, id,
-      enunciado, item_a, item_b, item_c, item_d, item_e,
+      trilha_nome, ponto_interesse_codigo, id,
+      enunciado, item_a, item_b, item_c, item_d,
       texto, audio_url, resposta_correta, dica, audio_dica_url
     } = req.body;
 
-    if (!arvore_codigo) {
+    const pontoCodigo = ponto_interesse_codigo;
+    if (!pontoCodigo) {
       await t.rollback();
-      return res.status(400).json({ error: 'arvore_codigo é obrigatório' });
+      return res.status(400).json({ error: 'ponto_interesse_codigo é obrigatório' });
+    }
+
+    const [pontos] = await sequelize.query(
+      `SELECT codigo FROM ponto_interesse WHERE codigo = $1 FOR UPDATE`,
+      { bind: [Number(pontoCodigo)], transaction: t }
+    );
+    if (!pontos.length) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Ponto de interesse não encontrado' });
     }
 
     let newId = id;
     if (newId == null) {
       const max = await Pergunta.max('id', {
-        where: { arvore_codigo: Number(arvore_codigo) },
+        where: { ponto_interesse_codigo: Number(pontoCodigo) },
         transaction: t
       });
       newId = (max || 0) + 1;
     }
 
     const created = await Pergunta.create({
-      arvore_codigo: Number(arvore_codigo),
+      ponto_interesse_codigo: Number(pontoCodigo),
       id: Number(newId),
-      enunciado, item_a, item_b, item_c, item_d, item_e,
+      enunciado, item_a, item_b, item_c, item_d,
       texto, audio_url, resposta_correta, dica, audio_dica_url
     }, { transaction: t });
 
+    await atualizarQuantidadePerguntas(pontoCodigo, t);
     await t.commit();
 
     // Log de criação (best-effort)
     try {
-      // try to determine trilha for logging: prefer provided trilha_nome, otherwise take first assoc
-      let trilhaForLog = trilha_nome;
-      if (!trilhaForLog) {
-        const [rows] = await sequelize.query(
-          `SELECT trilha_nome FROM arvore_trilha WHERE arvore_codigo = $1 LIMIT 1`,
-          { bind: [Number(arvore_codigo)] }
-        );
-        if (rows && rows[0]) trilhaForLog = rows[0].trilha_nome;
-      }
-      if (trilhaForLog) {
-        await logPergunta(
-          req,
-          trilhaForLog,
-          Number(arvore_codigo),
-          Number(newId),
-          `create:"${(enunciado || '').slice(0, 80)}"`
-        );
-      }
+      await logPergunta(
+        req,
+        Number(pontoCodigo),
+        Number(newId),
+        `create:"${(enunciado || '').slice(0, 80)}"`
+      );
     } catch (logErr) {
       console.warn('Falha ao registrar log de criação:', logErr.message);
     }
@@ -143,16 +154,16 @@ router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
 
     // ensure association exists
     const [assoc] = await sequelize.query(
-      `SELECT 1 FROM arvore_trilha WHERE trilha_nome = $1 AND arvore_codigo = $2 LIMIT 1`,
+      `SELECT 1 FROM ponto_interesse_trilha WHERE trilha_nome = $1 AND ponto_interesse_codigo = $2 LIMIT 1`,
       { bind: [trilha, Number(arvore)] }
     );
     if (!assoc || assoc.length === 0) return res.status(404).json({ error: 'Pergunta não encontrada' });
 
-    const q = await Pergunta.findOne({ where: { arvore_codigo: Number(arvore), id: Number(id) } });
+    const q = await Pergunta.findOne({ where: { ponto_interesse_codigo: Number(arvore), id: Number(id) } });
     if (!q) return res.status(404).json({ error: 'Pergunta não encontrada' });
 
     const fields = [
-      'enunciado','item_a','item_b','item_c','item_d','item_e',
+      'enunciado','item_a','item_b','item_c','item_d',
       'texto','audio_url','resposta_correta','dica','audio_dica_url'
     ];
     const changed = [];
@@ -173,7 +184,6 @@ router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
     try {
       await logPergunta(
         req,
-        trilha,
         Number(arvore),
         Number(id),
         `update:${changed.join(',')}`
@@ -191,24 +201,51 @@ router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
 
 // DELETE — sem log (para evitar conflitos de FK)
 router.delete('/:trilha/:arvore/:id', auth, async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { trilha, arvore, id } = req.params;
+    const semTrilha = trilha === '__sem_trilha__';
+
+    const [pontos] = await sequelize.query(
+      `SELECT codigo FROM ponto_interesse WHERE codigo = $1 FOR UPDATE`,
+      { bind: [Number(arvore)], transaction: t }
+    );
+    if (!pontos.length) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Ponto de interesse não encontrado' });
+    }
 
     // ensure association exists
-    const [assoc] = await sequelize.query(
-      `SELECT 1 FROM arvore_trilha WHERE trilha_nome = $1 AND arvore_codigo = $2 LIMIT 1`,
-      { bind: [trilha, Number(arvore)] }
-    );
-    if (!assoc || assoc.length === 0) return res.status(404).json({ error: 'Pergunta não encontrada' });
+    if (!semTrilha) {
+      const [assoc] = await sequelize.query(
+        `SELECT 1 FROM ponto_interesse_trilha WHERE trilha_nome = $1 AND ponto_interesse_codigo = $2 LIMIT 1`,
+        { bind: [trilha, Number(arvore)], transaction: t }
+      );
+      if (!assoc || assoc.length === 0) {
+        await t.rollback();
+        return res.status(404).json({ error: 'Pergunta não encontrada' });
+      }
+    }
 
-    const q = await Pergunta.findOne({ where: { arvore_codigo: Number(arvore), id: Number(id) } });
-    if (!q) return res.status(404).json({ error: 'Pergunta não encontrada' });
+    const q = await Pergunta.findOne({
+      where: { ponto_interesse_codigo: Number(arvore), id: Number(id) },
+      transaction: t
+    });
+    if (!q) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Pergunta não encontrada' });
+    }
 
-    await q.destroy();
+    await q.destroy({ transaction: t });
+    await atualizarQuantidadePerguntas(arvore, t);
+    await t.commit();
     return res.status(204).end();
   } catch (e) {
+    if (!t.finished) await t.rollback();
     console.error('DELETE /perguntas', e);
-    return res.status(400).json({ error: 'Erro ao excluir pergunta' });
+    return res.status(400).json({
+      error: e?.original?.detail || e?.original?.message || e.message || 'Erro ao excluir pergunta'
+    });
   }
 });
 

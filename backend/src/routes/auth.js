@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const { Administrador } = require('../models');
+const { Administrador, sequelize } = require('../models');
 const auth = require('../middlewares/auth');
 
 const router = express.Router();
@@ -107,6 +107,7 @@ router.put(
   auth,
   [
     body('nome').optional().isString().isLength({ min: 2 }),
+    body('email').optional().isEmail(),
     body('vinculo').optional().isString().isLength({ min: 1 }),
     body('novaSenha').optional().isString().isLength({ min: 6 }),
   ],
@@ -116,14 +117,58 @@ router.put(
       const a = await Administrador.findByPk(req.user.email);
       if (!a) return res.status(404).json({ error: 'Administrador não encontrado' });
 
-      const { nome, vinculo, novaSenha } = req.body;
+      const { nome, email, vinculo, novaSenha } = req.body;
       if (typeof nome === 'string') a.nome = nome.trim();
       if (typeof vinculo === 'string') a.vinculo = vinculo.trim();
       if (typeof novaSenha === 'string' && novaSenha.length >= 6) a.senha = novaSenha; // hook fará hash
-      await a.save();
+      const novoEmail = typeof email === 'string' ? normEmail(email) : a.email;
 
-      res.json({ ok: true, nome: a.nome, vinculo: a.vinculo });
+      let atualizado;
+      await sequelize.transaction(async transaction => {
+        await a.save({ transaction });
+        if (novoEmail !== a.email) {
+          const existing = await Administrador.findByPk(novoEmail, { transaction });
+          if (existing) {
+            const error = new Error('Este e-mail já está cadastrado');
+            error.status = 409;
+            throw error;
+          }
+
+          await Administrador.create({
+            email: novoEmail,
+            senha: a.senha,
+            nome: a.nome,
+            vinculo: a.vinculo,
+            foto: a.foto,
+            foto_mime: a.foto_mime,
+          }, { transaction, hooks: false });
+
+          await sequelize.query(
+            `UPDATE alteracao_ponto_interesse SET admin_email = $1 WHERE admin_email = $2`,
+            { bind: [novoEmail, a.email], transaction }
+          );
+          await sequelize.query(
+            `UPDATE alteracao_pergunta SET admin_email = $1 WHERE admin_email = $2`,
+            { bind: [novoEmail, a.email], transaction }
+          );
+          await a.destroy({ transaction });
+        }
+
+        atualizado = { email: novoEmail, nome: a.nome, vinculo: a.vinculo };
+      });
+
+      return res.json({
+        ok: true,
+        email: atualizado.email,
+        nome: atualizado.nome,
+        vinculo: atualizado.vinculo,
+        token: sign({ email: atualizado.email, nome: atualizado.nome, vinculo: atualizado.vinculo }),
+      });
     } catch (e) {
+      if (e.status === 409) return res.status(409).json({ error: e.message });
+      if (e.original?.code === '23505') {
+        return res.status(409).json({ error: 'Conflito ao alterar o e-mail ou migrar o histórico da conta' });
+      }
       console.error(e);
       res.status(500).json({ error: 'Erro interno 4' });
     }

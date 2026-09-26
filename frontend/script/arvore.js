@@ -4,6 +4,10 @@
   const TOKEN_KEY = 'token';
   const listRoot  = document.getElementById('arvoresList');
   if (!listRoot) return;
+  const isPredio = document.body.dataset.tipo === 'predio_historico';
+  const resourcePath = isPredio ? 'predios' : 'arvores';
+  const resourceLabel = isPredio ? 'prédio' : 'árvore';
+  const SEM_TRILHA = '__sem_trilha__';
 
   // fetch com Authorization automático
   async function authFetch(path, opts = {}) {
@@ -261,10 +265,10 @@
     const gridIds = document.createElement('div');
     gridIds.className='form__grid';
     gridIds.appendChild(row('Trilha', input('arvoreTrilha','text',true)));
-    gridIds.appendChild(row('Código', input('arvoreCodigo','text',true)));
 
     const rowNome = row('Nome', input('arvoreNome','text',false,{required:true}));
     const rowEsp  = row('Espécie', input('arvoreEspecie','text',false,{required:true}));
+    rowEsp.setAttribute('data-arvore-only', '');
 
     const grid1 = document.createElement('div');
     grid1.className='form__grid';
@@ -337,12 +341,27 @@
       return el;
     }
   }
+
+  if (isPredio) {
+    document.querySelectorAll('#arvoreModal h3, #arvoreAddModal h3').forEach((title) => {
+      title.textContent = title.textContent.replace(/árvore/gi, 'prédio');
+    });
+    document.querySelectorAll('#arvoreModal label, #arvoreAddModal label').forEach((label) => {
+      label.textContent = label.textContent.replace(/árvore/gi, 'prédio');
+    });
+    ['arvoreEspecie', 'arvoreFamilia', 'arvoreOrigem', 'arvoreTipoOrigem',
+      'addEspecie', 'addFamilia', 'addOrigem', 'addTipoOrigem'].forEach((id) => {
+      const field = document.getElementById(id);
+      field?.removeAttribute('required');
+      field?.closest('.form__row')?.setAttribute('hidden', '');
+    });
+  }
 }
 
   // ===== Gallery helpers =====
   async function fetchImages(trilha, codigo) {
     try {
-      const resp = await fetch(`${API_BASE}/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images`);
+      const resp = await fetch(`${API_BASE}/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images`);
       if (!resp.ok) return [];
       return await resp.json();
     } catch (e) { return []; }
@@ -384,7 +403,7 @@
           img.url = newUrl; img.legenda = newLegenda; img.fonte = newFonte; renderAddImagesList();
           return;
         }
-        const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, {
+        const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: newUrl, legenda: newLegenda, fonte: newFonte })
         });
@@ -402,7 +421,7 @@
           renderAddImagesList();
           return;
         }
-        const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, { method: 'DELETE' });
+        const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, { method: 'DELETE' });
         if (!resp.ok && resp.status !== 204) throw new Error('Falha ao excluir');
         renderEditImages(trilha, codigo);
       } catch (err) { console.error(err); alert(err.message || 'Erro'); }
@@ -417,6 +436,16 @@
     list.innerHTML = '';
     const imgs = await fetchImages(trilha, codigo);
     imgs.forEach(img => list.appendChild(makeImageRow(img, trilha, codigo, false)));
+  }
+
+  async function fetchPointTrilhas(codigo) {
+    try {
+      const resp = await fetch(`${API_BASE}/api/${resourcePath}/${encodeURIComponent(String(codigo))}/trilhas`);
+      if (!resp.ok) return [];
+      return await resp.json();
+    } catch {
+      return [];
+    }
   }
 
   function renderAddImagesList() {
@@ -469,7 +498,8 @@
 
   async function loadTrilhas() {
     const filtroSelect = document.getElementById('filtroTrilha');
-    const addSelect    = document.getElementById('addTrilha');
+    const addSelect    = document.getElementById('addTrilhas');
+    const editSelect   = document.getElementById('arvoreNovaTrilha');
 
     try {
       const resp = await fetch(`${API_BASE}/api/trilhas`);
@@ -493,6 +523,11 @@
           filtroSelect.appendChild(opt);
         });
 
+        const semTrilha = document.createElement('option');
+        semTrilha.value = SEM_TRILHA;
+        semTrilha.textContent = 'Sem trilha';
+        filtroSelect.appendChild(semTrilha);
+
         // mantém filtro vindo da URL
         const trilhaParam = getParam('trilha');
         if (trilhaParam) {
@@ -504,19 +539,28 @@
       if (addSelect) {
         addSelect.innerHTML = '';
 
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = 'Selecione uma trilha';
-        placeholder.disabled = true;
-        placeholder.selected = true;
+        trilhas.forEach(t => {
+          const label = document.createElement('label');
+          label.className = 'trilha-opcao';
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.name = 'addTrilha';
+          checkbox.value = t.nome;
+          const text = document.createElement('span');
+          text.textContent = t.nome;
+          label.appendChild(checkbox);
+          label.appendChild(text);
+          addSelect.appendChild(label);
+        });
+      }
 
-        addSelect.appendChild(placeholder);
-
+      if (editSelect) {
+        editSelect.innerHTML = '<option value="">Adicionar a outra trilha</option>';
         trilhas.forEach(t => {
           const opt = document.createElement('option');
           opt.value = t.nome;
           opt.textContent = t.nome;
-          addSelect.appendChild(opt);
+          editSelect.appendChild(opt);
         });
       }
 
@@ -564,13 +608,29 @@
       if (!a) return;
 
       await ensureModal();
+      await loadTrilhas();
+      const trilhasDoPonto = await fetchPointTrilhas(a.codigo);
+      if (trilhasDoPonto.length) {
+        a.trilhasDetalhes = trilhasDoPonto.map(t => ({ nome: t.trilha_nome, ordem: t.ordem }));
+        a.trilhasDetalhes.sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR'));
+        a.trilhas = a.trilhasDetalhes.map(t => `${t.nome} (${t.ordem}ª)`);
+      }
       setVal('arvoreTrilha', a.trilha_nome);
-      setVal('arvoreCodigo', a.codigo);
+      document.getElementById('arvoreModal').dataset.codigo = String(a.codigo);
+      setVal('arvoreQrcodeUrl', a.qrcode_url || '');
       setVal('arvoreNome', a.nome);
       setVal('arvoreEspecie', a.especie || '');
       // render images gallery for this tree
       (async () => { await renderEditImages(a.trilha_nome, a.codigo); })();
-      setVal('arvoreOrdem', a.ordem ?? '');
+      renderTrilhas(a.trilhasDetalhes || [{ nome: a.trilha_nome, ordem: a.ordem }]);
+      const novaTrilha = document.getElementById('arvoreNovaTrilha');
+      if (novaTrilha) {
+        const existentes = new Set((a.trilhasDetalhes || []).map(t => t.nome));
+        Array.from(novaTrilha.options).forEach(option => {
+          option.disabled = !option.value || existentes.has(option.value);
+        });
+        novaTrilha.value = '';
+      }
       setVal('arvoreFamilia', a.familia || '');
       setVal('arvoreOrigem', a.origem || '');
       setVal('arvoreTipoOrigem', a.tipo_origem || '');
@@ -594,7 +654,7 @@
           const fonte = (document.getElementById('addImageFonte') || {}).value?.trim() || '';
           if (!url) { alert('Informe a URL da imagem'); return; }
           try {
-            const resp = await authFetch(`/api/arvores/${encodeURIComponent(a.trilha_nome)}/${encodeURIComponent(String(a.codigo))}/images`, {
+            const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(a.trilha_nome)}/${encodeURIComponent(String(a.codigo))}/images`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ url, legenda, fonte })
             });
@@ -628,7 +688,7 @@
     // toggle ativa
     if (e.target && e.target.id === 'btnToggleStatus') {
       const trilha = (document.getElementById('arvoreTrilha') || {}).value || '';
-      const codigo = Number((document.getElementById('arvoreCodigo') || {}).value || 0);
+      const codigo = Number(document.getElementById('arvoreModal')?.dataset.codigo || 0);
       const idx = arvores.findIndex(x => x.trilha_nome === trilha && Number(x.codigo) === codigo);
       if (idx === -1) return;
 
@@ -652,7 +712,7 @@
       }
 
       try {
-        const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/ativa`, {
+        const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/ativa`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ativa: novaAtiva })
@@ -672,20 +732,110 @@
     }
   });
 
+  function renderTrilhas(trilhas) {
+    const root = document.getElementById('arvoreTrilhas');
+    if (!root) return;
+    root.innerHTML = '';
+    [...trilhas].sort((a, b) =>
+      String(a.nome || a.trilha_nome).localeCompare(String(b.nome || b.trilha_nome), 'pt-BR')
+    ).forEach((trilha) => {
+      const row = document.createElement('div');
+      row.className = 'trilha-posicao';
+      const name = trilha.nome || trilha.trilha_nome;
+      const text = document.createElement('span');
+      text.textContent = `${name} - posição ${trilha.ordem ?? '—'}`;
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'trilha-remover';
+      remove.dataset.trilha = name;
+      remove.textContent = 'Remover';
+      row.appendChild(text);
+      row.appendChild(remove);
+      root.appendChild(row);
+    });
+  }
+
+  document.addEventListener('click', async (e) => {
+    if (e.target?.classList.contains('trilha-remover')) {
+      const modal = document.getElementById('arvoreModal');
+      const codigo = Number(modal?.dataset.codigo || 0);
+      const trilha = e.target.dataset.trilha || '';
+      if (!codigo || !trilha) return;
+      if (!window.confirm(`Remover este ponto da trilha "${trilha}"?`)) return;
+
+      const resp = await authFetch(
+        `/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}`,
+        { method: 'DELETE' }
+      );
+      const payload = await resp.json().catch(() => ({}));
+      if (!resp.ok && resp.status !== 204) {
+        alert(payload.error || 'Erro ao remover o ponto da trilha.');
+        return;
+      }
+
+      const atual = arvores.find(a => Number(a.codigo) === codigo);
+      if (atual) {
+        atual.trilhasDetalhes = (atual.trilhasDetalhes || [])
+          .filter(item => item.nome !== trilha);
+        atual.trilhas = atual.trilhasDetalhes.map(item => `${item.nome} (${item.ordem}ª)`);
+        if (!atual.trilhasDetalhes.length) {
+          closeModal();
+          await loadArvores();
+          return;
+        }
+        atual.trilha_nome = atual.trilhasDetalhes[0].nome;
+        atual.ordem = atual.trilhasDetalhes[0].ordem;
+        setVal('arvoreTrilha', atual.trilha_nome);
+        renderTrilhas(atual.trilhasDetalhes);
+      }
+      return;
+    }
+
+    if (e.target?.id !== 'btnAdicionarTrilha') return;
+    const modal = document.getElementById('arvoreModal');
+    const select = document.getElementById('arvoreNovaTrilha');
+    const trilha = select?.value || '';
+    const codigo = Number(modal?.dataset.codigo || 0);
+    if (!trilha || !codigo) return;
+
+    const resp = await authFetch(`/api/${resourcePath}/${codigo}/trilhas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trilha_nome: trilha })
+    });
+    const payload = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      alert(payload.error || 'Erro ao adicionar trilha.');
+      return;
+    }
+
+    const atual = arvores.find(a => Number(a.codigo) === codigo);
+    if (atual) {
+      atual.trilhasDetalhes = [...(atual.trilhasDetalhes || []), { nome: trilha, ordem: payload.ordem }];
+      atual.trilhasDetalhes.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      renderTrilhas(atual.trilhasDetalhes);
+      atual.trilhas = atual.trilhasDetalhes.map(t => `${t.nome} (${t.ordem}ª)`);
+      Array.from(select.options).forEach(option => {
+        if (option.value === trilha) option.disabled = true;
+      });
+      select.value = '';
+    }
+  });
+
   // submit (salvar edição)
   document.addEventListener('submit', async (e) => {
     if (!(e.target && e.target.id === 'arvoreForm')) return;
     e.preventDefault();
 
     const trilha  = (document.getElementById('arvoreTrilha') || {}).value || '';
-    const codigo  = Number((document.getElementById('arvoreCodigo') || {}).value || 0);
+    const codigo  = Number(document.getElementById('arvoreModal')?.dataset.codigo || 0);
     const idx = arvores.findIndex(x => x.trilha_nome === trilha && Number(x.codigo) === codigo);
     if (idx === -1) return;
 
     const nome    = (document.getElementById('arvoreNome') || {}).value?.trim() ?? '';
+    const qrcode_url = (document.getElementById('arvoreQrcodeUrl') || {}).value?.trim() ?? '';
     const especie = (document.getElementById('arvoreEspecie') || {}).value?.trim() ?? '';
     // images managed separately via gallery API
-    const ordem = parseNum(document.getElementById('arvoreOrdem')?.value);
     const familia = (document.getElementById('arvoreFamilia') || {}).value?.trim() ?? '';
     const origem = (document.getElementById('arvoreOrigem') || {}).value?.trim() ?? '';
     const tipo_origem = (document.getElementById('arvoreTipoOrigem') || {}).value?.trim() ?? '';
@@ -696,11 +846,11 @@
     arvores[idx] = {
       ...arvores[idx],
       nome,
+      qrcode_url,
       especie,
       familia,
       origem,
       tipo_origem,
-      ordem,
       latitude,
       longitude,
       // foto_url left untouched; images are in gallery
@@ -708,16 +858,16 @@
     render();
 
     try {
-      const resp = await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}`, {
+      const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nome,
+          qrcode_url,
           especie,
           familia,
           origem,
           tipo_origem,
-          ordem,
           latitude,
           longitude
         })
@@ -752,19 +902,20 @@
     }
 
     [
-      'addTrilha',
-      'addCodigo',
+      'addQrcodeUrl',
       'addNome',
       'addEspecie',
       'addFamilia',
       'addOrigem',
       'addTipoOrigem',
-      'addOrdem',
       'addLatitude',
       'addLongitude'
     ].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
+    });
+    document.querySelectorAll('#addTrilhas input[name="addTrilha"]').forEach(input => {
+      input.checked = false;
     });
     // reset new images
     newImages = [];
@@ -803,15 +954,12 @@
 
     e.preventDefault();
 
-    const trilha  = document.getElementById('addTrilha')?.value || '';
-    const codigo  = Number(document.getElementById('addCodigo')?.value || 0);
+    const trilhas = Array.from(document.querySelectorAll('#addTrilhas input[name="addTrilha"]:checked'))
+      .map(input => input.value);
+    const qrcode_url = document.getElementById('addQrcodeUrl')?.value?.trim() || '';
     const nome    = document.getElementById('addNome')?.value?.trim() || '';
     const especie = document.getElementById('addEspecie')?.value?.trim() || '';
     // images handled via gallery; single foto field removed
-    const ordem = parseNum(
-  document.getElementById('addOrdem')?.value
-);
-
 const familia = (
   document.getElementById('addFamilia') || {}
 ).value?.trim() || '';
@@ -834,29 +982,28 @@ const longitude = parseNum(
 
     // pos_x/pos_y removed
 
-    if (!trilha || !codigo || !nome) {
+    if (!trilhas.length || !nome) {
       alert('Preencha os campos obrigatórios.');
       return;
     }
 
     try {
-      const resp = await authFetch('/api/arvores', {
+      const resp = await authFetch(`/api/${resourcePath}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          trilha_nome: trilha,
-          codigo,
+          trilhas,
           nome,
+          qrcode_url,
           especie,
           familia,
           origem,
           tipo_origem,
-          ordem,
           latitude,
           longitude,
-          foto_url: foto
+          tipo: isPredio ? 'predio_historico' : 'arvore'
         })
       });
 
@@ -870,7 +1017,7 @@ const longitude = parseNum(
       if (resp.ok && newImages && newImages.length) {
         try {
           for (const img of newImages) {
-            await authFetch(`/api/arvores/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images`, {
+            await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilhas[0])}/${encodeURIComponent(String(payload.codigo))}/images`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(img)
             });
@@ -880,7 +1027,7 @@ const longitude = parseNum(
 
       // recarrega lista do backend
       await loadArvores();
-      alert('Árvore adicionada com sucesso!');
+      alert(`${isPredio ? 'Prédio adicionado' : 'Árvore adicionada'} com sucesso!`);
 
       // fecha modal
       const modal = document.getElementById('arvoreAddModal');
@@ -899,12 +1046,17 @@ const longitude = parseNum(
   // ===== carregar lista =====
   async function loadArvores() {
     const trilhaParam = getParam('trilha');
-    const qs = trilhaParam ? `?trilha=${encodeURIComponent(trilhaParam)}` : '';
+    const qs = trilhaParam && trilhaParam !== SEM_TRILHA
+      ? `?trilha=${encodeURIComponent(trilhaParam)}`
+      : '';
     try {
-      const resp = await fetch(`${API_BASE}/api/arvores${qs}`);
+      const resp = await fetch(`${API_BASE}/api/${resourcePath}${qs}`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
-      const raw = (Array.isArray(data) ? data : []);
+      let raw = (Array.isArray(data) ? data : []);
+      if (trilhaParam === SEM_TRILHA) {
+        raw = raw.filter(a => !a.trilha_nome);
+      }
 
       function ordinal(n) {
         if (n == null || Number.isNaN(Number(n))) return '';
@@ -921,13 +1073,14 @@ const longitude = parseNum(
       raw.forEach(a => {
         const key = a.codigo;
         const ordem = a.ordem == null ? null : Number(a.ordem);
-        const trilhaInfo = { nome: a.trilha_nome, ordem };
+        const trilhaInfo = { nome: a.trilha_nome || 'Sem trilha', ordem };
 
         if (!map.has(key)) {
           map.set(key, {
             ...a,
             codigo: Number(a.codigo),
             trilhas: [trilhaInfo],
+            trilhasDetalhes: [trilhaInfo],
             quantidade_perguntas: Number(a.quantidade_perguntas ?? 0),
             ativa: !!a.ativa,
             // pos_x/pos_y removed from UI
@@ -935,6 +1088,7 @@ const longitude = parseNum(
           });
         } else {
           map.get(key).trilhas.push(trilhaInfo);
+          map.get(key).trilhasDetalhes.push(trilhaInfo);
         }
       });
 
@@ -949,7 +1103,10 @@ const longitude = parseNum(
       });
 
       arvores.forEach(a => {
-        a.trilhas = a.trilhas.map(t =>
+        a.trilhasDetalhes = a.trilhasDetalhes
+          .map(t => ({ ...t }))
+          .sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR'));
+        a.trilhas = a.trilhasDetalhes.map(t =>
           t.ordem != null ? `${t.nome} (${ordinal(t.ordem)})` : t.nome
         );
       });

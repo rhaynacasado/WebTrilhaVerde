@@ -7,34 +7,9 @@
     </header>
 
     <form id="arvoreForm" class="form">
+      <input id="arvoreTrilha" type="hidden" />
 
-      <!-- IDENTIFICAÇÃO -->
-      <div class="form__grid">
-        <div class="form__row">
-          <label for="arvoreTrilha">Trilha</label>
-          <input id="arvoreTrilha" type="text" readonly aria-readonly="true" class="input-readonly" />
-        </div>
-
-        <div class="form__row">
-          <label for="arvoreCodigo">Código QRCode</label>
-          <input id="arvoreCodigo" type="text" readonly aria-readonly="true" class="input-readonly" />
-        </div>
-      </div>
-
-      <!-- ORDEM -->
-      <div class="form__grid">
-        <div class="form__row">
-          <label for="arvoreOrdem">Ordem na trilha</label>
-          <input
-            id="arvoreOrdem"
-            type="number"
-            min="1"
-            placeholder="Sequência da árvore na trilha"
-          />
-        </div>
-      </div>
-
-      <!-- INFORMAÇÕES DA ÁRVORE -->
+      <!-- INFORMAÇÕES DO PONTO -->
       <div class="form__grid">
         <div class="form__row">
           <label for="arvoreNome">Nome</label>
@@ -42,30 +17,50 @@
         </div>
 
         <div class="form__row">
+          <label for="arvoreQrcodeUrl">Link QRCode</label>
+          <input id="arvoreQrcodeUrl" type="url" placeholder="https://..." required />
+        </div>
+      </div>
+
+      <!-- INFORMAÇÕES DA ÁRVORE -->
+      <div class="form__grid">
+        <div class="form__row" data-arvore-only>
           <label for="arvoreEspecie">Espécie</label>
-          <input id="arvoreEspecie" type="text" required />
+          <input id="arvoreEspecie" type="text" />
+        </div>
+
+        <div class="form__row" data-arvore-only>
+          <label for="arvoreFamilia">Família</label>
+          <input id="arvoreFamilia" type="text" />
         </div>
       </div>
 
       <div class="form__grid">
-        <div class="form__row">
-          <label for="arvoreFamilia">Família</label>
-          <input id="arvoreFamilia" type="text" />
-        </div>
-
-        <div class="form__row">
+        <div class="form__row" data-arvore-only>
           <label for="arvoreOrigem">Origem</label>
           <input id="arvoreOrigem" type="text" />
         </div>
+
+        <div class="form__row" data-arvore-only>
+          <label for="arvoreTipoOrigem">Tipo de origem</label>
+          <input
+            id="arvoreTipoOrigem"
+            type="text"
+            placeholder="Ex.: Nativa, Exótica..."
+          />
+        </div>
       </div>
 
+      <!-- TRILHAS E POSIÇÕES -->
       <div class="form__row">
-        <label for="arvoreTipoOrigem">Tipo de origem</label>
-        <input
-          id="arvoreTipoOrigem"
-          type="text"
-          placeholder="Ex.: Nativa, Exótica..."
-        />
+        <label>Trilhas e posições</label>
+        <div id="arvoreTrilhas" class="trilhas-posicoes"></div>
+        <div class="trilha-adicionar">
+          <select id="arvoreNovaTrilha">
+            <option value="">Adicionar a outra trilha</option>
+          </select>
+          <button id="btnAdicionarTrilha" type="button" class="btn">Adicionar</button>
+        </div>
       </div>
 
       <!-- GALERIA DE FOTOS -->
@@ -91,6 +86,7 @@
             type="number"
             step="any"
             placeholder="-22.123456"
+            required
           />
         </div>
 
@@ -101,6 +97,7 @@
             type="number"
             step="any"
             placeholder="-47.123456"
+            required
           />
         </div>
       </div>
