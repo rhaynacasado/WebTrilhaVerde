@@ -6,6 +6,17 @@ const { Pergunta, sequelize } = require('../models'); // <- precisa do sequelize
 const auth = require('../middlewares/auth');
 const { logPergunta } = require('../utils/logHelpers');
 
+async function atualizarQuantidadePerguntas(pontoCodigo, transaction) {
+  await sequelize.query(
+    `UPDATE ponto_interesse
+     SET quantidade_perguntas = (
+       SELECT COUNT(*)::int FROM pergunta WHERE ponto_interesse_codigo = $1
+     )
+     WHERE codigo = $1`,
+    { bind: [Number(pontoCodigo)], transaction }
+  );
+}
+
 // ==================== GETs públicos ====================
 
 // ?ponto=<codigo> (app mobile)  ?trilha=<nome>
@@ -86,6 +97,15 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'ponto_interesse_codigo é obrigatório' });
     }
 
+    const [pontos] = await sequelize.query(
+      `SELECT codigo FROM ponto_interesse WHERE codigo = $1 FOR UPDATE`,
+      { bind: [Number(pontoCodigo)], transaction: t }
+    );
+    if (!pontos.length) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Ponto de interesse não encontrado' });
+    }
+
     let newId = id;
     if (newId == null) {
       const max = await Pergunta.max('id', {
@@ -102,6 +122,7 @@ router.post('/', auth, async (req, res) => {
       texto, audio_url, resposta_correta, dica, audio_dica_url
     }, { transaction: t });
 
+    await atualizarQuantidadePerguntas(pontoCodigo, t);
     await t.commit();
 
     // Log de criação (best-effort)
@@ -193,24 +214,51 @@ router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
 
 // DELETE — sem log (para evitar conflitos de FK)
 router.delete('/:trilha/:arvore/:id', auth, async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { trilha, arvore, id } = req.params;
+    const semTrilha = trilha === '__sem_trilha__';
+
+    const [pontos] = await sequelize.query(
+      `SELECT codigo FROM ponto_interesse WHERE codigo = $1 FOR UPDATE`,
+      { bind: [Number(arvore)], transaction: t }
+    );
+    if (!pontos.length) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Ponto de interesse não encontrado' });
+    }
 
     // ensure association exists
-    const [assoc] = await sequelize.query(
-      `SELECT 1 FROM ponto_interesse_trilha WHERE trilha_nome = $1 AND ponto_interesse_codigo = $2 LIMIT 1`,
-      { bind: [trilha, Number(arvore)] }
-    );
-    if (!assoc || assoc.length === 0) return res.status(404).json({ error: 'Pergunta não encontrada' });
+    if (!semTrilha) {
+      const [assoc] = await sequelize.query(
+        `SELECT 1 FROM ponto_interesse_trilha WHERE trilha_nome = $1 AND ponto_interesse_codigo = $2 LIMIT 1`,
+        { bind: [trilha, Number(arvore)], transaction: t }
+      );
+      if (!assoc || assoc.length === 0) {
+        await t.rollback();
+        return res.status(404).json({ error: 'Pergunta não encontrada' });
+      }
+    }
 
-    const q = await Pergunta.findOne({ where: { ponto_interesse_codigo: Number(arvore), id: Number(id) } });
-    if (!q) return res.status(404).json({ error: 'Pergunta não encontrada' });
+    const q = await Pergunta.findOne({
+      where: { ponto_interesse_codigo: Number(arvore), id: Number(id) },
+      transaction: t
+    });
+    if (!q) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Pergunta não encontrada' });
+    }
 
-    await q.destroy();
+    await q.destroy({ transaction: t });
+    await atualizarQuantidadePerguntas(arvore, t);
+    await t.commit();
     return res.status(204).end();
   } catch (e) {
+    if (!t.finished) await t.rollback();
     console.error('DELETE /perguntas', e);
-    return res.status(400).json({ error: 'Erro ao excluir pergunta' });
+    return res.status(400).json({
+      error: e?.original?.detail || e?.original?.message || e.message || 'Erro ao excluir pergunta'
+    });
   }
 });
 

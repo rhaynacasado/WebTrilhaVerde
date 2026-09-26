@@ -9,7 +9,7 @@
 
     <form id="perguntaAddForm" class="form">
       <div class="form__row">
-        <label for="addArvore">Árvore *</label>
+        <label for="addArvore">Ponto de interesse *</label>
         <select id="addArvore" required></select>
       </div>
 
@@ -22,18 +22,7 @@
         <label for="addTextoInfo">Texto Info *</label>
         <textarea id="addTextoInfo" rows="3" placeholder="Texto explicativo" required></textarea>
       </div>
-
-      <div class="form__grid">
-        <div class="form__row">
-          <label for="addAudioInfo">Áudio Info (URL) *</label>
-          <input id="addAudioInfo" type="url" placeholder="https://..." required />
-        </div>
-        <div class="form__row">
-          <label for="addAudioDica">Áudio Dica (URL) *</label>
-          <input id="addAudioDica" type="url" placeholder="https://..." required />
-        </div>
-      </div>
-
+      
       <div class="form__grid">
         <div class="form__row">
           <label for="addItemA">Item A *</label>
@@ -52,7 +41,7 @@
           <input id="addItemD" type="text" required />
         </div>
       </div>
-
+      
       <div class="form__row">
         <label for="addResposta">Resposta correta *</label>
         <select id="addResposta" required>
@@ -62,12 +51,23 @@
           <option value="D">Item D</option>
         </select>
       </div>
-
+      
       <div class="form__row">
         <label for="addTextoDica">Texto Dica *</label>
         <textarea id="addTextoDica" rows="2" placeholder="Texto de dica" required></textarea>
       </div>
-
+      
+            <div class="form__grid">
+              <div class="form__row">
+                <label for="addAudioInfo">Áudio Info (URL)</label>
+                <input id="addAudioInfo" type="url" placeholder="https://..." />
+              </div>
+              <div class="form__row">
+                <label for="addAudioDica">Áudio Dica (URL)</label>
+                <input id="addAudioDica" type="url" placeholder="https://..." />
+              </div>
+            </div>
+      
       <footer class="modal__foot">
         <button type="button" class="btn" data-close>Cancelar</button>
         <button type="submit" class="btn primary" id="btnAdicionarPergunta">Adicionar</button>

@@ -51,6 +51,7 @@
   let arvoreById = new Map();       // id(ui) -> { trilha_nome, codigo, nome }
   let nextPerguntaId = 1;
   let filtroTrilha = '';
+  let filtroTipo = '';
   let filtroArvore = '';
   const SEM_TRILHA = '__sem_trilha__';
 
@@ -58,7 +59,7 @@
     new URLSearchParams(window.location.search).get(n);
 
   async function loadArvores() {
-    const resp = await fetch(`${API_BASE}/api/arvores`);
+    const resp = await fetch(`${API_BASE}/api/arvores?tipo=all`);
 
     if (!resp.ok) {
       throw new Error('Falha ao carregar árvores');
@@ -76,7 +77,8 @@
       id: idx + 1,
       trilha_nome: a.trilha_nome,
       codigo: Number(a.codigo),
-      nome: a.nome
+      nome: a.nome,
+      tipo: a.tipo || 'arvore'
     }));
 
     arvoreById = new Map(
@@ -85,10 +87,15 @@
 
     // filtros vindos da URL
     const trilhaParam = getParam('trilha');
+    const tipoParam = getParam('tipo');
     const codigoParam = getParam('codigo');
 
     if (trilhaParam) {
       filtroTrilha = trilhaParam;
+    }
+
+    if (tipoParam === 'arvore' || tipoParam === 'predio_historico') {
+      filtroTipo = tipoParam;
     }
 
     if (codigoParam) {
@@ -169,9 +176,10 @@
 
     function loadFiltros() {
       const trilhaSelect = document.getElementById('filtroTrilha');
+      const tipoSelect = document.getElementById('filtroTipo');
       const arvoreSelect = document.getElementById('filtroArvore');
 
-      if (!trilhaSelect || !arvoreSelect) return;
+      if (!trilhaSelect || !tipoSelect || !arvoreSelect) return;
 
       // ===== trilhas únicas =====
       const trilhas = [...new Set(arvores.map(a => a.trilha_nome).filter(Boolean))]
@@ -192,6 +200,7 @@
       trilhaSelect.appendChild(semTrilha);
 
       trilhaSelect.value = filtroTrilha;
+      tipoSelect.value = filtroTipo;
 
       updateFiltroArvores();
     }
@@ -209,13 +218,20 @@
       } else if (filtroTrilha) {
         lista = lista.filter(a => a.trilha_nome === filtroTrilha);
       }
+      if (filtroTipo) {
+        lista = lista.filter(a => a.tipo === filtroTipo);
+      }
+
+      if (filtroArvore && !lista.some(a => String(a.id) === filtroArvore)) {
+        filtroArvore = '';
+      }
 
       lista
         .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
         .forEach(a => {
           const opt = document.createElement('option');
           opt.value = String(a.id);
-          opt.textContent = a.nome;
+          opt.textContent = `${a.tipo === 'predio_historico' ? 'Prédio' : 'Árvore'} · ${a.nome}`;
           arvoreSelect.appendChild(opt);
         });
 
@@ -244,6 +260,10 @@
         );
       }
 
+      if (filtroTipo) {
+        arvoresFiltradas = arvoresFiltradas.filter(a => a.tipo === filtroTipo);
+      }
+
       if (filtroArvore) {
         arvoresFiltradas = arvoresFiltradas.filter(
           a => String(a.id) === filtroArvore
@@ -255,7 +275,7 @@
 
         const h = document.createElement('h3');
         h.className = 'group-title';
-        h.textContent = arv.nome;
+        h.textContent = `${arv.tipo === 'predio_historico' ? 'Prédio' : 'Árvore'} · ${arv.nome}`;
         container.appendChild(h);
 
         const group = document.createElement('div');
@@ -423,8 +443,13 @@
 
       document.getElementById('perguntaHiddenId').value = q.id;
       document.getElementById('perguntaArvoreId').value = String(q.arvoreId);
-      document.getElementById('perguntaArvoreNome').value =
-        arvoreById.get(q.arvoreId)?.nome || '';
+      const ponto = arvoreById.get(q.arvoreId);
+      document.getElementById('perguntaArvoreNome').value = ponto?.nome || '';
+      const tipoPonto = document.getElementById('perguntaTipoPonto');
+      if (tipoPonto) {
+        const isBuilding = ponto?.tipo === 'predio_historico';
+        tipoPonto.value = isBuilding ? 'Prédio' : 'Árvore';
+      }
 
       document.getElementById('perguntaEnunciado').value = q.enunciado || '';
       document.getElementById('perguntaTextoInfo').value = q.textoInfo || '';
@@ -542,19 +567,29 @@
           const aRef = arvoreById.get(arvoreId);
           if (!aRef) return;
 
-          // remove otimista
-          perguntas = perguntas.filter(q => !(q.id === id && q.arvoreId === arvoreId));
-          render();
-
+          let deleted = false;
           try {
-            const url  = `/api/perguntas/${encodeURIComponent(aRef.trilha_nome)}/${encodeURIComponent(String(aRef.codigo))}/${encodeURIComponent(String(id))}`;
+            const trilhaPath = aRef.trilha_nome
+              ? encodeURIComponent(aRef.trilha_nome)
+              : '__sem_trilha__';
+            const url  = `/api/perguntas/${trilhaPath}/${encodeURIComponent(String(aRef.codigo))}/${encodeURIComponent(String(id))}`;
             const resp = await authFetch(url, { method: 'DELETE' });
-            if (!resp.ok && resp.status !== 204) throw new Error(`DELETE ${resp.status}`);
+            if (!resp.ok && resp.status !== 204) {
+              const payload = await resp.json().catch(() => ({}));
+              throw new Error(payload.error || `DELETE ${resp.status}`);
+            }
+            perguntas = perguntas.filter(q => !(q.id === id && q.arvoreId === arvoreId));
+            render();
+            deleted = true;
           } catch (err) {
             console.error(err);
-            alert('Erro ao excluir pergunta (verifique se está logado).');
+            alert(`Erro ao excluir pergunta: ${err.message}`);
           } finally {
-            closeConfirm(); closeModal(); showFab();
+            closeConfirm();
+            if (deleted) {
+              closeModal();
+              showFab();
+            }
           }
         };
       }
@@ -579,16 +614,16 @@
         // opção padrão
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = 'Selecione uma árvore';
+        placeholder.textContent = 'Selecione um ponto de interesse';
         placeholder.disabled = true;
         placeholder.selected = true;
         sel.appendChild(placeholder);
 
-        // árvores
+        // pontos de interesse
         arvores.forEach(a => {
           const opt = document.createElement('option');
           opt.value = String(a.id);
-          opt.textContent = a.nome;
+          opt.textContent = `${a.tipo === 'predio_historico' ? 'Prédio' : 'Árvore'} · ${a.nome}`;
           sel.appendChild(opt);
         });
       }
@@ -624,7 +659,7 @@
         const arvoreRef = arvoreById.get(arvoreUIId);
 
         if (!arvoreRef) {
-          alert('Árvore selecionada é inválida!');
+          alert('O ponto de interesse selecionado é inválido!');
           return;
         }
 
@@ -710,7 +745,25 @@
       render();
     }
 
-    // ================= filtro árvore =================
+    // ================= filtro tipo =================
+    if (e.target && e.target.id === 'filtroTipo') {
+      filtroTipo = e.target.value;
+      filtroArvore = '';
+
+      const url = new URL(window.location);
+      if (filtroTipo) {
+        url.searchParams.set('tipo', filtroTipo);
+      } else {
+        url.searchParams.delete('tipo');
+      }
+      url.searchParams.delete('codigo');
+      window.history.replaceState({}, '', url);
+
+      updateFiltroArvores();
+      render();
+    }
+
+    // ================= filtro ponto =================
     if (e.target && e.target.id === 'filtroArvore') {
 
       filtroArvore = e.target.value;

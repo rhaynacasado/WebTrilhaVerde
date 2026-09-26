@@ -44,6 +44,12 @@
     return svg;
   }
 
+  let currentTrilhaNome = '';
+  let currentTrilhaAtiva = true;
+  let currentPontos = [];
+  let draggedCodigo = null;
+  let sequenceDirty = false;
+
   async function ensureAddModal() {
     if (byId('trilhaAddModal')) return true;
     try {
@@ -126,7 +132,7 @@
 
       trilhas.forEach(r => {
         const el = document.createElement('div');
-        el.className = 'item';
+        el.className = `item${r.ativa === false ? ' is-inactive' : ''}`;
 
         const body = document.createElement('div');
         body.className = 'item-body';
@@ -162,14 +168,13 @@
         const mapBtn = document.createElement('button');
         mapBtn.type = 'button';
         mapBtn.className = 'edit-pill';
-        mapBtn.title = 'Visualizar mapa';
-        mapBtn.setAttribute('aria-label', `Visualizar mapa da trilha ${r.nome}`);
+        mapBtn.title = 'Alterar sequência e visualizar mapa';
+        mapBtn.setAttribute('aria-label', `Alterar sequência da trilha ${r.nome}`);
         mapBtn.dataset.trilha = r.nome;
         mapBtn.appendChild(makeMapSvg());
         mapBtn.onclick = (ev) => {
           ev.stopPropagation();
-          console.log('mapBtn clicked for trilha:', r.nome);
-          openTrilhaMap(r.nome);
+          openTrilhaMap(r.nome, r.ativa !== false);
         };
         actions.appendChild(mapBtn);
 
@@ -219,61 +224,240 @@
   });
   // ===== Map modal helpers =====
   async function ensureMapModalExists() {
-    if (document.getElementById('trilhaMapModal')) return;
+    if (document.getElementById('trilhaMapModal')) return true;
     try {
-      // tenta primeiro relativo à página
       let resp = await fetch('../partials/modal-trilha-mapa.html');
-      if (!resp.ok) {
-        console.warn('fetch ../partials failed, tentando /frontend/partials/...');
-        resp = await fetch('/frontend/partials/modal-trilha-mapa.html');
-      }
-      console.log('Carregando partial do modal de mapa:', resp.status);
-      if (!resp.ok) return;
+      if (!resp.ok) resp = await fetch('/frontend/partials/modal-trilha-mapa.html');
+      if (!resp.ok) return false;
       const html = await resp.text();
       const div = document.createElement('div');
       div.innerHTML = html;
-      // append children to body
       while (div.firstChild) document.body.appendChild(div.firstChild);
-
-      // close handlers
-      document.querySelectorAll('#trilhaMapModal [data-close]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const modal = document.getElementById('trilhaMapModal');
-          if (modal) {
-            modal.setAttribute('aria-hidden', 'true');
-            modal.classList.remove('open');
-          }
-        });
-      });
-      console.log('Modal de mapa inserido no DOM.');
+      return !!document.getElementById('trilhaMapModal');
     } catch (e) {
       console.error('Erro ao carregar partial do modal de mapa', e);
+      return false;
     }
   }
 
-  async function openTrilhaMap(trilhaNome) {
-    console.log('openTrilhaMap:', trilhaNome);
-    await ensureMapModalExists();
+  async function openTrilhaMap(trilhaNome, ativa = true) {
+    if (!await ensureMapModalExists()) {
+      alert('Não foi possível abrir a edição da sequência.');
+      return;
+    }
     const modal = document.getElementById('trilhaMapModal');
     const title = document.getElementById('trilhaMapTitle');
-    if (title) title.textContent = `Mapa — ${trilhaNome}`;
+    currentTrilhaNome = trilhaNome;
+    currentTrilhaAtiva = ativa;
+    sequenceDirty = false;
+    if (title) title.textContent = `Sequência — ${trilhaNome}`;
+    renderTrilhaActiveButton();
     if (modal) {
       modal.setAttribute('aria-hidden', 'false');
       modal.classList.add('open');
     }
 
-    // load trees and initialize map
     try {
-      console.log('Buscando pontos de interesse para trilha (API):', trilhaNome);
       const resp = await fetch(`${API_BASE}/api/arvores?tipo=all&trilha=${encodeURIComponent(trilhaNome)}`);
       if (!resp.ok) throw new Error('Falha ao buscar pontos de interesse');
-      const pontos = await resp.json();
-      console.log('Pontos recebidos para mapa:', pontos);
-      await initTrilhaMap(pontos || []);
+      currentPontos = await resp.json();
+      renderSequenceList();
+      await initTrilhaMap(currentPontos);
     } catch (e) {
       console.error('Erro ao carregar pontos para o mapa', e);
-      const canvas = document.getElementById('trilhaMapCanvas');
-      if (canvas) canvas.innerHTML = '<p style="padding:16px">Erro ao carregar mapa ou árvores.</p>';
+      const list = document.getElementById('trilhaSequenceList');
+      if (list) list.innerHTML = '<li class="trilha-sequence-empty">Erro ao carregar os pontos desta trilha.</li>';
+      setSequenceStatus('Não foi possível carregar os pontos da trilha.');
+    }
+  }
+
+  function setSequenceStatus(message) {
+    const status = document.getElementById('trilhaSequenceStatus');
+    if (status) status.textContent = message;
+  }
+
+  function renderTrilhaActiveButton() {
+    const button = byId('toggleTrilhaActive');
+    if (!button) return;
+    button.classList.toggle('danger', currentTrilhaAtiva);
+    button.classList.toggle('success', !currentTrilhaAtiva);
+    button.textContent = currentTrilhaAtiva ? 'Desativar trilha' : 'Ativar trilha';
+    button.setAttribute('aria-label', `${currentTrilhaAtiva ? 'Desativar' : 'Ativar'} trilha ${currentTrilhaNome}`);
+    button.title = button.getAttribute('aria-label');
+  }
+
+  async function toggleCurrentTrilhaActive() {
+    const button = byId('toggleTrilhaActive');
+    if (!button) return;
+    const nextAtiva = !currentTrilhaAtiva;
+    const acao = nextAtiva ? 'ativar' : 'desativar';
+    if (!window.confirm(`Deseja ${acao} a trilha "${currentTrilhaNome}"?`)) return;
+
+    button.disabled = true;
+    try {
+      const response = await authFetch(`${API_BASE}/api/trilhas/${encodeURIComponent(currentTrilhaNome)}/ativa`, {
+        method: 'PUT',
+        body: JSON.stringify({ ativa: nextAtiva })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `Erro ${response.status}`);
+      currentTrilhaAtiva = payload.ativa !== false;
+      renderTrilhaActiveButton();
+      setSequenceStatus(currentTrilhaAtiva ? 'Trilha ativada.' : 'Trilha desativada.');
+      await carregarTrilhas();
+    } catch (error) {
+      setSequenceStatus(error.message || 'Erro ao alterar status da trilha.');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function renderSequenceList() {
+    const list = document.getElementById('trilhaSequenceList');
+    const count = document.getElementById('trilhaSequenceCount');
+    const saveButton = document.getElementById('saveTrilhaSequence');
+    if (!list) return;
+    list.replaceChildren();
+    if (count) count.textContent = `${currentPontos.length} ${currentPontos.length === 1 ? 'ponto' : 'pontos'}`;
+    if (saveButton) saveButton.disabled = !sequenceDirty;
+
+    if (!currentPontos.length) {
+      const empty = document.createElement('li');
+      empty.className = 'trilha-sequence-empty';
+      empty.textContent = 'Esta trilha ainda não tem pontos associados.';
+      list.appendChild(empty);
+      return;
+    }
+
+    currentPontos.forEach((ponto, index) => {
+      const item = document.createElement('li');
+      item.className = 'trilha-sequence-item';
+      if (ponto.tipo === 'predio_historico') item.classList.add('is-building');
+      if (!ponto.ativa) item.classList.add('is-inactive');
+      item.draggable = true;
+      item.dataset.codigo = String(ponto.codigo);
+
+      const number = document.createElement('span');
+      number.className = 'trilha-sequence-number';
+      number.textContent = String(index + 1);
+      number.setAttribute('aria-hidden', 'true');
+
+      const grip = document.createElement('span');
+      grip.className = 'trilha-sequence-grip';
+      grip.textContent = '⠿';
+      grip.setAttribute('aria-hidden', 'true');
+
+      const name = document.createElement('span');
+      name.className = 'trilha-sequence-name';
+      name.textContent = ponto.nome || `${ponto.tipo === 'predio_historico' ? 'Prédio' : 'Árvore'} ${ponto.codigo}`;
+      const type = document.createElement('span');
+      type.className = 'trilha-sequence-type';
+      type.textContent = ponto.tipo === 'predio_historico' ? 'Prédio histórico' : 'Árvore';
+      name.appendChild(type);
+
+      const controls = document.createElement('span');
+      controls.className = 'trilha-sequence-controls';
+      [['↑', 'Mover para cima', index === 0], ['↓', 'Mover para baixo', index === currentPontos.length - 1]].forEach(([label, action, disabled], direction) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.title = action;
+        button.setAttribute('aria-label', `${action}: ${name.firstChild.textContent}`);
+        button.disabled = disabled;
+        button.addEventListener('click', () => moveSequencePoint(index, index + (direction === 0 ? -1 : 1)));
+        controls.appendChild(button);
+      });
+
+      item.append(number, grip, name, controls);
+      list.appendChild(item);
+    });
+  }
+
+  function moveSequencePoint(fromIndex, toIndex) {
+    if (toIndex < 0 || toIndex >= currentPontos.length || fromIndex === toIndex) return;
+    const [point] = currentPontos.splice(fromIndex, 1);
+    currentPontos.splice(toIndex, 0, point);
+    sequenceDirty = true;
+    renderSequenceList();
+    setSequenceStatus('Ordem alterada. Alterações não salvas.');
+    initTrilhaMap(currentPontos);
+  }
+
+  function setupSequenceInteractions() {
+    document.addEventListener('dragstart', event => {
+      const item = event.target.closest('#trilhaSequenceList .trilha-sequence-item');
+      if (!item) return;
+      draggedCodigo = item.dataset.codigo;
+      item.classList.add('is-dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', draggedCodigo);
+    });
+
+    document.addEventListener('dragend', event => {
+      const item = event.target.closest('#trilhaSequenceList .trilha-sequence-item');
+      item?.classList.remove('is-dragging');
+      document.querySelectorAll('.trilha-sequence-item.is-drop-target').forEach(row => row.classList.remove('is-drop-target'));
+      draggedCodigo = null;
+    });
+
+    document.addEventListener('dragover', event => {
+      const item = event.target.closest('#trilhaSequenceList .trilha-sequence-item');
+      if (!item) return;
+      event.preventDefault();
+      item.classList.add('is-drop-target');
+      event.dataTransfer.dropEffect = 'move';
+    });
+
+    document.addEventListener('dragleave', event => {
+      const item = event.target.closest('#trilhaSequenceList .trilha-sequence-item');
+      if (item && !item.contains(event.relatedTarget)) item.classList.remove('is-drop-target');
+    });
+
+    document.addEventListener('drop', event => {
+      const target = event.target.closest('#trilhaSequenceList .trilha-sequence-item');
+      if (!target || !draggedCodigo) return;
+      event.preventDefault();
+      const fromIndex = currentPontos.findIndex(point => String(point.codigo) === draggedCodigo);
+      let toIndex = currentPontos.findIndex(point => String(point.codigo) === target.dataset.codigo);
+      const bounds = target.getBoundingClientRect();
+      if (event.clientY >= bounds.top + bounds.height / 2) toIndex += 1;
+      if (fromIndex < toIndex) toIndex -= 1;
+      moveSequencePoint(fromIndex, toIndex);
+      draggedCodigo = null;
+    });
+
+    document.addEventListener('click', event => {
+      if (event.target.closest('#trilhaMapModal [data-close]')) {
+        const modal = document.getElementById('trilhaMapModal');
+        if (sequenceDirty && !window.confirm('Há uma sequência não salva. Fechar e descartar as alterações?')) return;
+        modal?.classList.remove('open');
+        modal?.setAttribute('aria-hidden', 'true');
+      }
+      if (event.target.closest('#saveTrilhaSequence')) saveTrilhaSequence();
+      if (event.target.closest('#toggleTrilhaActive')) toggleCurrentTrilhaActive();
+    });
+  }
+
+  async function saveTrilhaSequence() {
+    const saveButton = document.getElementById('saveTrilhaSequence');
+    if (!saveButton || !sequenceDirty) return;
+    saveButton.disabled = true;
+    setSequenceStatus('Salvando sequência...');
+    try {
+      const resp = await authFetch(`${API_BASE}/api/trilhas/${encodeURIComponent(currentTrilhaNome)}/pontos/ordem`, {
+        method: 'PUT',
+        body: JSON.stringify({ pontos: currentPontos.map(ponto => Number(ponto.codigo)) })
+      });
+      const payload = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(payload.error || `Erro ${resp.status}`);
+      sequenceDirty = false;
+      currentPontos.forEach((ponto, index) => { ponto.ordem = index + 1; });
+      renderSequenceList();
+      setSequenceStatus('Sequência salva.');
+      await carregarTrilhas();
+    } catch (error) {
+      saveButton.disabled = false;
+      setSequenceStatus(error.message || 'Não foi possível salvar a sequência.');
     }
   }
 
@@ -304,30 +488,37 @@
       const bounds = new maps.LatLngBounds();
 
       let any = false;
-      let markersCount = 0;
-      console.log('Inicializando marcadores no mapa para', arvores.length, 'pontos');
+      const route = [];
       const infoWindow = new maps.InfoWindow();
-      arvores.forEach(a => {
+      arvores.forEach((a, index) => {
         const lat = a.latitude == null ? null : Number(a.latitude);
         const lng = a.longitude == null ? null : Number(a.longitude);
-        console.log('Ponto', a.codigo, 'lat=', a.latitude, 'lng=', a.longitude);
         if (lat == null || lng == null || Number.isNaN(lat) || Number.isNaN(lng)) return;
         any = true;
         const pos = { lat, lng };
-        // ícone em forma de pin — duas cores: ativa (verde) / inativa (cinza)
-        const isActive = !!a.ativa;
-        const color = isActive ? '#EA4335' : '#898989'; // #0F9D58
-        const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z' fill='${color}'/><circle cx='12' cy='9' r='2.5' fill='%23ffffff'/></svg>`;
+        route.push(pos);
+        const isBuilding = a.tipo === 'predio_historico';
+        const color = a.ativa ? (isBuilding ? '#693517' : '#4F6F52') : '#858d82';
+        const typeGlyph = isBuilding
+          ? `<path d='M31 4h6v8h-6z' fill='${color}'/><path d='M32 5.5h1v1h-1zm3 0h1v1h-1zm-3 2h1v1h-1zm3 0h1v1h-1z' fill='#fff'/>`
+          : `<path d='M34 3.5 31.2 7h1.7l-2.1 2.8H33V12h2V9.8h2.2L35 7h1.8z' fill='${color}'/>`;
+        const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 44'><path d='M18 1C11.4 1 6 6.4 6 13c0 8.7 12 28 12 28s12-19.3 12-28C30 6.4 24.6 1 18 1z' fill='${color}'/><circle cx='18' cy='14' r='8.5' fill='#fff'/><circle cx='34' cy='8' r='7.5' fill='#fff' stroke='${color}' stroke-width='1.5'/>${typeGlyph}</svg>`;
         const icon = {
           url: 'data:image/svg+xml;utf8,' + encodeURIComponent(svg),
-          scaledSize: new maps.Size(30, 30),
-          anchor: new maps.Point(15, 30)
+          scaledSize: new maps.Size(42, 44),
+          anchor: new maps.Point(18, 41),
+          labelOrigin: new maps.Point(18, 14)
         };
         const tipoLabel = a.tipo === 'predio_historico' ? 'Prédio' : 'Árvore';
-        const marker = new maps.Marker({ position: pos, map, title: a.nome || `${tipoLabel} ${a.codigo}`, icon });
-        // ao clicar no pin mostra nome e ordem na trilha
+        const marker = new maps.Marker({
+          position: pos,
+          map,
+          title: `${index + 1}. ${a.nome || `${tipoLabel} ${a.codigo}`}`,
+          icon,
+          label: { text: String(index + 1), color, fontSize: '10px', fontWeight: '700' }
+        });
         marker.addListener('click', () => {
-          const ordemText = (a.ordem == null) ? '—' : String(a.ordem);
+          const ordemText = String(index + 1);
           const safeName = (a.nome || `${tipoLabel} ${a.codigo}`).replace(/</g, '&lt;');
           const latText = (a.latitude == null) ? '—' : String(a.latitude);
           const lngText = (a.longitude == null) ? '—' : String(a.longitude);
@@ -345,24 +536,33 @@
           infoWindow.setContent(html);
           infoWindow.open(map, marker);
         });
-        markersCount++;
         bounds.extend(pos);
       });
 
-      console.log('Marcadores adicionados:', markersCount);
+      if (route.length > 1) {
+        new maps.Polyline({
+          path: route,
+          geodesic: true,
+          strokeColor: '#4F6F52',
+          strokeOpacity: 0.9,
+          strokeWeight: 4,
+          map
+        });
+      }
       if (any) {
         map.fitBounds(bounds);
       } else {
-        canvas.innerHTML = '<p style="padding:16px">Nenhum ponto com latitude/longitude nesta trilha.</p>';
+        canvas.innerHTML = '<p class="trilha-sequence-empty">Nenhum ponto possui coordenadas para exibir no mapa.</p>';
       }
     } catch (e) {
       console.error(e);
-      canvas.innerHTML = `<p style="padding:16px">${e.message}</p>`;
+      canvas.innerHTML = `<p class="trilha-sequence-empty">${e.message}</p>`;
     }
   }
 
   // espera o DOM
   document.addEventListener('DOMContentLoaded', () => {
+    setupSequenceInteractions();
     setupAddTrilhaButton();
     carregarTrilhas();
   });

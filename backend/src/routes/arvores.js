@@ -66,6 +66,7 @@ router.get('/', async (req, res) => {
     const sql = `
             SELECT at.trilha_nome, at.ordem, p.codigo, p.nome, p.tipo, p.qrcode_url,
               p.ativa,
+              (SELECT COUNT(*)::int FROM pergunta q WHERE q.ponto_interesse_codigo = p.codigo) AS quantidade_perguntas,
               CASE WHEN p.tipo = 'arvore' THEN p.a_especie END AS especie,
               CASE WHEN p.tipo = 'arvore' THEN p.a_familia END AS familia,
               CASE WHEN p.tipo = 'arvore' THEN p.a_origem END AS origem,
@@ -78,23 +79,9 @@ router.get('/', async (req, res) => {
 
     const [trees] = await sequelize.query(sql, { bind: replacements.length ? replacements : undefined });
 
-    // build counts by joining pergunta -> ponto_interesse_trilha
-    const countsSql = `
-      SELECT at.trilha_nome, p.ponto_interesse_codigo, COUNT(p.id)::int AS qtd
-      FROM pergunta p
-      JOIN ponto_interesse_trilha at ON at.ponto_interesse_codigo = p.ponto_interesse_codigo
-      ${trilha ? 'WHERE at.trilha_nome = $1' : ''}
-      GROUP BY at.trilha_nome, p.ponto_interesse_codigo
-    `;
-
-    const countsBind = trilha ? [trilha] : [];
-    const [countsRows] = await sequelize.query(countsSql, { bind: countsBind });
-
-    const map = new Map(countsRows.map(c => [`${c.trilha_nome}:${c.ponto_interesse_codigo}`, Number(c.qtd)]));
-
     const out = trees.map(t => ({
       ...t,
-      quantidade_perguntas: map.get(`${t.trilha_nome}:${t.codigo}`) || 0,
+      quantidade_perguntas: Number(t.quantidade_perguntas) || 0,
       tipo: t.tipo
     }));
 

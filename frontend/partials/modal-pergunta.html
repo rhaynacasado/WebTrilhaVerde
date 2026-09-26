@@ -13,11 +13,11 @@
 
       <div class="form__grid">
         <div class="form__row">
-          <label for="perguntaId">ID *</label>
-          <input id="perguntaId" type="text" readonly aria-readonly="true" class="input-readonly" />
+          <label for="perguntaTipoPonto">Tipo de ponto</label>
+          <input id="perguntaTipoPonto" type="text" readonly aria-readonly="true" class="input-readonly" />
         </div>
         <div class="form__row">
-          <label for="perguntaArvoreNome">Árvore *</label>
+          <label for="perguntaArvoreNome">Ponto de interesse *</label>
           <input id="perguntaArvoreNome" type="text" readonly aria-readonly="true" class="input-readonly" />
         </div>
       </div>
@@ -31,17 +31,7 @@
         <label for="perguntaTextoInfo">Texto Info *</label>
         <textarea id="perguntaTextoInfo" rows="3" placeholder="Texto explicativo para a pergunta" required></textarea>
       </div>
-      <div class="form__grid">
-        <div class="form__row">
-          <label for="perguntaAudioInfo">Áudio Info (URL) *</label>
-          <input id="perguntaAudioInfo" type="url" placeholder="https://..." required />
-        </div>
-        <div class="form__row">
-          <label for="perguntaAudioDica">Áudio Dica (URL) *</label>
-          <input id="perguntaAudioDica" type="url" placeholder="https://..." required />
-        </div>
-      </div>
-
+      
       <div class="form__grid">
         <div class="form__row">
           <label for="perguntaItemA">Item A *</label>
@@ -70,12 +60,23 @@
           <option value="D">Item D</option>
         </select>
       </div>
-
+      
       <div class="form__row">
         <label for="perguntaTextoDica">Texto Dica *</label>
         <textarea id="perguntaTextoDica" rows="2" placeholder="Texto de dica" required></textarea>
       </div>
-
+      
+      <div class="form__grid">
+        <div class="form__row">
+          <label for="perguntaAudioInfo">Áudio Info (URL)</label>
+          <input id="perguntaAudioInfo" type="url" placeholder="https://..." />
+        </div>
+        <div class="form__row">
+          <label for="perguntaAudioDica">Áudio Dica (URL)</label>
+          <input id="perguntaAudioDica" type="url" placeholder="https://..." />
+        </div>
+      </div>
+      
       <footer class="modal__foot">
         <button type="button" class="btn danger" id="btnExcluirPergunta">Excluir</button>
         <button type="submit" class="btn primary" id="btnSalvarPergunta">Alterar</button>

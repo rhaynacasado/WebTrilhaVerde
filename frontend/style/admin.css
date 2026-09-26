@@ -82,6 +82,10 @@
   display:flex;
   align-items:stretch;
 }
+#pageTrilhas .item.is-inactive{
+  opacity:.55;
+  filter:grayscale(.15);
+}
 #pageTrilhas .edit-pill{
   width:56px;
   min-width:56px;
@@ -95,7 +99,7 @@
 }
 #pageTrilhas .edit-pill{
   background:#A7C957;
-  border-radius:0 14px 14px 0;
+  border-radius:0;
 }
 #pageTrilhas .edit-pill:hover{
   filter:brightness(1.02);
@@ -126,7 +130,7 @@
     border-radius:0;
   }
   #pageTrilhas .edit-pill{
-    border-radius:0 0 14px 0;
+    border-radius:0;
   }
 }
 
@@ -257,6 +261,204 @@
 }
 .icon-btn:hover{ 
   background: #eee; 
+}
+
+/* Edição da sequência de pontos da trilha */
+.trilha-sequence-dialog{
+  max-width:1280px;
+  width:min(1280px, calc(100% - 32px));
+}
+.trilha-sequence-dialog .modal__head h3{
+  margin:0;
+}
+.trilha-sequence-status{
+  margin:4px 0 0;
+  color:var(--cinza);
+  font-size:13px;
+}
+.trilha-sequence-layout{
+  display:grid;
+  grid-template-columns:minmax(290px, 0.78fr) minmax(0, 1.6fr);
+  min-height:0;
+  flex:1 1 auto;
+}
+.trilha-sequence-panel{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  border-right:1px solid #e5e7eb;
+}
+.trilha-sequence-panel-head{
+  min-height:56px;
+  padding:12px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border-bottom:1px solid #e5e7eb;
+}
+.trilha-sequence-panel-head h4{
+  margin:0;
+  color:#354d3a;
+  font-size:15px;
+}
+.trilha-sequence-count{
+  color:var(--cinza);
+  font-size:13px;
+  white-space:nowrap;
+}
+.trilha-sequence-list{
+  list-style:none;
+  margin:0;
+  padding:10px;
+  overflow:auto;
+  overscroll-behavior:contain;
+}
+.trilha-sequence-item{
+  display:grid;
+  grid-template-columns:28px 28px minmax(0, 1fr) auto;
+  align-items:center;
+  gap:8px;
+  min-height:62px;
+  padding:8px;
+  border:1px solid #e1e7df;
+  border-radius:6px;
+  background:#fff;
+  cursor:grab;
+}
+.trilha-sequence-item + .trilha-sequence-item{
+  margin-top:7px;
+}
+.trilha-sequence-item.is-inactive{
+  border-color:#d9ddda;
+  background:#f0f2f0;
+}
+.trilha-sequence-item:active{
+  cursor:grabbing;
+}
+.trilha-sequence-item.is-dragging{
+  opacity:.45;
+}
+.trilha-sequence-item.is-drop-target{
+  border-color:#5b8c5a;
+  box-shadow:inset 0 2px #5b8c5a;
+}
+.trilha-sequence-number{
+  display:grid;
+  place-items:center;
+  width:26px;
+  aspect-ratio:1;
+  border-radius:50%;
+  background:#4f6f52;
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+}
+.trilha-sequence-item.is-inactive .trilha-sequence-number{
+  background:#858d88;
+}
+.trilha-sequence-item.is-building .trilha-sequence-number{
+  background:#693517;
+}
+.trilha-sequence-item.is-inactive.is-building .trilha-sequence-number{
+  background:#858d88;
+}
+.trilha-sequence-grip{
+  color:#7a8579;
+  font-size:19px;
+  line-height:1;
+  text-align:center;
+  user-select:none;
+}
+.trilha-sequence-name{
+  min-width:0;
+  overflow-wrap:anywhere;
+  color:#26352a;
+  font-size:14px;
+  font-weight:600;
+}
+.trilha-sequence-item.is-inactive .trilha-sequence-name{
+  color:#68716b;
+}
+.trilha-sequence-type{
+  display:block;
+  margin-top:3px;
+  color:#737d73;
+  font-size:12px;
+  font-weight:400;
+}
+.trilha-sequence-item.is-inactive .trilha-sequence-type{
+  color:#858d88;
+}
+.trilha-sequence-controls{
+  display:flex;
+  gap:3px;
+}
+.trilha-sequence-controls button{
+  width:30px;
+  height:30px;
+  border:1px solid #e1e7df;
+  border-radius:4px;
+  background:#fff;
+  color:#354d3a;
+  cursor:pointer;
+  font-size:16px;
+}
+.trilha-sequence-controls button:disabled{
+  color:#b9c0b8;
+  cursor:default;
+}
+.trilha-sequence-controls button:not(:disabled):hover{
+  background:#eff4eb;
+}
+.trilha-sequence-map-panel{
+  min-width:0;
+  min-height:0;
+  padding:12px;
+  background:#f3f5f1;
+}
+.trilha-sequence-map{
+  width:100%;
+  height:100%;
+  min-height:390px;
+  background:#e7ece4;
+}
+.trilha-sequence-empty{
+  margin:0;
+  padding:20px 12px;
+  color:var(--cinza);
+  font-size:14px;
+}
+.trilha-sequence-dialog .modal__foot{
+  border-top:1px solid #e5e7eb;
+}
+
+@media (max-width:760px){
+  .trilha-sequence-dialog{
+    max-height:94vh;
+    margin:3vh auto;
+  }
+  .trilha-sequence-layout{
+    display:flex;
+    flex-direction:column;
+    overflow:auto;
+  }
+  .trilha-sequence-panel{
+    min-height:220px;
+    max-height:42vh;
+    border-right:0;
+    border-bottom:1px solid #e5e7eb;
+  }
+  .trilha-sequence-list{
+    min-height:110px;
+  }
+  .trilha-sequence-map-panel{
+    flex:0 0 auto;
+  }
+  .trilha-sequence-map{
+    height:36vh;
+    min-height:240px;
+  }
 }
 
 .btn{ 

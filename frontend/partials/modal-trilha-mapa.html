@@ -1,17 +1,31 @@
 <div id="trilhaMapModal" class="modal" aria-hidden="true">
   <div class="modal__backdrop" data-close></div>
-  <div class="modal__dialog" role="dialog" aria-modal="true">
+  <div class="modal__dialog trilha-sequence-dialog" role="dialog" aria-modal="true" aria-labelledby="trilhaMapTitle">
     <header class="modal__head">
-      <h3 id="trilhaMapTitle">Mapa da trilha</h3>
-      <button type="button" class="icon-btn" data-close>&times;</button>
+      <div>
+        <h3 id="trilhaMapTitle">Sequência da trilha</h3>
+        <p id="trilhaSequenceStatus" class="trilha-sequence-status" aria-live="polite"></p>
+      </div>
+      <button type="button" class="icon-btn" title="Fechar" aria-label="Fechar" data-close>&times;</button>
     </header>
 
-    <div class="modal__body" style="padding:0;">
-      <div id="trilhaMapCanvas" style="width:100%;height:480px;background:#eee"></div>
+    <div class="trilha-sequence-layout">
+      <section class="trilha-sequence-panel" aria-label="Pontos da trilha">
+        <div class="trilha-sequence-panel-head">
+          <h4>Pontos da trilha</h4>
+          <span id="trilhaSequenceCount" class="trilha-sequence-count">0 pontos</span>
+        </div>
+        <ol id="trilhaSequenceList" class="trilha-sequence-list" aria-label="Sequência dos pontos"></ol>
+      </section>
+      <section class="trilha-sequence-map-panel" aria-label="Mapa da sequência">
+        <div id="trilhaMapCanvas" class="trilha-sequence-map"></div>
+      </section>
     </div>
 
     <footer class="modal__foot">
+      <button type="button" class="btn danger" id="toggleTrilhaActive">Desativar trilha</button>
       <button type="button" class="btn" data-close>Fechar</button>
+      <button type="button" class="btn primary" id="saveTrilhaSequence" disabled>Salvar sequência</button>
     </footer>
   </div>
 </div>
