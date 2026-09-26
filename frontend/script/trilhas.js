@@ -453,7 +453,9 @@
       sequenceDirty = false;
       currentPontos.forEach((ponto, index) => { ponto.ordem = index + 1; });
       renderSequenceList();
-      setSequenceStatus('Sequência salva.');
+      const modal = document.getElementById('trilhaMapModal');
+      modal?.classList.remove('open');
+      modal?.setAttribute('aria-hidden', 'true');
       await carregarTrilhas();
     } catch (error) {
       saveButton.disabled = false;

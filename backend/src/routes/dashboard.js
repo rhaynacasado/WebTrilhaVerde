@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { sequelize, Administrador, Trilha, Arvore, Pergunta } = require('../models');
+const { sequelize, Usuario, Trilha, Arvore, Pergunta } = require('../models');
 
 function formatActivity(r) {
   // Mensagens no mesmo estilo do /log
@@ -25,7 +25,7 @@ function formatActivity(r) {
 router.get('/summary', async (req, res) => {
   try {
     const [usuarios, trilhas, arvores, perguntas] = await Promise.all([
-      Administrador.count(),
+      Usuario.count(),
       Trilha.count(),
       Arvore.count(),
       Pergunta.count(),

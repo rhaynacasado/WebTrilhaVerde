@@ -127,24 +127,12 @@ router.post('/', auth, async (req, res) => {
 
     // Log de criação (best-effort)
     try {
-      // try to determine trilha for logging: prefer provided trilha_nome, otherwise take first assoc
-      let trilhaForLog = trilha_nome;
-      if (!trilhaForLog) {
-        const [rows] = await sequelize.query(
-          `SELECT trilha_nome FROM ponto_interesse_trilha WHERE ponto_interesse_codigo = $1 LIMIT 1`,
-          { bind: [Number(pontoCodigo)] }
-        );
-        if (rows && rows[0]) trilhaForLog = rows[0].trilha_nome;
-      }
-      if (trilhaForLog) {
-        await logPergunta(
-          req,
-          trilhaForLog,
-          Number(pontoCodigo),
-          Number(newId),
-          `create:"${(enunciado || '').slice(0, 80)}"`
-        );
-      }
+      await logPergunta(
+        req,
+        Number(pontoCodigo),
+        Number(newId),
+        `create:"${(enunciado || '').slice(0, 80)}"`
+      );
     } catch (logErr) {
       console.warn('Falha ao registrar log de criação:', logErr.message);
     }
@@ -196,7 +184,6 @@ router.put('/:trilha/:arvore/:id', auth, async (req, res) => {
     try {
       await logPergunta(
         req,
-        trilha,
         Number(arvore),
         Number(id),
         `update:${changed.join(',')}`
