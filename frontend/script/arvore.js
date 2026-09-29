@@ -52,6 +52,19 @@
     }
   }
 
+  function syncModalFieldVisibility() {
+    const predioFields = document.querySelectorAll('[data-predio-only]');
+    const arvoreFields = document.querySelectorAll('[data-arvore-only]');
+
+    predioFields.forEach((row) => {
+      row.hidden = !isPredio;
+    });
+
+    arvoreFields.forEach((row) => {
+      row.hidden = isPredio;
+    });
+  }
+
   // ===== Google Maps helper =====
   const DEFAULT_CENTER = { lat: -22.7105478704092, lng: -47.632867682507566 };
   let googleMapsLoaded = false;
@@ -230,7 +243,10 @@
   const hasAdd  = document.getElementById('arvoreAddModal');
 
   // se já tem os dois, não faz nada
-  if (hasEdit && hasAdd) return;
+  if (hasEdit && hasAdd) {
+    syncModalFieldVisibility();
+    return;
+  }
 
   // tenta carregar os dois SEM parar no meio
   const candidates = [
@@ -243,6 +259,8 @@
       await tryLoad(c.url);
     }
   }
+
+  syncModalFieldVisibility();
 
   // fallback só pro modal de edição (mantém seu comportamento original)
   if (!document.getElementById('arvoreModal')) {
@@ -374,6 +392,8 @@
       field?.closest('.form__row')?.setAttribute('hidden', '');
     });
   }
+
+  syncModalFieldVisibility();
 }
 
   // ===== Gallery helpers =====
@@ -473,6 +493,26 @@
     newImages.forEach(img => {
       list.appendChild(makeImageRow(img, null, null, true));
     });
+  }
+
+  function addImageToNewList(url, legenda = '', fonte = '') {
+    const cleanUrl = String(url || '').trim();
+    if (!cleanUrl) return false;
+
+    const exists = newImages.some(img => String(img.url || '').trim() === cleanUrl);
+    if (exists) {
+      return false;
+    }
+
+    newImages.push({ url: cleanUrl, legenda: String(legenda || '').trim(), fonte: String(fonte || '').trim() });
+    renderAddImagesList();
+    return true;
+  }
+
+  function getModalField(modalId, fieldId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return document.getElementById(fieldId) || null;
+    return modal.querySelector(`#${CSS.escape(fieldId)}`) || null;
   }
 
   function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;" })[c]); }
@@ -669,22 +709,28 @@
       const btnAdd = document.getElementById('btnAddImage');
       if (btnAdd) {
         btnAdd.onclick = async () => {
-          const url = (document.getElementById('addImageUrl') || {}).value?.trim() || '';
-          const legenda = (document.getElementById('addImageLegenda') || {}).value?.trim() || '';
-          const fonte = (document.getElementById('addImageFonte') || {}).value?.trim() || '';
+          const modal = document.getElementById('arvoreModal');
+          const urlInput = modal ? modal.querySelector('#addImageUrl') : null;
+          const legendaInput = modal ? modal.querySelector('#addImageLegenda') : null;
+          const fonteInput = modal ? modal.querySelector('#addImageFonte') : null;
+
+          const url = (urlInput || {}).value?.trim() || '';
+          const legenda = (legendaInput || {}).value?.trim() || '';
+          const fonte = (fonteInput || {}).value?.trim() || '';
+
           if (!url) { alert('Informe a URL da imagem'); return; }
           try {
             const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(a.trilha_nome)}/${encodeURIComponent(String(a.codigo))}/images`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ url, legenda, fonte })
             });
-            if (!resp.ok) {
+            if (!resp.ok && resp.status !== 409) {
               const error = await resp.json().catch(() => ({}));
               throw new Error(error.error || `Falha ao adicionar imagem (${resp.status})`);
             }
-            (document.getElementById('addImageUrl') || {}).value = '';
-            (document.getElementById('addImageLegenda') || {}).value = '';
-            (document.getElementById('addImageFonte') || {}).value = '';
+            if (urlInput) urlInput.value = '';
+            if (legendaInput) legendaInput.value = '';
+            if (fonteInput) fonteInput.value = '';
             await renderEditImages(a.trilha_nome, a.codigo);
           } catch (err) { console.error(err); alert(err.message || 'Erro'); }
         };
@@ -962,15 +1008,25 @@
     const btnNew = document.getElementById('btnAddImageNew');
     if (btnNew) {
       btnNew.onclick = () => {
-        const url = (document.getElementById('addImageUrl') || {}).value?.trim() || '';
-        const legenda = (document.getElementById('addImageLegenda') || {}).value?.trim() || '';
-        const fonte = (document.getElementById('addImageFonte') || {}).value?.trim() || '';
+        const modal = document.getElementById('arvoreAddModal');
+        const urlInput = modal ? modal.querySelector('#addImageUrl') : null;
+        const legendaInput = modal ? modal.querySelector('#addImageLegenda') : null;
+        const fonteInput = modal ? modal.querySelector('#addImageFonte') : null;
+
+        const url = (urlInput || {}).value?.trim() || '';
+        const legenda = (legendaInput || {}).value?.trim() || '';
+        const fonte = (fonteInput || {}).value?.trim() || '';
+
         if (!url) { alert('Informe a URL da imagem'); return; }
-        newImages.push({ url, legenda, fonte });
-        (document.getElementById('addImageUrl') || {}).value = '';
-        (document.getElementById('addImageLegenda') || {}).value = '';
-        (document.getElementById('addImageFonte') || {}).value = '';
-        renderAddImagesList();
+
+        const added = addImageToNewList(url, legenda, fonte);
+        if (!added) {
+          alert('Esta imagem já foi adicionada para este ponto.');
+        }
+
+        if (urlInput) urlInput.value = '';
+        if (legendaInput) legendaInput.value = '';
+        if (fonteInput) fonteInput.value = '';
       };
     }
   });

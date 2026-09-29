@@ -547,17 +547,37 @@ router.get('/:trilha/:codigo/images', async (req, res) => {
 router.post('/:trilha/:codigo/images', auth, async (req, res) => {
   try {
     const codigo = Number(req.params.codigo);
-    const { url, legenda, fonte } = req.body;
+    const url = String(req.body?.url || '').trim();
+    const legenda = req.body?.legenda ?? null;
+    const fonte = req.body?.fonte ?? null;
+
     if (!url) return res.status(400).json({ error: 'url é obrigatório' });
+
+    const [existingRows] = await sequelize.query(
+      `SELECT url, legenda, fonte FROM imagens WHERE ponto_interesse_codigo = $1 AND url = $2 LIMIT 1`,
+      { bind: [codigo, url] }
+    );
+
+    if (existingRows && existingRows[0]) {
+      return res.status(200).json({
+        id: existingRows[0].url,
+        url: existingRows[0].url,
+        legenda: existingRows[0].legenda,
+        fonte: existingRows[0].fonte,
+      });
+    }
 
     const idColumn = await detectImagemIdColumn();
     const [result] = await sequelize.query(
       `INSERT INTO imagens (ponto_interesse_codigo, url, legenda, fonte) VALUES ($1,$2,$3,$4) RETURNING ${imageIdExpression(idColumn)}, url, legenda, fonte`,
-      { bind: [codigo, String(url), legenda || null, fonte || null] }
+      { bind: [codigo, url, legenda || null, fonte || null] }
     );
     const created = result && result[0] ? result[0] : null;
     return res.status(201).json(created || {});
   } catch (e) {
+    if (e.original?.code === '23505') {
+      return res.status(409).json({ error: 'Esta imagem já foi adicionada para este ponto.' });
+    }
     console.error(e);
     return res.status(500).json({ error: 'Erro ao criar imagem' });
   }

@@ -24,14 +24,15 @@ function formatActivity(r) {
 // GET /api/dashboard/summary
 router.get('/summary', async (req, res) => {
   try {
-    const [usuarios, trilhas, arvores, perguntas] = await Promise.all([
+    const [usuarios, trilhas, arvores, predios, perguntas] = await Promise.all([
       Usuario.count(),
       Trilha.count(),
-      Arvore.count(),
+      Arvore.count({ where: { tipo: 'arvore' } }),
+      Arvore.count({ where: { tipo: 'predio_historico' } }),
       Pergunta.count(),
     ]);
 
-    const [active] = await Promise.all([Arvore.count({ where: { ativa: true } })]);
+    const [active] = await Promise.all([Arvore.count({ where: { ativa: true, tipo: 'arvore' } })]);
     const percent = arvores ? Math.round((active / arvores) * 100) : 0;
 
     // últimas 5 atividades, já “formatadas”
@@ -58,7 +59,7 @@ router.get('/summary', async (req, res) => {
     }));
 
     res.json({
-      kpis: { usuarios, trilhas, arvores, perguntas },
+      kpis: { usuarios, trilhas, arvores, predios, perguntas },
       donut: { percent },       // << % de árvores ativas
       activities,               // << só 5 itens, já prontos pra exibir
     });

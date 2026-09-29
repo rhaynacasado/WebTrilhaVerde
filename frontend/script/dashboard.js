@@ -21,12 +21,14 @@
       setText('kpiUsuarios',  k.usuarios ?? 0);
       setText('kpiTrilhas',   k.trilhas ?? 0);
       setText('kpiArvores',   k.arvores ?? 0);
+      setText('kpiPredios',   k.predios ?? 0);
       setText('kpiPerguntas', k.perguntas ?? 0);
 
       // esconde linhas "delta" se existirem
       hideIfExists('kpiUsuariosDelta');
       hideIfExists('kpiTrilhasDelta');
       hideIfExists('kpiArvoresDelta');
+      hideIfExists('kpiPrediosDelta');
       hideIfExists('kpiPerguntasDelta');
 
       // Donut: renomeia título e aplica %
