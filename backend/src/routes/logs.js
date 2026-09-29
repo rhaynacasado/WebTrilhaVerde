@@ -19,6 +19,7 @@ router.get('/', auth, async (req, res) => {
           SELECT trilha_nome FROM ponto_interesse_trilha WHERE ponto_interesse_codigo = la.ponto_interesse_codigo LIMIT 1
         )) AS trilha_nome,
         la.ponto_interesse_codigo,
+        av.tipo             AS ponto_tipo,
         NULL::int           AS pergunta_id,
         la.admin_email,
         ad.nome             AS admin_nome,
@@ -43,6 +44,7 @@ router.get('/', auth, async (req, res) => {
           SELECT trilha_nome FROM ponto_interesse_trilha WHERE ponto_interesse_codigo = lp.ponto_interesse_codigo LIMIT 1
         )) AS trilha_nome,
         lp.ponto_interesse_codigo,
+        av.tipo             AS ponto_tipo,
         lp.pergunta_id,
         lp.admin_email,
         ad.nome             AS admin_nome,

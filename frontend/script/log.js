@@ -53,45 +53,59 @@
   function formatActivity(r) {
     const acao = (r.acao || '').toLowerCase();
     const trilha = r.trilha_nome;
-    const arvNome = r.arvore_nome || `árvore ${r.ponto_interesse_codigo}`;
+    const tipoPonto = r.ponto_tipo === 'predio_historico' ? 'Prédio' : 'Árvore';
+    const nomePonto = r.arvore_nome || `${tipoPonto} ${r.ponto_interesse_codigo}`;
+    const ponto = `${tipoPonto} “${nomePonto}”`;
     const pergId  = r.pergunta_id;
 
     // helpers
     const quoted = (s) => (s || '').replace(/^.*?"(.*)".*$/,'$1');
+    const formatFields = (fields) => {
+      const labels = {
+        nome: 'Nome', qrcode_url: 'Link do QR Code', latitude: 'Latitude', longitude: 'Longitude',
+        ativa: 'Status', a_especie: 'Espécie', a_familia: 'Família', a_origem: 'Origem',
+        a_tipo_origem: 'Tipo de origem', p_descricao: 'Descrição', p_construcao: 'Construção',
+        ordem: 'Posição', enunciado: 'Enunciado', item_a: 'Alternativa A', item_b: 'Alternativa B',
+        item_c: 'Alternativa C', item_d: 'Alternativa D', texto: 'Texto informativo',
+        audio_url: 'Áudio informativo', resposta_correta: 'Resposta correta', dica: 'Dica',
+        audio_dica_url: 'Áudio da dica'
+      };
+      return fields.split(',').map(field => labels[field.trim()] || field.trim().replaceAll('_', ' ')).join(', ');
+    };
 
     if (r.tipo === 'arvore') {
-      if (acao === 'ativou')    return `Ativou a árvore “${arvNome}” da trilha “${trilha}”.`;
-      if (acao === 'desativou') return `Desativou a árvore “${arvNome}” da trilha “${trilha}”.`;
+      if (acao === 'ativou')    return `Ativou ${ponto} da trilha “${trilha}”.`;
+      if (acao === 'desativou') return `Desativou ${ponto} da trilha “${trilha}”.`;
       if (acao.startsWith('create:')) {
         const name = quoted(acao);
-        return `Criou a árvore “${name || arvNome}” na trilha “${trilha}”.`;
+        return `Criou ${tipoPonto.toLowerCase()} “${name || nomePonto}” na trilha “${trilha}”.`;
       }
       if (acao.startsWith('delete:')) {
         const name = quoted(acao);
-        return `Excluiu a árvore “${name || arvNome}” da trilha “${trilha}”.`;
+        return `Excluiu ${tipoPonto.toLowerCase()} “${name || nomePonto}” da trilha “${trilha}”.`;
       }
       if (acao.startsWith('update:')) {
-        const campos = acao.slice(7);
-        return `Alterou ${campos.replaceAll('_',' ')} da árvore “${arvNome}” na trilha “${trilha}”.`;
+        const campos = formatFields(acao.slice(7));
+        return `Alterou ${campos} de ${ponto} na trilha “${trilha}”.`;
       }
-      return `Alterou a árvore “${arvNome}” da trilha “${trilha}”.`;
+      return `Alterou ${ponto} da trilha “${trilha}”.`;
     }
 
     // PERGUNTA
     if (r.tipo === 'pergunta') {
       if (acao.startsWith('create:')) {
         const enunc = quoted(acao) || r.pergunta_enunciado || '';
-        return `Criou a pergunta #${pergId}${enunc ? `: “${enunc}”` : ''} (ponto ${r.ponto_interesse_codigo}) da trilha “${trilha}”.`;
+        return `Criou a pergunta #${pergId}${enunc ? `: “${enunc}”` : ''} para ${ponto} da trilha “${trilha}”.`;
       }
       if (acao.startsWith('delete:')) {
         const enunc = quoted(acao); // snapshot salvo no log
-        return `Excluiu a pergunta #${pergId}${enunc ? `: “${enunc}”` : ''} (ponto ${r.ponto_interesse_codigo}) da trilha “${trilha}”.`;
+        return `Excluiu a pergunta #${pergId}${enunc ? `: “${enunc}”` : ''} de ${ponto} da trilha “${trilha}”.`;
       }
       if (acao.startsWith('update:')) {
-        const campos = acao.slice(7);
-        return `Alterou ${campos.replaceAll('_',' ')} da pergunta #${pergId} (ponto ${r.ponto_interesse_codigo}) da trilha “${trilha}”.`;
+        const campos = formatFields(acao.slice(7));
+        return `Alterou ${campos} da pergunta #${pergId} de ${ponto} na trilha “${trilha}”.`;
       }
-      return `Alterou a pergunta #${pergId} (ponto ${r.ponto_interesse_codigo}) da trilha “${trilha}”.`;
+      return `Alterou a pergunta #${pergId} de ${ponto} da trilha “${trilha}”.`;
     }
 
     return 'Atividade';
