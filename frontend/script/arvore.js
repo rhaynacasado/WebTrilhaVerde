@@ -637,6 +637,8 @@
       document.getElementById('arvoreModal').dataset.codigo = String(a.codigo);
       setVal('arvoreQrcodeUrl', a.qrcode_url || '');
       setVal('arvoreNome', a.nome);
+      setVal('arvoreDescricao', a.p_descricao || '');
+      setVal('arvoreConstrucao', a.p_construcao || '');
       setVal('arvoreEspecie', a.especie || '');
       // render images gallery for this tree
       (async () => { await renderEditImages(a.trilha_nome, a.codigo); })();
@@ -859,12 +861,15 @@
     const tipo_origem = (document.getElementById('arvoreTipoOrigem') || {}).value?.trim() ?? '';
     const latitude = parseNum(document.getElementById('arvoreLatitude')?.value);
     const longitude = parseNum(document.getElementById('arvoreLongitude')?.value);
+    const p_descricao = document.getElementById('arvoreDescricao')?.value?.trim() || null;
+    const p_construcao = document.getElementById('arvoreConstrucao')?.value?.trim() || null;
 
     // otimista
     arvores[idx] = {
       ...arvores[idx],
       nome,
       qrcode_url,
+      ...(isPredio ? { p_descricao, p_construcao } : {}),
       especie,
       familia,
       origem,
@@ -882,6 +887,7 @@
         body: JSON.stringify({
           nome,
           qrcode_url,
+          ...(isPredio ? { p_descricao, p_construcao } : {}),
           especie,
           familia,
           origem,
@@ -923,6 +929,8 @@
     [
       'addQrcodeUrl',
       'addNome',
+      'addDescricao',
+      'addConstrucao',
       'addEspecie',
       'addFamilia',
       'addOrigem',
@@ -977,6 +985,8 @@
       .map(input => input.value);
     const qrcode_url = document.getElementById('addQrcodeUrl')?.value?.trim() || '';
     const nome    = document.getElementById('addNome')?.value?.trim() || '';
+    const p_descricao = document.getElementById('addDescricao')?.value?.trim() || null;
+    const p_construcao = document.getElementById('addConstrucao')?.value?.trim() || null;
     const especie = document.getElementById('addEspecie')?.value?.trim() || '';
     // images handled via gallery; single foto field removed
 const familia = (
@@ -1016,6 +1026,7 @@ const longitude = parseNum(
           trilhas,
           nome,
           qrcode_url,
+          ...(isPredio ? { p_descricao, p_construcao } : {}),
           especie,
           familia,
           origem,

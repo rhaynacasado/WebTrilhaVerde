@@ -12,6 +12,8 @@ module.exports = (sequelize, DataTypes) => {
     familia:              { type: DataTypes.STRING, allowNull: true, field: 'a_familia' },
     origem:               { type: DataTypes.STRING, allowNull: true, field: 'a_origem' },
     tipo_origem:          { type: DataTypes.STRING(50), allowNull: true, field: 'a_tipo_origem' },
+    p_descricao:          { type: DataTypes.TEXT, allowNull: true, field: 'p_descricao' },
+    p_construcao:         { type: DataTypes.TEXT, allowNull: true, field: 'p_construcao' },
     latitude:             { type: DataTypes.DECIMAL(12,8), allowNull: false },
     longitude:            { type: DataTypes.DECIMAL(12,8), allowNull: false },
   }, {

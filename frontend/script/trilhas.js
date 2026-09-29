@@ -500,7 +500,7 @@
         const pos = { lat, lng };
         route.push(pos);
         const isBuilding = a.tipo === 'predio_historico';
-        const color = a.ativa ? (isBuilding ? '#693517' : '#4F6F52') : '#858d82';
+        const color = a.ativa ? (isBuilding ? '#8B5E3C' : '#4F6F52') : '#6B7280';
         const typeGlyph = isBuilding
           ? `<path d='M31 4h6v8h-6z' fill='${color}'/><path d='M32 5.5h1v1h-1zm3 0h1v1h-1zm-3 2h1v1h-1zm3 0h1v1h-1z' fill='#fff'/>`
           : `<path d='M34 3.5 31.2 7h1.7l-2.1 2.8H33V12h2V9.8h2.2L35 7h1.8z' fill='${color}'/>`;

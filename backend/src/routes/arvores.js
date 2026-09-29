@@ -82,6 +82,7 @@ router.get('/', async (req, res) => {
         CASE WHEN p.tipo = 'arvore' THEN p.a_familia END AS familia,
         CASE WHEN p.tipo = 'arvore' THEN p.a_origem END AS origem,
         CASE WHEN p.tipo = 'arvore' THEN p.a_tipo_origem END AS tipo_origem,
+        p.p_descricao, p.p_construcao,
         p.latitude, p.longitude
       FROM ponto_interesse p
       LEFT JOIN ponto_interesse_trilha at ON at.ponto_interesse_codigo = p.codigo
@@ -169,6 +170,7 @@ async function loadArvoreOr404(trilha, codigo, res) {
     attributes: [
       'codigo', 'nome', 'especie', 'ativa',
       'familia', 'origem', 'tipo_origem',
+      'p_descricao', 'p_construcao',
       'latitude', 'longitude', 'tipo', 'quantidade_perguntas', 'qrcode_url'
     ]
   });
@@ -330,6 +332,8 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     const familia = req.body.familia === undefined ? undefined : (String(req.body.familia));
     const origem = req.body.origem === undefined ? undefined : (String(req.body.origem));
     const tipo_origem = req.body.tipo_origem === undefined ? undefined : (String(req.body.tipo_origem));
+    const p_descricao = req.body.p_descricao === undefined ? undefined : (String(req.body.p_descricao || '').trim() || null);
+    const p_construcao = req.body.p_construcao === undefined ? undefined : (String(req.body.p_construcao || '').trim() || null);
     const ativa = req.body.ativa === undefined ? undefined : !!req.body.ativa;
 
     const changed = [];
@@ -343,6 +347,8 @@ router.put('/:trilha/:codigo', auth, async (req, res) => {
     if (isTree && familia !== undefined && String(arv.familia || '') !== String(familia)) { arv.familia = familia; changed.push('a_familia'); }
     if (isTree && origem !== undefined && String(arv.origem || '') !== String(origem)) { arv.origem = origem; changed.push('a_origem'); }
     if (isTree && tipo_origem !== undefined && String(arv.tipo_origem || '') !== String(tipo_origem)) { arv.tipo_origem = tipo_origem; changed.push('a_tipo_origem'); }
+    if (!isTree && p_descricao !== undefined && String(arv.p_descricao || '') !== String(p_descricao || '')) { arv.p_descricao = p_descricao; changed.push('p_descricao'); }
+    if (!isTree && p_construcao !== undefined && String(arv.p_construcao || '') !== String(p_construcao || '')) { arv.p_construcao = p_construcao; changed.push('p_construcao'); }
 
     // ordem lives in ponto_interesse_trilha now
     let ordemChanged = false;
@@ -440,7 +446,10 @@ router.post('/', auth, async (req, res) => {
         familia: body.familia || null,
         origem: body.origem || null,
         tipo_origem: body.tipo_origem || null,
-      } : {}),
+      } : {
+        p_descricao: String(body.p_descricao || '').trim() || null,
+        p_construcao: String(body.p_construcao || '').trim() || null,
+      }),
       tipo: body.tipo || resourceType(req),
     }, { returning: false });
 
