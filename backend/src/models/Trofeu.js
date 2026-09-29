@@ -10,6 +10,11 @@ module.exports = (sequelize, DataTypes) => {
         key: 'nickname'
       }
     },
+    trilha_nome: {
+      type: DataTypes.STRING(255),
+      primaryKey: true,
+      allowNull: false
+    },
     ponto_interesse_codigo: {
       type: DataTypes.INTEGER,
       primaryKey: true,

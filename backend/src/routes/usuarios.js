@@ -41,7 +41,12 @@ router.get('/:nickname', async (req, res) => {
   try {
     const u = await Usuario.findByPk(req.params.nickname);
     if (!u) return res.status(404).json({ error: 'Usuário não encontrado' });
-    return res.json(u.toJSON());
+    const [[{ total }]] = await sequelize.query(
+      `SELECT COUNT(DISTINCT ponto_interesse_codigo)::int AS total
+       FROM trofeu WHERE usuario_nickname = :nickname`,
+      { replacements: { nickname: u.nickname } }
+    );
+    return res.json({ ...u.toJSON(), num_pontos_visitados: total });
   } catch (e) {
     console.error('GET /usuarios/:nickname', e);
     return res.status(500).json({ error: 'Erro ao buscar usuário' });
@@ -94,20 +99,23 @@ router.get('/:nickname/avatar', async (req, res) => {
   }
 });
 
-// GET /api/usuarios/:nickname/trofeus
+// GET /api/usuarios/:nickname/trofeus[?trilha=]
 router.get('/:nickname/trofeus', async (req, res) => {
   try {
     const { nickname } = req.params;
+    const trilha_nome = req.query.trilha || req.query.trilha_nome || null;
 
     const [trofeus] = await sequelize.query(`
       SELECT
         t.usuario_nickname,
+        t.trilha_nome,
         t.ponto_interesse_codigo,
         p.nome AS ponto_interesse_nome
       FROM trofeu t
       INNER JOIN ponto_interesse p ON p.codigo = t.ponto_interesse_codigo
       WHERE t.usuario_nickname = :nickname
-    `, { replacements: { nickname } });
+        AND (CAST(:trilha_nome AS varchar) IS NULL OR t.trilha_nome = :trilha_nome)
+    `, { replacements: { nickname, trilha_nome } });
 
     return res.status(200).json(trofeus);
   } catch (e) {
@@ -121,26 +129,27 @@ router.post('/:nickname/trofeus', async (req, res) => {
   try {
     const { nickname } = req.params;
     const ponto_interesse_codigo = Number(req.body.ponto_interesse_codigo);
+    const trilha_nome = typeof req.body.trilha_nome === 'string' ? req.body.trilha_nome.trim() : '';
 
-    if (!ponto_interesse_codigo) {
-      return res.status(400).json({ error: 'ponto_interesse_codigo é obrigatório' });
+    if (!ponto_interesse_codigo || !trilha_nome) {
+      return res.status(400).json({ error: 'trilha_nome e ponto_interesse_codigo são obrigatórios' });
     }
 
-    const [trofeu, created] = await Trofeu.findOrCreate({
+    const [trofeu] = await Trofeu.findOrCreate({
       where: {
         usuario_nickname: nickname,
+        trilha_nome,
         ponto_interesse_codigo,
       }
     });
 
-    if (created) {
-      await Usuario.increment('num_pontos_visitados', {
-        where: { nickname: nickname }
-      });
-    }
     // sempre 201: o app trata qualquer outro status como falha, inclusive troféu já existente
     return res.status(201).json(trofeu.toJSON());
   } catch (error) {
+    // FK: usuário inexistente ou ponto que não pertence à trilha
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ error: 'Usuário, trilha ou ponto inválido' });
+    }
     console.error('ERRO AO TENTAR SALVAR O TROFÉU:', error);
     return res.status(500).json({ message: 'Erro interno ao salvar troféu' });
   }
@@ -154,36 +163,16 @@ router.delete('/:nickname/trofeus', async (req, res) => {
     const trilha_nome = req.query.trilha || req.query.trilha_nome;
 
     if (trilha_nome) {
-      // Apaga só os troféus dos pontos que pertencem à trilha
-      const [deletedRows] = await sequelize.query(
-        `DELETE FROM trofeu
-         WHERE usuario_nickname = :nickname
-           AND ponto_interesse_codigo IN (
-             SELECT ponto_interesse_codigo FROM ponto_interesse_trilha WHERE trilha_nome = :trilha_nome
-           )
-         RETURNING ponto_interesse_codigo`,
-        { replacements: { nickname, trilha_nome } }
-      );
-      const deleted = deletedRows.length;
-
-      // Decrementa o contador pelo número de troféus removidos
-      if (deleted > 0) {
-        await sequelize.query(
-          `UPDATE usuario
-           SET num_pontos_visitados = GREATEST(0, num_pontos_visitados - :deleted)
-           WHERE nickname = :nickname`,
-          { replacements: { deleted, nickname } }
-        );
-      }
+      // Apaga só os troféus desta trilha; os de outras trilhas (mesmo do
+      // mesmo ponto) não são afetados
+      await Trofeu.destroy({
+        where: { usuario_nickname: nickname, trilha_nome }
+      });
     } else {
       // Apaga todos os troféus do usuário
       await Trofeu.destroy({
         where: { usuario_nickname: nickname }
       });
-      await Usuario.update(
-        { num_pontos_visitados: 0 },
-        { where: { nickname } }
-      );
     }
 
     return res.status(204).send();
