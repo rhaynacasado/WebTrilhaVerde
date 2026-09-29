@@ -35,7 +35,10 @@ router.post(
   [
     body('nome').isString().isLength({ min: 2 }),
     body('email').isEmail(),
-    body('senha').isString().isLength({ min: 6 }),
+    body('senha')
+      .isString().withMessage('A senha deve ser um texto.')
+      .bail()
+      .isLength({ min: 6 }).withMessage('A senha deve ter pelo menos 6 caracteres.'),
     body('vinculo').optional().isString(),
   ],
   async (req, res) => {

@@ -34,6 +34,11 @@
       alert("Preencha nome, e-mail e senha.");
       return;
     }
+    if (senha.length < 6) {
+      alert("A senha deve ter pelo menos 6 caracteres.");
+      senhaInput?.focus();
+      return;
+    }
 
     try {
       // monta multipart (importante para enviar a foto binária)
@@ -49,7 +54,8 @@
         body: fd, // NÃO defina Content-Type manualmente
       });
       const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(data.error || "Falha no cadastro");
+      const senhaError = data.errors?.find(error => error.path === 'senha' || error.param === 'senha');
+      if (!resp.ok) throw new Error(senhaError?.msg || data.error || "Falha no cadastro");
 
       const token = data.token;
       localStorage.setItem("token", token);

@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
+  const isForgotPage = document.body.dataset.page === "esqueci";
 
   // Debug: log a URL e params capturados
   console.log("Página carregada com URL:", window.location.href);
@@ -10,18 +11,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let resetToken = qs.get("token") || qs.get("resetToken") || qs.get("t") || hashParams.get("token") || hashParams.get("resetToken") || hashParams.get("t");
 
-  // Se não houver token na URL, tente recuperar do sessionStorage ou localStorage
-  if (!resetToken) {
+  if (isForgotPage) {
+    resetToken = null;
+    sessionStorage.removeItem("resetToken");
+    localStorage.removeItem("resetToken");
+  } else if (!resetToken) {
+    // Se não houver token na URL, tente recuperar do sessionStorage ou localStorage
     resetToken = sessionStorage.getItem("resetToken") || localStorage.getItem("resetToken");
     console.log("Token recuperado do sessionStorage/localStorage:", resetToken ? resetToken.substring(0, 8) + "..." : "nenhum");
-  } else {
+  }
+
+  if (resetToken && !isForgotPage) {
     // Se token vem da URL, armazene no sessionStorage e no localStorage para facilitar a volta
     sessionStorage.setItem("resetToken", resetToken);
     localStorage.setItem("resetToken", resetToken);
     console.log("Token armazenado no sessionStorage/localStorage");
   }
 
-  const isResetMode = Boolean(resetToken || qs.get("mode") === "reset" || hashParams.get("mode") === "reset");
+  const isResetMode = !isForgotPage && Boolean(resetToken || qs.get("mode") === "reset" || hashParams.get("mode") === "reset");
   console.log("Token capturado/recuperado:", resetToken ? resetToken.substring(0, 8) + "..." : "nenhum");
   console.log("Modo de reset identificado:", isResetMode);
 
