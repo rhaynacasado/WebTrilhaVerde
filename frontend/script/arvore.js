@@ -904,7 +904,7 @@
   // ================= FAB (ADICIONAR ÁRVORE) =================
   const fab = document.createElement('button');
   fab.className = 'fab-add';
-  fab.title = 'Adicionar árvore';
+  fab.title = isPredio ? 'Adicionar prédio' : 'Adicionar árvore';
   fab.appendChild(makePlusSvg());
   document.body.appendChild(fab);
 
