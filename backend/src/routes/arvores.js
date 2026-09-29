@@ -82,7 +82,7 @@ router.get('/', async (req, res) => {
         CASE WHEN p.tipo = 'arvore' THEN p.a_familia END AS familia,
         CASE WHEN p.tipo = 'arvore' THEN p.a_origem END AS origem,
         CASE WHEN p.tipo = 'arvore' THEN p.a_tipo_origem END AS tipo_origem,
-        p.p_descricao, p.p_construcao,
+        p.p_desccricao, p.p_construcao,
         p.latitude, p.longitude
       FROM ponto_interesse p
       LEFT JOIN ponto_interesse_trilha at ON at.ponto_interesse_codigo = p.codigo

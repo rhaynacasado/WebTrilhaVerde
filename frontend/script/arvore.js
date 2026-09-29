@@ -408,63 +408,212 @@
   function makeImageRow(img, trilha, codigo, isNew=false) {
     const wrap = document.createElement('div');
     wrap.className = 'image-row';
-    wrap.style.display = 'flex'; wrap.style.alignItems = 'center'; wrap.style.gap='8px'; wrap.style.marginBottom='6px';
 
-    const a = document.createElement('a');
-    a.href = img.url || '#';
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.textContent = img.url || '';
-    a.style.flex = '1';
-    a.style.wordBreak = 'break-all';
+    const setInlineMessage = (msgEl, text, kind='error') => {
+      msgEl.textContent = text || '';
+      msgEl.className = `image-form-message ${kind}`;
+    };
 
-    const meta = document.createElement('div');
-    meta.style.fontSize='12px'; meta.style.color='#444';
-    meta.innerHTML = `${img.legenda ? `<div>${escapeHtml(img.legenda)}</div>` : ''}${img.fonte ? `<div style="font-style:italic">${escapeHtml(img.fonte)}</div>` : ''}`;
+    function renderView() {
+      wrap.innerHTML = '';
 
-    const btnEdit = document.createElement('button'); btnEdit.type='button'; btnEdit.className='btn'; btnEdit.textContent='Editar';
-    const btnDel  = document.createElement('button'); btnDel.type='button';  btnDel.className='btn danger'; btnDel.textContent='Apagar';
+      const thumb = document.createElement('a');
+      thumb.className = 'image-thumb';
+      thumb.href = img.url || '#';
+      thumb.target = '_blank';
+      thumb.rel = 'noopener noreferrer';
+      thumb.setAttribute('aria-label', 'Abrir imagem em nova aba');
 
-    wrap.appendChild(a);
-    wrap.appendChild(meta);
-    wrap.appendChild(btnEdit);
-    wrap.appendChild(btnDel);
+      const thumbImg = document.createElement('img');
+      thumbImg.src = img.url || '';
+      thumbImg.alt = img.legenda || 'Imagem';
+      thumbImg.loading = 'lazy';
+      thumb.appendChild(thumbImg);
 
-    btnEdit.addEventListener('click', async () => {
-      try {
-        const newUrl = window.prompt('URL:', img.url || '') || '';
-        if (!newUrl) return;
-        const newLegenda = window.prompt('Legenda:', img.legenda || '') || '';
-        const newFonte = window.prompt('Fonte:', img.fonte || '') || '';
-        if (isNew) {
-          // update local newImages entry
-          img.url = newUrl; img.legenda = newLegenda; img.fonte = newFonte; renderAddImagesList();
+      const body = document.createElement('div');
+      body.className = 'image-body';
+
+      const link = document.createElement('a');
+      link.className = 'image-link';
+      link.href = img.url || '#';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = img.url || 'URL indisponível';
+
+      const meta = document.createElement('div');
+      meta.className = 'image-meta';
+      if (img.legenda) {
+        const caption = document.createElement('div');
+        caption.textContent = img.legenda;
+        meta.appendChild(caption);
+      }
+      if (img.fonte) {
+        const source = document.createElement('div');
+        source.append('Fonte: ');
+        let sourceUrl;
+        try {
+          const parsedUrl = new URL(img.fonte);
+          if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') sourceUrl = parsedUrl.href;
+        } catch {}
+        if (sourceUrl) {
+          const sourceLink = document.createElement('a');
+          sourceLink.href = sourceUrl;
+          sourceLink.target = '_blank';
+          sourceLink.rel = 'noopener noreferrer';
+          sourceLink.textContent = img.fonte;
+          source.appendChild(sourceLink);
+        } else {
+          source.append(document.createTextNode(img.fonte));
+        }
+        meta.appendChild(source);
+      }
+      if (!img.legenda && !img.fonte) {
+        const empty = document.createElement('div');
+        empty.textContent = 'Sem informações adicionais';
+        meta.appendChild(empty);
+      }
+
+      body.appendChild(link);
+      body.appendChild(meta);
+
+      const actions = document.createElement('div');
+      actions.className = 'image-actions';
+
+      const btnEdit = document.createElement('button');
+      btnEdit.type = 'button';
+      btnEdit.className = 'btn';
+      btnEdit.textContent = 'Editar';
+
+      const btnDel = document.createElement('button');
+      btnDel.type = 'button';
+      btnDel.className = 'btn danger';
+      btnDel.textContent = 'Apagar';
+
+      actions.appendChild(btnEdit);
+      actions.appendChild(btnDel);
+      wrap.appendChild(thumb);
+      wrap.appendChild(body);
+      wrap.appendChild(actions);
+
+      btnEdit.addEventListener('click', () => renderEditor());
+
+      btnDel.addEventListener('click', async () => {
+        if (!confirm('Confirma exclusão desta imagem?')) return;
+        try {
+          if (isNew) {
+            newImages = newImages.filter(n => n !== img);
+            renderAddImagesList();
+            return;
+          }
+          const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, { method: 'DELETE' });
+          if (!resp.ok && resp.status !== 204) throw new Error('Falha ao excluir');
+          renderEditImages(trilha, codigo);
+        } catch (err) { console.error(err); alert(err.message || 'Erro'); }
+      });
+    }
+
+    function renderEditor() {
+      wrap.innerHTML = '';
+
+      const form = document.createElement('div');
+      form.className = 'image-editor';
+
+      const urlInput = document.createElement('input');
+      urlInput.type = 'url';
+      urlInput.value = img.url || '';
+      urlInput.placeholder = 'URL da imagem';
+      urlInput.className = 'image-editor-input';
+
+      const legendaInput = document.createElement('input');
+      legendaInput.type = 'text';
+      legendaInput.value = img.legenda || '';
+      legendaInput.placeholder = 'Legenda';
+      legendaInput.className = 'image-editor-input';
+
+      const fonteInput = document.createElement('input');
+      fonteInput.type = 'text';
+      fonteInput.value = img.fonte || '';
+      fonteInput.placeholder = 'Fonte';
+      fonteInput.className = 'image-editor-input';
+
+      const controls = document.createElement('div');
+      controls.className = 'image-editor-actions';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'btn primary';
+      saveBtn.textContent = 'Salvar';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'btn';
+      cancelBtn.textContent = 'Cancelar';
+
+      const msg = document.createElement('div');
+      msg.className = 'image-form-message';
+
+      controls.appendChild(saveBtn);
+      controls.appendChild(cancelBtn);
+
+      form.appendChild(urlInput);
+      form.appendChild(legendaInput);
+      form.appendChild(fonteInput);
+      form.appendChild(controls);
+      form.appendChild(msg);
+      wrap.appendChild(form);
+
+      const persist = async () => {
+        const newUrl = String(urlInput.value || '').trim();
+        const newLegenda = String(legendaInput.value || '').trim();
+        const newFonte = String(fonteInput.value || '').trim();
+
+        if (!newUrl) {
+          urlInput.focus();
+          urlInput.setCustomValidity('Informe a URL da imagem');
+          urlInput.reportValidity();
+          setInlineMessage(msg, 'Informe a URL da imagem', 'error');
           return;
         }
-        const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: newUrl, legenda: newLegenda, fonte: newFonte })
-        });
-        if (!resp.ok) throw new Error('Falha ao atualizar');
-        renderEditImages(trilha, codigo);
-      } catch (err) { console.error(err); alert(err.message || 'Erro'); }
-    });
+        urlInput.setCustomValidity('');
 
-    btnDel.addEventListener('click', async () => {
-      if (!confirm('Confirma exclusão desta imagem?')) return;
-      try {
-        if (isNew) {
-          // remove local
-          newImages = newImages.filter(n => n !== img);
-          renderAddImagesList();
-          return;
+        try {
+          if (isNew) {
+            img.url = newUrl;
+            img.legenda = newLegenda;
+            img.fonte = newFonte;
+            renderAddImagesList();
+            return;
+          }
+
+          const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: newUrl, legenda: newLegenda, fonte: newFonte })
+          });
+
+          if (!resp.ok) {
+            const payload = await resp.json().catch(() => ({}));
+            throw new Error(payload.error || 'Falha ao atualizar imagem');
+          }
+
+          img.url = newUrl;
+          img.legenda = newLegenda;
+          img.fonte = newFonte;
+          renderEditImages(trilha, codigo);
+        } catch (err) {
+          console.error(err);
+          setInlineMessage(msg, err.message || 'Erro ao salvar imagem', 'error');
         }
-        const resp = await authFetch(`/api/${resourcePath}/${encodeURIComponent(trilha)}/${encodeURIComponent(String(codigo))}/images/${encodeURIComponent(String(img.id))}`, { method: 'DELETE' });
-        if (!resp.ok && resp.status !== 204) throw new Error('Falha ao excluir');
-        renderEditImages(trilha, codigo);
-      } catch (err) { console.error(err); alert(err.message || 'Erro'); }
-    });
+      };
 
+      saveBtn.addEventListener('click', persist);
+      cancelBtn.addEventListener('click', renderView);
+      urlInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); persist(); } });
+      legendaInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); persist(); } });
+      fonteInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); persist(); } });
+    }
+
+    renderView();
     return wrap;
   }
 
