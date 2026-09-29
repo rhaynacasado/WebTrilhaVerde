@@ -34,6 +34,24 @@
     return Number.isFinite(n) ? n : null;
   };
 
+  function updateAddModalLabels() {
+    const title = document.getElementById('arvoreAddTitle');
+    const nomeInput = document.getElementById('addNome');
+    const nomeLabel = document.querySelector('label[for="addNome"]');
+
+    if (title) {
+      title.textContent = isPredio ? 'Adicionar prédio' : 'Adicionar árvore';
+    }
+
+    if (nomeInput) {
+      nomeInput.placeholder = isPredio ? 'Nome do prédio' : 'Nome da árvore';
+    }
+
+    if (nomeLabel) {
+      nomeLabel.textContent = isPredio ? 'Nome do prédio *' : 'Nome *';
+    }
+  }
+
   // ===== Google Maps helper =====
   const DEFAULT_CENTER = { lat: -22.7105478704092, lng: -47.632867682507566 };
   let googleMapsLoaded = false;
@@ -892,6 +910,7 @@
 
   fab.addEventListener('click', async () => {
     await ensureModal();
+    updateAddModalLabels();
     await loadTrilhas();
 
     const modal = document.getElementById('arvoreAddModal');

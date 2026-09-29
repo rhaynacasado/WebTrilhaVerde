@@ -230,9 +230,14 @@ const getFrontendBaseUrl = (req) => {
   return configured;
 };
 
+const normalizeFrontendBaseUrl = (value) => {
+  if (!value) return "";
+  return String(value).trim().replace(/\/$/, "").replace(/\/frontend$/, "");
+};
+
 const buildResetUrl = (req, token) => {
-  const configured = String(process.env.FRONTEND_URL || "").trim();
-  const baseUrl = configured ? configured.replace(/\/$/, "") : getFrontendBaseUrl(req);
+  const configured = normalizeFrontendBaseUrl(process.env.FRONTEND_URL || "");
+  const baseUrl = configured || normalizeFrontendBaseUrl(getFrontendBaseUrl(req));
   return `${baseUrl}/pages/redefinicao.html?token=${encodeURIComponent(token)}&mode=reset`;
 };
 
