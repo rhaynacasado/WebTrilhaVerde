@@ -143,6 +143,9 @@
 .modal.open{ 
   display: block; 
 }
+body:has(.modal.open) .fab-add{
+  display:none;
+}
 .modal__backdrop{ 
   position: absolute; 
   inset: 0; 
