@@ -56,16 +56,18 @@ router.get('/summary', async (req, res) => {
     // últimas 5 atividades, já “formatadas”
         const [rows] = await sequelize.query(`
           SELECT 'arvore' AS tipo, at.trilha_nome AS trilha_nome, a.ponto_interesse_codigo, NULL::int AS pergunta_id,
-            COALESCE(arv.nome,'') AS alvo_nome, arv.tipo AS ponto_tipo, a.admin_email, a.data_alteracao, a.acao
+              COALESCE(arv.nome,'') AS alvo_nome, arv.tipo AS ponto_tipo, a.admin_email, ad.nome AS admin_nome, a.data_alteracao, a.acao
           FROM alteracao_ponto_interesse a
           LEFT JOIN ponto_interesse_trilha at ON at.ponto_interesse_codigo = a.ponto_interesse_codigo
           LEFT JOIN ponto_interesse arv ON arv.codigo = at.ponto_interesse_codigo
+            LEFT JOIN administrador ad ON ad.email = a.admin_email
           UNION ALL
           SELECT 'pergunta' AS tipo, at2.trilha_nome AS trilha_nome, p.ponto_interesse_codigo, p.pergunta_id,
-            COALESCE(arv2.nome,'') AS alvo_nome, arv2.tipo AS ponto_tipo, p.admin_email, p.data_alteracao, p.acao
+              COALESCE(arv2.nome,'') AS alvo_nome, arv2.tipo AS ponto_tipo, p.admin_email, ad.nome AS admin_nome, p.data_alteracao, p.acao
           FROM alteracao_pergunta p
           LEFT JOIN ponto_interesse_trilha at2 ON at2.ponto_interesse_codigo = p.ponto_interesse_codigo
           LEFT JOIN ponto_interesse arv2 ON arv2.codigo = at2.ponto_interesse_codigo
+            LEFT JOIN administrador ad ON ad.email = p.admin_email
           ORDER BY data_alteracao DESC
           LIMIT 5
         `);
@@ -73,6 +75,7 @@ router.get('/summary', async (req, res) => {
     const activities = rows.map(r => ({
       quando: r.data_alteracao,
       quemEmail: r.admin_email,
+      quemNome: r.admin_nome,
       atividade: formatActivity(r),
     }));
 

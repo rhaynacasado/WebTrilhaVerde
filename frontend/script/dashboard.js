@@ -49,7 +49,7 @@
           badge.textContent = '🙂';
           const whoText = document.createElement('div');
           const strong = document.createElement('strong');
-          strong.textContent = a.quemEmail?.split('@')[0] || '—';
+          strong.textContent = a.quemNome || '—';
           const br = document.createElement('br');
           const spanAcao = document.createElement('span');
           spanAcao.className = 'acao';
