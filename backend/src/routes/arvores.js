@@ -52,34 +52,45 @@ function imageIdExpression(idColumn) {
 router.get('/', async (req, res) => {
   try {
     const { trilha, ativas } = req.query;
-    const tipo = req.query.tipo || resourceType(req);
-    const replacements = [];
-    let whereSql = '';
-    if (tipo !== 'all') whereSql += ` AND p.tipo = $${replacements.push(tipo)}`;
-    if (trilha) { whereSql += ' AND at.trilha_nome = $' + (replacements.push(trilha) ); }
-    if (ativas === 'true') { whereSql += ' AND p.ativa = true'; }
+    const tipo = String(req.query.tipo || resourceType(req) || 'arvore').trim();
+    const binds = [];
+    const clauses = [];
+
+    if (tipo && tipo !== 'all') {
+      binds.push(tipo);
+      clauses.push(`p.tipo = $${binds.length}`);
+    }
+
+    if (trilha && String(trilha).trim()) {
+      binds.push(String(trilha).trim());
+      clauses.push(`at.trilha_nome = $${binds.length}`);
+    }
+
+    if (ativas === 'true') {
+      clauses.push('p.ativa = true');
+    }
 
     const orderSql = trilha
       ? 'ORDER BY at.ordem ASC NULLS LAST, p.nome ASC'
       : 'ORDER BY p.nome ASC, at.trilha_nome ASC';
 
     const sql = `
-            SELECT at.trilha_nome, at.ordem, p.codigo, p.nome, p.tipo, p.qrcode_url,
-              p.ativa,
-              (SELECT COUNT(*)::int FROM pergunta q WHERE q.ponto_interesse_codigo = p.codigo) AS quantidade_perguntas,
-              CASE WHEN p.tipo = 'arvore' THEN p.a_especie END AS especie,
-              CASE WHEN p.tipo = 'arvore' THEN p.a_familia END AS familia,
-              CASE WHEN p.tipo = 'arvore' THEN p.a_origem END AS origem,
-              CASE WHEN p.tipo = 'arvore' THEN p.a_tipo_origem END AS tipo_origem,
-              p.latitude, p.longitude
-            FROM ponto_interesse p
-            LEFT JOIN ponto_interesse_trilha at ON at.ponto_interesse_codigo = p.codigo
-      WHERE 1=1 ${whereSql}
+      SELECT at.trilha_nome, at.ordem, p.codigo, p.nome, p.tipo, p.qrcode_url,
+        p.ativa,
+        (SELECT COUNT(*)::int FROM pergunta q WHERE q.ponto_interesse_codigo = p.codigo) AS quantidade_perguntas,
+        CASE WHEN p.tipo = 'arvore' THEN p.a_especie END AS especie,
+        CASE WHEN p.tipo = 'arvore' THEN p.a_familia END AS familia,
+        CASE WHEN p.tipo = 'arvore' THEN p.a_origem END AS origem,
+        CASE WHEN p.tipo = 'arvore' THEN p.a_tipo_origem END AS tipo_origem,
+        p.latitude, p.longitude
+      FROM ponto_interesse p
+      LEFT JOIN ponto_interesse_trilha at ON at.ponto_interesse_codigo = p.codigo
+      WHERE 1 = 1${clauses.length ? ` AND ${clauses.join(' AND ')}` : ''}
       ${orderSql}`;
 
-    const [trees] = await sequelize.query(sql, { bind: replacements.length ? replacements : undefined });
+    const [trees] = await sequelize.query(sql, { bind: binds.length ? binds : undefined });
 
-    const out = trees.map(t => ({
+    const out = (Array.isArray(trees) ? trees : []).map(t => ({
       ...t,
       quantidade_perguntas: Number(t.quantidade_perguntas) || 0,
       tipo: t.tipo
