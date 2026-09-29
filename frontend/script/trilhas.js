@@ -181,7 +181,7 @@
         el.appendChild(actions);
 
         el.onclick = () => {
-          window.location.href = `arvores?trilha=${encodeURIComponent(r.nome)}`;
+          window.location.href = `arvores.html?trilha=${encodeURIComponent(r.nome)}`;
         };
 
         box.appendChild(el);
