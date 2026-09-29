@@ -58,11 +58,11 @@ router.post('/:nickname/avatar', upload.single('avatar'), async (req, res) => {
   try {
     const { nickname } = req.params;
     const { foto_mime } = req.body;
-    const foto_bytes = req.file.buffer;
 
     if (!req.file || !foto_mime) {
       return res.status(400).json({ error: 'Arquivo e mime type são obrigatórios.' });
     }
+    const foto_bytes = req.file.buffer;
 
     const usuario = await Usuario.findByPk(nickname);
     if (!usuario) {
