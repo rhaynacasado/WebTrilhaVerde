@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
-  const isForgotPage = document.body.dataset.page === "esqueci";
+  const isForgotPage = document.body.dataset.page === "esqueci" || Boolean(document.getElementById("emailReset"));
 
   // Debug: log a URL e params capturados
   console.log("Página carregada com URL:", window.location.href);
