@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastro — Trilha Verde</title>
+  <title>Cadastro de perfil — Trilha Verde</title>
   <link rel="stylesheet" href="../style/acesso.css">
   <link rel="stylesheet" href="../style/cadastro.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
@@ -15,7 +15,8 @@
     <section class="right">
       <h1 class="logo">Trilha Verde</h1>
       <div class="form-box">
-        <h2>Crie uma nova conta</h2>
+        <h2>Complete seu perfil</h2>
+        <p id="invitationMessage" role="status">Validando convite...</p>
         <form class="formCadastro">
           <div class="form-content">
             <div class="profile-pic">
@@ -26,27 +27,30 @@
               <input type="file" id="fileInput" accept="image/*" style="display: none;">
             </div>
 
-            <label for="nome">Nome *</label>
-            <input type="text" id="nome" placeholder="Nome completo">
+            <label for="nome">Nome completo *</label>
+            <input type="text" id="nome" placeholder="Seu nome completo" required minlength="2" maxlength="255">
 
-            <label for="signupEmail">E-mail *</label>
-            <input type="email" id="signupEmail" placeholder="Seu e-mail">
+            <label for="signupEmail">E-mail do convite</label>
+            <input type="email" id="signupEmail" readonly>
 
-            <label for="vinculo">Vínculo *</label>
+            <label for="vinculo">Vínculo</label>
             <select id="vinculo" name="vinculo">
+              <option value="">Selecione</option>
               <option value="Aluno USP">Aluno USP</option>
               <option value="Professor USP">Professor USP</option>
               <option value="Funcionário USP">Funcionário USP</option>
               <option value="Externo">Externo</option>
             </select> 
 
-            <label for="signupSenha">Senha *</label>
-            <input type="password" id="signupSenha" placeholder="********">
+            <label for="signupSenha">Senha (mínimo 6 caracteres) *</label>
+            <input type="password" id="signupSenha" placeholder="********" required minlength="6" autocomplete="new-password">
 
-            <button type="submit" class="btn">Criar conta</button>
-            <p class="error" id="signupError">Cadastro inválido</p>
+            <label for="confirmarSenha">Confirmar senha *</label>
+            <input type="password" id="confirmarSenha" placeholder="********" required minlength="6" autocomplete="new-password">
 
-            <div class="divider"><span>ou</span></div>
+            <button type="submit" class="btn">Cadastrar perfil</button>
+            <p class="error" id="signupError" role="alert"></p>
+
             <a class="toggleForm" href="../index.html">Entre na sua conta</a>
           </div>
         </form>

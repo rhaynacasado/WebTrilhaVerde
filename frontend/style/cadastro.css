@@ -5,6 +5,14 @@
   height: 100%;
 }
 
+.formCadastro[hidden] {
+  display: none;
+}
+
+.invitation-error {
+  color: #a12622;
+}
+
 .right {
   flex: 1;
   padding-top: 30px;

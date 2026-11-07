@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administradores — Trilha Verde</title>
+  <link rel="stylesheet" href="../style/admin.css">
+  <link rel="stylesheet" href="../style/admin-management.css">
+</head>
+<body>
+  <p id="accessError" class="access-error" role="alert" hidden></p>
+  <div class="app-shell" hidden>
+    <div id="sidebar"></div>
+    <div id="topbar"></div>
+
+    <main class="content">
+      <section class="page visible">
+        <header class="page-header">
+          <h2>Gerenciar administradores</h2>
+          <p>Convide administradores e controle o nível de acesso de cada conta.</p>
+        </header>
+
+        <section class="admin-invite card" aria-labelledby="inviteTitle">
+          <h3 id="inviteTitle">Convidar administrador</h3>
+          <form id="adminCreateForm">
+            <label>
+              E-mail
+              <input type="email" name="email" autocomplete="email" required>
+            </label>
+            <label>
+              Tipo
+              <select name="tipo" required>
+                <option value="padrao">Padrão</option>
+                <option value="superadmin">Superadmin</option>
+              </select>
+            </label>
+            <button type="submit" class="primary">Enviar convite</button>
+          </form>
+          <p id="adminMessage" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="admin-list card" aria-labelledby="adminListTitle">
+          <h3 id="adminListTitle">Administradores cadastrados</h3>
+          <div class="admin-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">E-mail</th>
+                  <th scope="col">Perfil</th>
+                  <th scope="col">Tipo</th>
+                  <th scope="col">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="adminRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="../script/env.js"></script>
+  <script src="../script/admin.js"></script>
+  <script src="../script/admin-management.js"></script>
+</body>
+</html>

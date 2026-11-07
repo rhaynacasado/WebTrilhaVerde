@@ -23,6 +23,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 /* ========= Rotas ========= */
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/admins', require('./routes/admins'));
 app.use('/api/arvores', require('./routes/arvores'));
 app.use('/api/predios', require('./routes/arvores'));
 app.use('/api/pontos-interesse', require('./routes/pontosInteresse'));

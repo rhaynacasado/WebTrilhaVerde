@@ -39,6 +39,7 @@ async function ensureAuth() {
       name: me.nome || me.name || "Administrador",
       email: me.email,
       vinculo: me.vinculo ?? "externo",
+      tipo: me.tipo,
       picurl: getStoredAdmin()?.picurl || DEFAULT_AVATAR,
     });
   } catch {
@@ -134,6 +135,11 @@ async function loadPartials() {
       link.classList.add("active");
     }
   });
+
+  const adminManagementLink = document.getElementById("adminManagementLink");
+  if (adminManagementLink) {
+    adminManagementLink.hidden = getStoredAdmin()?.tipo !== "superadmin";
+  }
 }
 
 /* EXEMPLO: usando authFetch nas suas APIs protegidas

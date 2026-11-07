@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     email:     { type: DataTypes.STRING, primaryKey: true, allowNull: false, validate:{ isEmail:true } },
     senha:     { type: DataTypes.STRING, allowNull: false },
     nome:      { type: DataTypes.STRING, allowNull: false },
+    tipo:      { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'padrao', validate: { isIn: [['superadmin', 'padrao']] } },
     vinculo:   { type: DataTypes.STRING },
     foto:      { type: DataTypes.BLOB('long'), allowNull: true }, // BYTEA no PG
     foto_mime: { type: DataTypes.TEXT,        allowNull: true },

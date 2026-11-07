@@ -7,6 +7,7 @@ const Arvore             = require('./Arvore')(sequelize, DataTypes);
 const Imagem             = require('./Imagem')(sequelize, DataTypes);
 const Pergunta           = require('./Pergunta')(sequelize, DataTypes);
 const Administrador      = require('./Administrador')(sequelize, DataTypes);
+const AdministradorConvite = require('./AdministradorConvite')(sequelize, DataTypes);
 const AlteracaoArvore    = require('./AlteracaoArvore')(sequelize, DataTypes);
 const AlteracaoPergunta  = require('./AlteracaoPergunta')(sequelize, DataTypes);
 const Usuario            = require('./Usuario')(sequelize, DataTypes);
@@ -95,6 +96,7 @@ module.exports = {
   ArvoreTrilha,
   Pergunta,
   Administrador,
+  AdministradorConvite,
   AlteracaoArvore,
   AlteracaoPergunta,
   Usuario,

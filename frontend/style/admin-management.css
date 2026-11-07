@@ -1,0 +1,136 @@
+.app-shell[hidden] {
+  display: none;
+}
+
+.admin-invite,
+.admin-list {
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid #e8e4dc;
+  border-radius: 14px;
+  background: var(--branco);
+  box-shadow: var(--shadow);
+}
+
+.admin-invite h3,
+.admin-list h3 {
+  margin-bottom: 16px;
+}
+
+#adminCreateForm {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(160px, 220px) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+#adminCreateForm label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+#adminCreateForm input,
+#adminCreateForm select,
+.admin-type-select {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #c9c4b8;
+  border-radius: 8px;
+  background: #fff;
+}
+
+#adminCreateForm button,
+.admin-remove {
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--verde-floresta);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#adminCreateForm button:disabled,
+.admin-type-select:disabled,
+.admin-remove:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+
+#adminMessage {
+  min-height: 1.5em;
+  margin-top: 12px;
+}
+
+#adminMessage.is-error,
+.access-error {
+  color: #a12622;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-list table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-list th,
+.admin-list td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e8e4dc;
+  vertical-align: middle;
+}
+
+.admin-list th {
+  color: var(--verde-floresta);
+}
+
+.admin-remove {
+  background: #8f3d3d;
+}
+
+.admin-resend {
+  min-height: 42px;
+  margin-right: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--verde-floresta);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--verde-floresta);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-resend:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+
+.admin-remove:hover {
+  filter: brightness(1.08);
+}
+
+.admin-status {
+  color: var(--cinza);
+}
+
+.access-error {
+  margin: 24px;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  #adminCreateForm {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-list th,
+  .admin-list td {
+    padding: 10px 8px;
+  }
+}

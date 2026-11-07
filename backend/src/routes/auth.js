@@ -7,7 +7,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const { Administrador, sequelize } = require('../models');
+const { Op } = require('sequelize');
+const { Administrador, AdministradorConvite, sequelize } = require('../models');
 const auth = require('../middlewares/auth');
 
 const router = express.Router();
@@ -28,43 +29,87 @@ const upload = multer({
   fileFilter: (_req, file, cb) => cb(/image\/(png|jpe?g|gif|webp)/i.test(file.mimetype) ? null : new Error('Arquivo inválido'), /image\/(png|jpe?g|gif|webp)/i.test(file.mimetype))
 });
 
-/** ---------- SIGNUP (multipart) ---------- */
+/** ---------- CONVITE / CADASTRO DO PERFIL ---------- */
+router.get('/invitation', async (req, res) => {
+  const token = String(req.query.token || '');
+  if (!/^[a-f0-9]{64}$/i.test(token)) {
+    return res.status(400).json({ error: 'Convite inválido ou expirado.' });
+  }
+
+  try {
+    const invitation = await AdministradorConvite.findOne({
+      where: {
+        token_hash: crypto.createHash('sha256').update(token).digest('hex'),
+        expires_at: { [Op.gt]: new Date() },
+      },
+    });
+    if (!invitation) return res.status(400).json({ error: 'Convite inválido ou expirado.' });
+
+    const admin = await Administrador.findByPk(invitation.email, { attributes: ['email', 'tipo'] });
+    if (!admin) return res.status(400).json({ error: 'Convite inválido ou expirado.' });
+    return res.json({ email: admin.email, tipo: admin.tipo });
+  } catch (error) {
+    console.error('Falha ao validar convite de administrador:', error);
+    return res.status(500).json({ error: 'Não foi possível validar o convite.' });
+  }
+});
+
 router.post(
-  '/signup',
-  upload.single('avatar'), // campo do form: avatar (opcional)
+  '/complete-invitation',
+  upload.single('avatar'),
   [
-    body('nome').isString().isLength({ min: 2 }),
-    body('email').isEmail(),
-    body('senha')
-      .isString().withMessage('A senha deve ser um texto.')
-      .bail()
-      .isLength({ min: 6 }).withMessage('A senha deve ter pelo menos 6 caracteres.'),
+    body('token').isString().matches(/^[a-f0-9]{64}$/i),
+    body('nome').isString().trim().isLength({ min: 2, max: 255 }),
+    body('senha').isString().isLength({ min: 6 }),
     body('vinculo').optional().isString(),
   ],
   async (req, res) => {
     if (bad(req, res)) return;
-    const email = normEmail(req.body.email);
-    const { nome, senha } = req.body;
+    const tokenHash = crypto.createHash('sha256').update(req.body.token).digest('hex');
     const vinculo = typeof req.body.vinculo === 'string' ? req.body.vinculo.trim() : null;
 
     try {
-      const exists = await Administrador.findByPk(email);
-      if (exists) return res.status(409).json({ error: 'E-mail já cadastrado' });
+      const adminData = await sequelize.transaction(async transaction => {
+        const invitation = await AdministradorConvite.findOne({
+          where: {
+            token_hash: tokenHash,
+            expires_at: { [Op.gt]: new Date() },
+          },
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        });
+        if (!invitation) {
+          const error = new Error('Convite inválido ou expirado.');
+          error.status = 400;
+          throw error;
+        }
 
-      const admin = await Administrador.create({
-        email,
-        senha,          // hooks do modelo fazem o hash
-        nome: nome.trim(),
-        vinculo,
-        foto: req.file?.buffer || null,
-        foto_mime: req.file?.mimetype || null,
+        const admin = await Administrador.findByPk(invitation.email, { transaction });
+        if (!admin) {
+          const error = new Error('Administrador não encontrado.');
+          error.status = 404;
+          throw error;
+        }
+
+        admin.nome = req.body.nome.trim();
+        admin.senha = req.body.senha;
+        admin.vinculo = vinculo;
+        admin.foto = req.file?.buffer || null;
+        admin.foto_mime = req.file?.mimetype || null;
+        await admin.save({ transaction });
+        await invitation.destroy({ transaction });
+
+        return { email: admin.email, nome: admin.nome, vinculo: admin.vinculo, tipo: admin.tipo };
       });
 
-      const payload = { email: admin.email, nome: admin.nome, vinculo: admin.vinculo };
-      return res.status(201).json({ token: sign(payload), admin: payload });
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: 'Erro interno 8' });
+      return res.status(200).json({
+        token: sign(adminData),
+        admin: adminData,
+      });
+    } catch (error) {
+      if (error.status) return res.status(error.status).json({ error: error.message });
+      console.error('Falha ao concluir cadastro de administrador:', error);
+      return res.status(500).json({ error: 'Não foi possível cadastrar o perfil.' });
     }
   }
 );
@@ -81,7 +126,7 @@ router.post(
       if (!admin || !(await admin.checkPassword(senha)))
         return res.status(401).json({ error: 'Credenciais inválidas' });
 
-      const payload = { email: admin.email, nome: admin.nome, vinculo: admin.vinculo };
+      const payload = { email: admin.email, nome: admin.nome, vinculo: admin.vinculo, tipo: admin.tipo };
       res.json({ token: sign(payload), admin: payload });
     } catch (e) {
       console.error(e);
@@ -94,10 +139,10 @@ router.post(
 router.get('/me', auth, async (req, res) => {
   try {
     const a = await Administrador.findByPk(req.user.email, {
-      attributes: ['email', 'nome', 'vinculo'] // não traz BLOB sem necessidade
+      attributes: ['email', 'nome', 'vinculo', 'tipo'] // não traz BLOB sem necessidade
     });
     if (!a) return res.status(404).json({ error: 'Administrador não encontrado' });
-    res.json({ email: a.email, nome: a.nome, vinculo: a.vinculo });
+    res.json({ email: a.email, nome: a.nome, vinculo: a.vinculo, tipo: a.tipo });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Erro interno 3' });
@@ -141,6 +186,7 @@ router.put(
             email: novoEmail,
             senha: a.senha,
             nome: a.nome,
+            tipo: a.tipo,
             vinculo: a.vinculo,
             foto: a.foto,
             foto_mime: a.foto_mime,
@@ -157,7 +203,7 @@ router.put(
           await a.destroy({ transaction });
         }
 
-        atualizado = { email: novoEmail, nome: a.nome, vinculo: a.vinculo };
+        atualizado = { email: novoEmail, nome: a.nome, vinculo: a.vinculo, tipo: a.tipo };
       });
 
       return res.json({
@@ -165,7 +211,8 @@ router.put(
         email: atualizado.email,
         nome: atualizado.nome,
         vinculo: atualizado.vinculo,
-        token: sign({ email: atualizado.email, nome: atualizado.nome, vinculo: atualizado.vinculo }),
+        tipo: atualizado.tipo,
+        token: sign({ email: atualizado.email, nome: atualizado.nome, vinculo: atualizado.vinculo, tipo: atualizado.tipo }),
       });
     } catch (e) {
       if (e.status === 409) return res.status(409).json({ error: e.message });

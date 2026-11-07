@@ -1,101 +1,92 @@
-// frontend/script/cadastro.js
 (function initCadastro() {
   const API_BASE = window.__API_BASE__ || "http://200.144.255.186:3001";
   const form = document.querySelector(".formCadastro");
   if (!form) return;
 
-  const nomeInput    = document.getElementById("nome")          || document.getElementById("inputNome");
-  const emailInput   = document.getElementById("signupEmail")   || document.getElementById("inputEmail");
-  const senhaInput   = document.getElementById("signupSenha")   || document.getElementById("passwordSenha");
-  const vinculoInput = document.querySelector('#vinculo, #signupVinculo, #inputVinculo'); // << inclui #vinculo
-  const fileInput    = document.getElementById("fileInput");
+  const token = new URLSearchParams(window.location.search).get("token");
+  const emailInput = document.getElementById("signupEmail");
+  const message = document.getElementById("invitationMessage");
+  const errorBox = document.getElementById("signupError");
+  const senhaInput = document.getElementById("signupSenha");
+  const confirmInput = document.getElementById("confirmarSenha");
   const profileImage = document.getElementById("profileImage");
+  const fileInput = document.getElementById("fileInput");
+  form.hidden = true;
 
-  // preview
-  if (fileInput && profileImage) {
-    fileInput.addEventListener("change", (e) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const r = new FileReader();
-      r.onload = (ev) => (profileImage.src = ev.target.result);
-      r.readAsDataURL(f);
-    });
+  function showMessage(text, isError = false) {
+    message.textContent = text;
+    message.classList.toggle("invitation-error", isError);
   }
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const nome    = (nomeInput?.value || "").trim();
-    const email   = (emailInput?.value || "").trim();
-    const senha   = (senhaInput?.value || "").trim();
-    const vinculo = (vinculoInput?.value || "").trim();
-
-    if (!nome || !email || !senha) {
-      alert("Preencha nome, e-mail e senha.");
-      return;
-    }
-    if (senha.length < 6) {
-      alert("A senha deve ter pelo menos 6 caracteres.");
-      senhaInput?.focus();
+  async function loadInvitation() {
+    if (!token) {
+      showMessage("Este convite não é válido. Solicite um novo convite a um superadministrador.", true);
       return;
     }
 
     try {
-      // monta multipart (importante para enviar a foto binária)
-      const fd = new FormData();
-      fd.append("nome", nome);
-      fd.append("email", email);
-      fd.append("senha", senha);
-      fd.append("vinculo", vinculo);
-      if (fileInput?.files?.[0]) fd.append("avatar", fileInput.files[0]);
+      const response = await fetch(`${API_BASE}/api/auth/invitation?token=${encodeURIComponent(token)}`);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Convite inválido ou expirado.");
+      emailInput.value = data.email;
+      form.hidden = false;
+      showMessage("Informe os dados para concluir o cadastro do seu perfil.");
+    } catch (error) {
+      showMessage(error.message || "Não foi possível validar o convite.", true);
+    }
+  }
 
-      const resp = await fetch(`${API_BASE}/api/auth/signup`, {
+  fileInput?.addEventListener("change", () => {
+    const file = fileInput.files?.[0];
+    if (!file || !profileImage) return;
+    const reader = new FileReader();
+    reader.onload = event => { profileImage.src = event.target.result; };
+    reader.readAsDataURL(file);
+  });
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    errorBox.textContent = "";
+    errorBox.style.display = "none";
+    if (senhaInput.value !== confirmInput.value) {
+      errorBox.textContent = "As senhas devem ser iguais.";
+      errorBox.style.display = "block";
+      confirmInput.focus();
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("token", token);
+    formData.append("nome", document.getElementById("nome").value.trim());
+    formData.append("senha", senhaInput.value);
+    formData.append("vinculo", document.getElementById("vinculo").value);
+    if (fileInput?.files?.[0]) formData.append("avatar", fileInput.files[0]);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/complete-invitation`, {
         method: "POST",
-        body: fd, // NÃO defina Content-Type manualmente
+        body: formData,
       });
-      const data = await resp.json().catch(() => ({}));
-      const senhaError = data.errors?.find(error => error.path === 'senha' || error.param === 'senha');
-      if (!resp.ok) throw new Error(senhaError?.msg || data.error || "Falha no cadastro");
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const validationError = data.errors?.[0]?.msg;
+        throw new Error(validationError || data.error || "Não foi possível cadastrar o perfil.");
+      }
 
-      const token = data.token;
-      localStorage.setItem("token", token);
-      localStorage.setItem(
-        "admin",
-        JSON.stringify({
-          name: data.admin.nome,
-          email: data.admin.email,
-          vinculo: data.admin.vinculo,
-          picurl: "", // vamos preencher abaixo
-        })
-      );
-
-      await fetchAndCacheAvatarAsDataURL(API_BASE, token);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("admin", JSON.stringify({
+        name: data.admin.nome,
+        email: data.admin.email,
+        vinculo: data.admin.vinculo,
+        tipo: data.admin.tipo,
+        picurl: "",
+      }));
       window.location.href = "/pages/dashboard.html";
-    } catch (err) {
-      console.error(err);
-      alert(err.message || "Erro inesperado no cadastro");
+    } catch (error) {
+      errorBox.textContent = error.message || "Erro inesperado no cadastro.";
+      errorBox.style.display = "block";
     }
   });
 
-  async function fetchAndCacheAvatarAsDataURL(API_BASE, token) {
-    try {
-      const r = await fetch(`${API_BASE}/api/auth/me/avatar`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!r.ok || r.status === 204) return;
-      const ct = r.headers.get("Content-Type") || "image/jpeg";
-      const buf = await r.arrayBuffer();
-      const b64 = arrayBufferToBase64(buf);
-      const dataUrl = `data:${ct};base64,${b64}`;
-      const a = JSON.parse(localStorage.getItem("admin") || "{}");
-      a.picurl = dataUrl;
-      localStorage.setItem("admin", JSON.stringify(a));
-    } catch {}
-  }
-  function arrayBufferToBase64(buffer) {
-    let binary = "";
-    const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-    return btoa(binary);
-  }
+  loadInvitation();
 })();
