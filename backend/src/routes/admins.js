@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const path = require('path');
 const { Administrador, AdministradorConvite, sequelize } = require('../models');
 const auth = require('../middlewares/auth');
 const superadmin = require('../middlewares/superadmin');
@@ -38,11 +39,37 @@ async function sendInvitationEmail(email, token, origin) {
     auth: { user: smtpUser, pass: smtpPass },
   });
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || smtpUser,
+    from: process.env.SMTP_FROM || `"Trilha Verde" <${smtpUser}>`,
     to: email,
     subject: 'Convite para o Trilha Verde',
     text: `Você foi convidado para cadastrar seu perfil de administrador no Trilha Verde. Acesse ${inviteUrl}. O convite é válido por 24 horas.`,
-    html: `<p>Você foi convidado para cadastrar seu perfil de administrador no Trilha Verde.</p><p><a href="${inviteUrl}">Cadastrar meu perfil</a></p><p>O convite é válido por 24 horas.</p>`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #ffffff; color: #1f2937;">
+        <div style="background: #f7fafc; padding: 24px 32px; border-bottom: 1px solid #e5e7eb;">
+          <div style="font-size: 20px; font-weight: 700; color: #0f766e;">Trilha Verde</div>
+          <div style="font-size: 13px; color: #6b7280; margin-top: 4px;">Convite para administrador</div>
+        </div>
+        <div style="padding: 28px 32px 24px;">
+          <p style="margin: 0 0 12px; font-size: 16px;">Olá,</p>
+          <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6;">Você foi convidado para criar seu perfil de administrador no Trilha Verde.</p>
+          <div style="margin: 20px 0;">
+            <a href="${inviteUrl}" style="display: inline-block; background: #0f766e; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 8px; font-weight: 700;">Cadastrar meu perfil</a>
+          </div>
+          <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Ou copie e cole este link no navegador:</p>
+          <p style="margin: 0 0 16px; font-size: 13px; word-break: break-all; color: #2563eb;">${inviteUrl}</p>
+          <p style="margin: 0; font-size: 13px; color: #6b7280;">Este convite é válido por 24 horas.</p>
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <img src="cid:trilha-verde-logo" alt="Logo Trilha Verde" style="width: 64px; height: 64px; object-fit: contain;">
+            <div style="margin-top: 8px; font-size: 14px; font-weight: 700; color: #111827;">Equipe Trilha Verde</div>
+          </div>
+        </div>
+      </div>
+    `,
+    attachments: [{
+      filename: 'logo.png',
+      path: path.resolve(__dirname, '../../../frontend/img/logo.png'),
+      cid: 'trilha-verde-logo',
+    }],
   });
 }
 
@@ -70,6 +97,11 @@ router.get('/', async (_req, res) => {
     });
   } catch (error) {
     console.error('Falha ao listar administradores:', error);
+    if (['42P01', '42703'].includes(error.original?.code)) {
+      return res.status(503).json({
+        error: 'O banco ainda não tem as tabelas/colunas da gestão de administradores. Aplique a migração backend/migrations/20261107000000_admin_types_and_invitations.sql.',
+      });
+    }
     return res.status(500).json({ error: 'Não foi possível carregar os administradores' });
   }
 });
