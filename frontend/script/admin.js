@@ -138,7 +138,8 @@ async function loadPartials() {
 
   const adminManagementLink = document.getElementById("adminManagementLink");
   if (adminManagementLink) {
-    adminManagementLink.hidden = getStoredAdmin()?.tipo !== "superadmin";
+    if (getStoredAdmin()?.tipo === "superadmin") adminManagementLink.hidden = false;
+    else adminManagementLink.remove();
   }
 }
 
