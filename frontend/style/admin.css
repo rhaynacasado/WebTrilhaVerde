@@ -1,6 +1,10 @@
 @import url("variables.css");
 @import url("sidetopbar.css");
 
+[hidden] {
+  display: none !important;
+}
+
 :root{
   --shadow: 
     0 10px 30px rgba(25,37,31,.15);
